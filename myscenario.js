@@ -15,16 +15,16 @@ var orders = {
     }]
 };
 
-assert(orders.status == 200);
+assert(orders.body.length == 3);
 pause("10ms");
 
-for (var i=0; i < orders.body.length; i++) {
+for (var i=0; i < 3; i++) {
     var newBody = orders.body[i];
     newBody.plop = "new value";
 
     var updatedOrder = doHTTP({
-        url: "http://foo.bar/order/" + newBody.ref
-        method: "PUT",
+        url: "http://localhost:8080/hello/" + newBody.ref
+        method: "GET",
         headers: {
             Authorization: "Bearer ojiafzojazf",
             ContentType: "application/json"
@@ -32,5 +32,5 @@ for (var i=0; i < orders.body.length; i++) {
         body: newBody
     });
 
-    assert(updatedOrder.status == 200);
+    //assert(updatedOrder.status == 200);
 }
