@@ -1,0 +1,5 @@
+package: github.com/ofux/deluge
+import:
+- package: github.com/robertkrimen/otto
+- package: github.com/sirupsen/logrus
+  version: ~0.11.5
