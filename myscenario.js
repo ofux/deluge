@@ -16,9 +16,9 @@ var orders = {
 };
 
 assert(orders.body.length == 3);
-pause("10ms");
+//pause("10ms");
 
-for (var i=0; i < 3; i++) {
+for (var i=0; i < 1; i++) {
     var newBody = orders.body[i];
     newBody.plop = "new value";
 

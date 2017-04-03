@@ -20,6 +20,7 @@ const (
 )
 
 type WaterDrop struct {
+	Name          string
 	vm            *otto.Otto
 	script        *otto.Script
 	client        *http.Client
@@ -27,9 +28,10 @@ type WaterDrop struct {
 	SleepDuration time.Duration
 }
 
-func NewWaterDrop(script *otto.Script) *WaterDrop {
+func NewWaterDrop(name string, script *otto.Script) *WaterDrop {
 	vm := otto.New()
 	wd := &WaterDrop{
+		Name:   name,
 		vm:     vm,
 		script: script,
 		client: http.DefaultClient,
@@ -112,13 +114,13 @@ func (wd *WaterDrop) DoHTTP(call otto.FunctionCall) otto.Value {
 
 	log.Debugf("Performing HTTP request: %s %s", req.Method, req.URL.String())
 	start := time.Now()
-	res, err := wd.client.Do(req)
+	//res, err := wd.client.Do(req)
 	end := time.Now()
 	duration := end.Sub(start)
 	if err != nil {
 		log.Debugf("Request error: %s", err.Error())
 	} else {
-		log.Debugf("Response status: %s in %s", res.Status, duration.String())
+		log.Debugf("Response status: %s in %s", "res.Status", duration.String())
 	}
 
 	return otto.Value{}
