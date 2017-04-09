@@ -25,3 +25,11 @@ mqtt req responds res
 // or
 grpc req responds re
 ```
+
+## Libs
+
+- [ ] [logrus](https://github.com/sirupsen/logrus) for the logs
+- [ ] [cobra](https://github.com/spf13/cobra) for the CLI
+- [ ] [grpc-go](https://github.com/grpc/grpc-go) for gRPC
+- [ ] [surgemq](https://github.com/influxdata/surgemq) for MQTT
+- [ ] [hdrhistogram](https://github.com/codahale/hdrhistogram) for HDR Histogram
