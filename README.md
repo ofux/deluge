@@ -17,13 +17,30 @@ let req = {
   "URL": "..."
 };
 
-http req responds res
+let res = http(req);
 // or
-tcp req responds res
+let res = tcp(req);
 // or
-mqtt req responds res
+let res = mqtt(req);
 // or
-grpc req responds re
+let res = grpc(req);
+
+if (res["status"] != 200) {
+  fail();
+}
+
+assert(res["status"] == 200);
+
+// launch async
+async whatever();
+async function(){
+  // ...
+}()
+wait
+
+async "group1" whatever();
+async "group1" whatever();
+wait "group1"
 ```
 
 ## Libs
