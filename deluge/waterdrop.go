@@ -2,7 +2,9 @@ package deluge
 
 import (
 	"errors"
-	"github.com/robertkrimen/otto"
+	"github.com/ofux/deluge-dsl/ast"
+	"github.com/ofux/deluge-dsl/evaluator"
+	"github.com/ofux/deluge-dsl/object"
 	log "github.com/sirupsen/logrus"
 	"net/http"
 	"time"
@@ -21,27 +23,25 @@ const (
 
 type WaterDrop struct {
 	Name          string
-	vm            *otto.Otto
-	script        *otto.Script
+	script        *ast.Program
+	evaluator     *evaluator.Evaluator
 	client        *http.Client
 	Status        WaterDropStatus
 	SleepDuration time.Duration
 }
 
-func NewWaterDrop(name string, script *otto.Script) *WaterDrop {
-	vm := otto.New()
+func NewWaterDrop(name string, script *ast.Program) *WaterDrop {
 	wd := &WaterDrop{
-		Name:   name,
-		vm:     vm,
-		script: script,
-		client: http.DefaultClient,
-		Status: Virgin,
+		Name:      name,
+		script:    script,
+		evaluator: evaluator.NewEvaluator(),
+		client:    http.DefaultClient,
+		Status:    Virgin,
 	}
-	vm.Interrupt = make(chan func(), 1) // The buffer prevents blocking
 
-	vm.Set("assert", wd.Assert)
-	vm.Set("pause", wd.Pause)
-	vm.Set("doHTTP", wd.DoHTTP)
+	wd.evaluator.AddBuiltin("assert", wd.Assert)
+	wd.evaluator.AddBuiltin("pause", wd.Pause)
+	wd.evaluator.AddBuiltin("doHTTP", wd.DoHTTP)
 
 	return wd
 }
@@ -58,59 +58,65 @@ func (wd *WaterDrop) Run() {
 	}()
 
 	wd.Status = InProgress
-	_, err := wd.vm.Run(wd.script)
-	if err != nil {
-		log.Fatal(err)
+	env := object.NewEnvironment()
+	evaluated := wd.evaluator.Eval(wd.script, env)
+	if evaluated != nil && evaluated.Type() == object.ERROR_OBJ {
+		log.Errorln(evaluated.Inspect())
+		if errObj, ok := evaluated.(*object.Error); ok {
+			log.Fatal(errObj.Message)
+		}
 	}
 	if wd.Status == InProgress {
 		wd.Status = DoneSuccess
 	}
 }
 
-func (wd *WaterDrop) Assert(call otto.FunctionCall) otto.Value {
-	//fmt.Printf("Assert is %s.\n", call.Argument(0).String())
-	result, err := call.Argument(0).ToBoolean()
-	checkFatal(err, call)
+//type BuiltinFunction func(node ast.Node, args ...Object) Object
 
-	if !result {
-		log.Debugf("Assertion failed at %s", call.CallerLocation())
+func (wd *WaterDrop) Assert(node ast.Node, args ...object.Object) object.Object {
+	checkArgsTypeFatal(node, args, 0, object.BOOLEAN_OBJ)
+	result := args[0].(*object.Boolean)
+
+	if !result.Value {
+		log.Debugf("Assertion failed at %s", ast.PrintLocation(node))
 		wd.Status = DoneAssertionError
-		wd.vm.Interrupt <- func() {
-			panic(halt)
-		}
+		// TODO: exit/interrupt
 	}
-	return otto.Value{}
+	return evaluator.NULL
 }
 
-func (wd *WaterDrop) Pause(call otto.FunctionCall) otto.Value {
-	d, err := time.ParseDuration(call.Argument(0).String())
-	checkFatal(err, call)
+func (wd *WaterDrop) Pause(node ast.Node, args ...object.Object) object.Object {
+	checkArgsTypeFatal(node, args, 0, object.STRING_OBJ)
+
+	dArg := args[0].(*object.String)
+	d, err := time.ParseDuration(dArg.Value)
+	checkFatal(node, err)
 	wd.SleepDuration += d
 	time.Sleep(d)
-	return otto.Value{}
+	return evaluator.NULL
 }
 
-func (wd *WaterDrop) DoHTTP(call otto.FunctionCall) otto.Value {
-	if !call.Argument(0).IsObject() {
-		log.Fatalf("Expected HTTP request object at %s\n", call.CallerLocation())
-	}
-	jsReq := call.Argument(0).Object()
+func (wd *WaterDrop) DoHTTP(node ast.Node, args ...object.Object) object.Object {
+	checkArgsTypeFatal(node, args, 0, object.HASH_OBJ)
 
-	jsUrl, err := jsReq.Get("url")
-	checkFatal(err, call)
-	if !jsUrl.IsDefined() {
-		log.Fatalf("Invalid HTTP request: missing 'url' field at %s", call.CallerLocation())
+	jsReq := args[0].(*object.Hash)
+
+	jsUrl, ok := jsReq.Get("url")
+	if !ok {
+		log.Fatalf("Invalid HTTP request: missing 'url' field at %s", ast.PrintLocation(node))
 	}
+	checkTypeFatal(node, jsUrl.Value, object.STRING_OBJ)
+	url := jsUrl.Value.(*object.String).Value
 
 	var method = "GET"
-	jsMethod, err := jsReq.Get("method")
-	checkFatal(err, call)
-	if jsMethod.IsDefined() {
-		method = jsMethod.String()
+	jsMethod, ok := jsReq.Get("method")
+	if ok {
+		checkTypeFatal(node, jsMethod.Value, object.STRING_OBJ)
+		method = jsMethod.Value.(*object.String).Value
 	}
 
-	req, err := http.NewRequest(method, jsUrl.String(), nil)
-	checkFatal(err, call)
+	req, err := http.NewRequest(method, url, nil)
+	checkFatal(node, err)
 
 	log.Debugf("Performing HTTP request: %s %s", req.Method, req.URL.String())
 	start := time.Now()
@@ -123,11 +129,26 @@ func (wd *WaterDrop) DoHTTP(call otto.FunctionCall) otto.Value {
 		log.Debugf("Response status: %s in %s", "res.Status", duration.String())
 	}
 
-	return otto.Value{}
+	return evaluator.NULL
 }
 
-func checkFatal(err error, call otto.FunctionCall) {
+func checkFatal(node ast.Node, err error) {
 	if err != nil {
-		log.Fatalf("%s at %s\n", err.Error(), call.CallerLocation())
+		log.Fatalf("%s at %s\n", err.Error(), ast.PrintLocation(node))
+	}
+}
+
+func checkTypeFatal(node ast.Node, obj object.Object, expectedType object.ObjectType) {
+	if obj == nil || obj.Type() != expectedType {
+		log.Fatalf("%s: expected type %s, got %s\n", ast.PrintLocation(node), expectedType, obj.Type())
+	}
+}
+
+func checkArgsTypeFatal(node ast.Node, args []object.Object, argIndex int, expectedType object.ObjectType) {
+	if len(args) <= argIndex {
+		log.Fatalf("Expected at least %d arguments at %s\n", argIndex+1, ast.PrintLocation(node))
+	}
+	if args[argIndex] == nil || args[argIndex].Type() != expectedType {
+		log.Fatalf("%s: expected argument n°%d to be of type %s, got %s\n", ast.PrintLocation(node), argIndex+1, expectedType, args[argIndex].Type())
 	}
 }

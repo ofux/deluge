@@ -1,7 +1,7 @@
 package deluge
 
 import (
-	"github.com/robertkrimen/otto"
+	"github.com/ofux/deluge-dsl/ast"
 	log "github.com/sirupsen/logrus"
 	"strconv"
 	"sync"
@@ -15,7 +15,7 @@ type Rain struct {
 	TotalWaterDropsCalls int64
 }
 
-func NewRain(name string, script *otto.Script, concurrentClients int, callsTickerDuration time.Duration) *Rain {
+func NewRain(name string, script *ast.Program, concurrentClients int, callsTickerDuration time.Duration) *Rain {
 	r := &Rain{
 		Name:                name,
 		waterdrops:          make([]*WaterDrop, concurrentClients),
@@ -42,17 +42,24 @@ func (r *Rain) Run(duration time.Duration) {
 		go func(wd *WaterDrop) {
 			defer waitg.Done()
 			ticker := time.NewTicker(r.callsTickerDuration)
+			timer := time.NewTimer(duration)
 
 			for {
 				if time.Now().Sub(start).Nanoseconds() > duration.Nanoseconds() {
 					log.Debugf("Terminate waterdrop %s", wd.Name)
 					return
 				}
+
 				log.Debugf("Running waterdrop %s", wd.Name)
 				waterDropCallCounter <- 1
 				wd.Run()
 
-				<-ticker.C
+				select {
+				case <-timer.C:
+					log.Debugf("Terminate waterdrop %s", wd.Name)
+					return
+				case <-ticker.C:
+				}
 			}
 		}(wd)
 	}

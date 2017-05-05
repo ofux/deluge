@@ -1,17 +1,23 @@
 package deluge
 
 import (
-	"github.com/robertkrimen/otto"
+	"github.com/ofux/deluge-dsl/lexer"
+	"github.com/ofux/deluge-dsl/parser"
 	"testing"
+	"time"
 )
 
 func NewWaterDropTest(t *testing.T, js string) *WaterDrop {
-	vm := otto.New()
-	script, err := vm.Compile("", js)
-	if err != nil {
-		t.Fatal(err)
+	l := lexer.New(js)
+	p := parser.New(l)
+
+	program, ok := p.ParseProgram()
+	if !ok {
+		PrintParserErrors(p.Errors())
+		t.Fatal("Parsing error(s)")
 	}
-	return NewWaterDrop(script)
+
+	return NewWaterDrop("1", program)
 }
 
 func checkWDStatus(t *testing.T, wd *WaterDrop, status WaterDropStatus) {
@@ -50,4 +56,23 @@ func TestPause(t *testing.T) {
 			t.Fatalf("Expected sleep duration to be %s but was %s", "10ms", wd.SleepDuration.String())
 		}
 	})
+}
+
+func BenchmarkNewRain(b *testing.B) {
+	l := lexer.New(`
+let updatedOrder = doHTTP({
+    "url": "http://localhost:8080/hello/toto"
+});
+	`)
+	p := parser.New(l)
+
+	program, ok := p.ParseProgram()
+	if !ok {
+		PrintParserErrors(p.Errors())
+		b.Fatal("Parsing error(s)")
+	}
+
+	for i := 0; i < b.N; i++ {
+		NewRain("rain", program, 1000, time.Second)
+	}
 }
