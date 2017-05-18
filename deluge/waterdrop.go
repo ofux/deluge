@@ -23,14 +23,14 @@ const (
 
 type WaterDrop struct {
 	Name          string
-	script        *ast.Program
+	script        ast.Node
 	evaluator     *evaluator.Evaluator
 	client        *http.Client
 	Status        WaterDropStatus
 	SleepDuration time.Duration
 }
 
-func NewWaterDrop(name string, script *ast.Program) *WaterDrop {
+func NewWaterDrop(name string, script ast.Node) *WaterDrop {
 	wd := &WaterDrop{
 		Name:      name,
 		script:    script,
@@ -41,7 +41,7 @@ func NewWaterDrop(name string, script *ast.Program) *WaterDrop {
 
 	wd.evaluator.AddBuiltin("assert", wd.Assert)
 	wd.evaluator.AddBuiltin("pause", wd.Pause)
-	wd.evaluator.AddBuiltin("doHTTP", wd.DoHTTP)
+	wd.evaluator.AddBuiltin("http", wd.DoHTTP)
 
 	return wd
 }

@@ -11,22 +11,24 @@ import (
 type Rain struct {
 	Name                 string
 	waterdrops           []*WaterDrop
+	script               ast.Node
 	callsTickerDuration  time.Duration
 	TotalWaterDropsCalls int64
 }
 
-func NewRain(name string, script *ast.Program, concurrentClients int, callsTickerDuration time.Duration) *Rain {
-	r := &Rain{
+func NewRain(name string, concurrent int, duration time.Duration, script ast.Node) *Rain {
+	s := &Rain{
 		Name:                name,
-		waterdrops:          make([]*WaterDrop, concurrentClients),
-		callsTickerDuration: callsTickerDuration,
+		waterdrops:          make([]*WaterDrop, concurrent),
+		callsTickerDuration: duration,
+		script:              script,
 	}
 
-	for i := range r.waterdrops {
-		r.waterdrops[i] = NewWaterDrop(strconv.Itoa(i), script)
+	for i := 0; i < concurrent; i++ {
+		s.waterdrops[i] = NewWaterDrop(strconv.Itoa(i), s.script)
 	}
 
-	return r
+	return s
 }
 
 func (r *Rain) Run(duration time.Duration) {
@@ -65,7 +67,7 @@ func (r *Rain) Run(duration time.Duration) {
 	}
 	waitg.Wait()
 
-	log.Infof("Deluge executed %d requests in %s", r.TotalWaterDropsCalls, time.Now().Sub(start).String())
+	log.Infof("Scenario executed %d requests in %s", r.TotalWaterDropsCalls, time.Now().Sub(start).String())
 }
 
 func (r *Rain) countWaterDropCalls() chan int8 {

@@ -1,36 +1,95 @@
+deluge("Some name", {
+    "product": {
+        "concurrent": 100,
+        "delay": "2s"
+    }
+});
 
-/// rain
+scenario("product", "Test the product entity", function (args) {
 
-var orders = {
-    status: 200,
-    body: [{
-        plop: "toto",
-        ref: 1
-    }, {
-        plop: "toto",
-        ref: 2
-    }, {
-        plop: "toto",
-        ref: 3
-    }]
-};
+    let baseUrl = "http://127.0.0.1:8080";
+    if (args["baseUrl"]) {
+        baseUrl = args["baseUrl"];
+    }
 
-assert(orders.body.length == 3);
-//pause("10ms");
+    let httpCommonHeaders = {
+        "Accept": "application/json",
+        "Accept-Encoding": "gzip, deflate",
+        "Accept-Language": "fr,fr-fr;q=0.8,en-us",
+        "Connection": "keep-alive",
+        "User-Agent": "Mozilla/5.0 etc."
+    };
 
-for (var i=0; i < 1; i++) {
-    var newBody = orders.body[i];
-    newBody.plop = "new value";
 
-    var updatedOrder = doHTTP({
-        url: "http://localhost:8080/hello/" + newBody.ref
-        method: "GET",
-        headers: {
-            Authorization: "Bearer ojiafzojazf",
-            ContentType: "application/json"
-        },
-        body: newBody
+    let res1 = http("First unauthenticated request", {
+        "url": baseUrl + "/api/v1/account",
+        "headers": httpCommonHeaders
     });
 
-    //assert(updatedOrder.status == 200);
-}
+    assert(res1["status"] == 401);
+
+    pause("10s");
+
+    let access_token = authenticate();
+
+    pause("1s");
+
+    let res2 = http("Authenticated request", {
+        "url": baseUrl + "/api/v1/account",
+        "headers": merge(httpCommonHeaders, {
+            "Authorization": "Bearer " + access_token
+        })
+    });
+
+    assert(res2["status"] == 200);
+
+    pause("10s");
+
+    for (let i=0; i < 2; i++) {
+        let res3 = http("Get all products", {
+            "url": baseUrl + "/api/v1/products",
+            "headers": merge(httpCommonHeaders, {
+                "Authorization": "Bearer " + access_token
+            })
+        });
+
+        assert(res3["status"] == 200);
+
+        let res4 = http("Create new product", {
+            "url": baseUrl + "/api/v1/products",
+            "method": "POST",
+            "headers": merge(httpCommonHeaders, {
+                "Authorization": "Bearer " + access_token
+            }),
+            "body": str({
+                "ref": "SJ5",
+                // etc
+            })
+        });
+
+        assert(res4["status"] == 201);
+    }
+
+});
+
+
+
+
+let authenticate = function () {
+    let resAuth = http("Authentication", {
+        "url": "https://sgconnect.com/oauth/token",
+        "headers": httpCommonHeaders,
+        "form-params": {
+            "username": "admin",
+            "password": "admin",
+            "grant_type": "password"
+            // etc...
+        }
+    });
+
+    assert(resAuth["status"] == 200);
+    let access_token = json(resAuth["body"])["access_token"];
+    assert(len(access_token) > 0);
+
+    return access_token;
+};

@@ -26,7 +26,7 @@ func main() {
 		return
 	}
 
-	wd := deluge.NewRain("rain1", program, 1, 2*time.Second)
+	dlg := deluge.NewDeluge(program)
 	log.Infof("Deluge initialized in %s", time.Now().Sub(start).String())
-	wd.Run(200 * time.Second)
+	dlg.Run()
 }
