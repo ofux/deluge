@@ -10,7 +10,7 @@ import (
 
 type Deluge struct {
 	Name      string
-	scenarios map[string]*Rain
+	scenarios map[string]*Scenario
 }
 
 type delugeBuilder struct {
@@ -41,11 +41,11 @@ func NewDeluge(script *ast.Program) *Deluge {
 
 	dlg := &Deluge{
 		Name:      builder.name,
-		scenarios: make(map[string]*Rain),
+		scenarios: make(map[string]*Scenario),
 	}
 	for id, sConf := range builder.scenarioConfigs {
 		if sCore, ok := builder.scenarioCores[id]; ok {
-			dlg.scenarios[id] = NewRain(sCore.name, sConf.concurrent, sConf.duration, sCore.script)
+			dlg.scenarios[id] = NewScenario(sCore.name, sConf.concurrent, sConf.duration, sCore.script)
 		} else {
 			log.Fatalf("Scenario '%s' is configured but not defined.", id)
 		}

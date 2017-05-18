@@ -10,28 +10,28 @@ import (
 	"time"
 )
 
-var halt = errors.New("Halt water drop")
+var halt = errors.New("Halt simulated user")
 
-type WaterDropStatus int
+type SimUserStatus int
 
 const (
-	Virgin WaterDropStatus = iota
+	Virgin SimUserStatus = iota
 	InProgress
 	DoneSuccess
 	DoneAssertionError
 )
 
-type WaterDrop struct {
+type SimUser struct {
 	Name          string
 	script        ast.Node
 	evaluator     *evaluator.Evaluator
 	client        *http.Client
-	Status        WaterDropStatus
+	Status        SimUserStatus
 	SleepDuration time.Duration
 }
 
-func NewWaterDrop(name string, script ast.Node) *WaterDrop {
-	wd := &WaterDrop{
+func NewSimUser(name string, script ast.Node) *SimUser {
+	su := &SimUser{
 		Name:      name,
 		script:    script,
 		evaluator: evaluator.NewEvaluator(),
@@ -39,14 +39,14 @@ func NewWaterDrop(name string, script ast.Node) *WaterDrop {
 		Status:    Virgin,
 	}
 
-	wd.evaluator.AddBuiltin("assert", wd.Assert)
-	wd.evaluator.AddBuiltin("pause", wd.Pause)
-	wd.evaluator.AddBuiltin("http", wd.DoHTTP)
+	su.evaluator.AddBuiltin("assert", su.Assert)
+	su.evaluator.AddBuiltin("pause", su.Pause)
+	su.evaluator.AddBuiltin("http", su.DoHTTP)
 
-	return wd
+	return su
 }
 
-func (wd *WaterDrop) Run() {
+func (su *SimUser) Run() {
 	defer func() {
 		if caught := recover(); caught != nil {
 			if caught == halt {
@@ -57,46 +57,46 @@ func (wd *WaterDrop) Run() {
 		}
 	}()
 
-	wd.Status = InProgress
+	su.Status = InProgress
 	env := object.NewEnvironment()
-	evaluated := wd.evaluator.Eval(wd.script, env)
+	evaluated := su.evaluator.Eval(su.script, env)
 	if evaluated != nil && evaluated.Type() == object.ERROR_OBJ {
 		log.Errorln(evaluated.Inspect())
 		if errObj, ok := evaluated.(*object.Error); ok {
 			log.Fatal(errObj.Message)
 		}
 	}
-	if wd.Status == InProgress {
-		wd.Status = DoneSuccess
+	if su.Status == InProgress {
+		su.Status = DoneSuccess
 	}
 }
 
 //type BuiltinFunction func(node ast.Node, args ...Object) Object
 
-func (wd *WaterDrop) Assert(node ast.Node, args ...object.Object) object.Object {
+func (su *SimUser) Assert(node ast.Node, args ...object.Object) object.Object {
 	checkArgsTypeFatal(node, args, 0, object.BOOLEAN_OBJ)
 	result := args[0].(*object.Boolean)
 
 	if !result.Value {
 		log.Debugf("Assertion failed at %s", ast.PrintLocation(node))
-		wd.Status = DoneAssertionError
+		su.Status = DoneAssertionError
 		// TODO: exit/interrupt
 	}
 	return evaluator.NULL
 }
 
-func (wd *WaterDrop) Pause(node ast.Node, args ...object.Object) object.Object {
+func (su *SimUser) Pause(node ast.Node, args ...object.Object) object.Object {
 	checkArgsTypeFatal(node, args, 0, object.STRING_OBJ)
 
 	dArg := args[0].(*object.String)
 	d, err := time.ParseDuration(dArg.Value)
 	checkFatal(node, err)
-	wd.SleepDuration += d
+	su.SleepDuration += d
 	time.Sleep(d)
 	return evaluator.NULL
 }
 
-func (wd *WaterDrop) DoHTTP(node ast.Node, args ...object.Object) object.Object {
+func (su *SimUser) DoHTTP(node ast.Node, args ...object.Object) object.Object {
 	checkArgsTypeFatal(node, args, 0, object.HASH_OBJ)
 
 	jsReq := args[0].(*object.Hash)
@@ -120,7 +120,7 @@ func (wd *WaterDrop) DoHTTP(node ast.Node, args ...object.Object) object.Object 
 
 	log.Debugf("Performing HTTP request: %s %s", req.Method, req.URL.String())
 	start := time.Now()
-	//res, err := wd.client.Do(req)
+	//res, err := su.client.Do(req)
 	end := time.Now()
 	duration := end.Sub(start)
 	if err != nil {
