@@ -7,7 +7,7 @@ deluge("Some name", {
 
 scenario("sc1", "Some scenario", function () {
 
-    http({
+    http("Some request", {
         "url": "http://localhost:8080/hello/toto"
     });
 

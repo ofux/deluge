@@ -39,20 +39,6 @@ func TestAssert(t *testing.T) {
 		assert(1+1 == 3)
 		`)
 		su.Run()
-		checkSimUserStatus(t, su, DoneAssertionError)
-	})
-}
-
-func TestPause(t *testing.T) {
-	t.Run("Pause valid duration", func(t *testing.T) {
-		su := NewSimUserTest(t, `
-		pause("10ms")
-		`)
-		su.Run()
-		checkSimUserStatus(t, su, DoneSuccess)
-
-		if su.SleepDuration.String() != "10ms" {
-			t.Fatalf("Expected sleep duration to be %s but was %s", "10ms", su.SleepDuration.String())
-		}
+		checkSimUserStatus(t, su, DoneError)
 	})
 }

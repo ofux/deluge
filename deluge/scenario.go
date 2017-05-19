@@ -56,6 +56,10 @@ func (sc *Scenario) Run(duration time.Duration) {
 				simUserCallCounter <- 1
 				su.Run()
 
+				if su.Status == DoneError {
+					return
+				}
+
 				select {
 				case <-timer.C:
 					log.Debugf("Terminate user simulation %s", su.Name)

@@ -1,7 +1,6 @@
 package deluge
 
 import (
-	"errors"
 	"github.com/ofux/deluge-dsl/ast"
 	"github.com/ofux/deluge-dsl/evaluator"
 	"github.com/ofux/deluge-dsl/object"
@@ -10,15 +9,13 @@ import (
 	"time"
 )
 
-var halt = errors.New("Halt simulated user")
-
 type SimUserStatus int
 
 const (
 	Virgin SimUserStatus = iota
 	InProgress
 	DoneSuccess
-	DoneAssertionError
+	DoneError
 )
 
 type SimUser struct {
@@ -39,84 +36,55 @@ func NewSimUser(name string, script ast.Node) *SimUser {
 		Status:    Virgin,
 	}
 
-	su.evaluator.AddBuiltin("assert", su.Assert)
-	su.evaluator.AddBuiltin("pause", su.Pause)
-	su.evaluator.AddBuiltin("http", su.DoHTTP)
+	su.evaluator.AddBuiltin("http", su.ExecHTTPRequest)
 
 	return su
 }
 
 func (su *SimUser) Run() {
-	defer func() {
-		if caught := recover(); caught != nil {
-			if caught == halt {
-				log.Debug(halt.Error())
-				return
-			}
-			panic(caught) // Something else happened, repanic!
-		}
-	}()
-
 	su.Status = InProgress
 	env := object.NewEnvironment()
 	evaluated := su.evaluator.Eval(su.script, env)
+
 	if evaluated != nil && evaluated.Type() == object.ERROR_OBJ {
 		log.Errorln(evaluated.Inspect())
-		if errObj, ok := evaluated.(*object.Error); ok {
-			log.Fatal(errObj.Message)
-		}
+		su.Status = DoneError
+		return
 	}
+
 	if su.Status == InProgress {
 		su.Status = DoneSuccess
 	}
 }
 
-//type BuiltinFunction func(node ast.Node, args ...Object) Object
-
-func (su *SimUser) Assert(node ast.Node, args ...object.Object) object.Object {
-	checkArgsTypeFatal(node, args, 0, object.BOOLEAN_OBJ)
-	result := args[0].(*object.Boolean)
-
-	if !result.Value {
-		log.Debugf("Assertion failed at %s", ast.PrintLocation(node))
-		su.Status = DoneAssertionError
-		// TODO: exit/interrupt
+func (su *SimUser) ExecHTTPRequest(node ast.Node, args ...object.Object) object.Object {
+	if oErr := evaluator.AssertArgsType(node, args, object.STRING_OBJ, object.HASH_OBJ); oErr != nil {
+		return oErr
 	}
-	return evaluator.NULL
-}
 
-func (su *SimUser) Pause(node ast.Node, args ...object.Object) object.Object {
-	checkArgsTypeFatal(node, args, 0, object.STRING_OBJ)
+	//name := args[0].(*object.String).Value
+	reqObj := args[1].(*object.Hash)
 
-	dArg := args[0].(*object.String)
-	d, err := time.ParseDuration(dArg.Value)
-	checkFatal(node, err)
-	su.SleepDuration += d
-	time.Sleep(d)
-	return evaluator.NULL
-}
-
-func (su *SimUser) DoHTTP(node ast.Node, args ...object.Object) object.Object {
-	checkArgsTypeFatal(node, args, 0, object.HASH_OBJ)
-
-	jsReq := args[0].(*object.Hash)
-
-	jsUrl, ok := jsReq.Get("url")
+	jsUrl, ok := reqObj.Get("url")
 	if !ok {
-		log.Fatalf("Invalid HTTP request: missing 'url' field at %s", ast.PrintLocation(node))
+		return evaluator.NewError(node, "invalid HTTP request: missing 'url' field")
 	}
-	checkTypeFatal(node, jsUrl.Value, object.STRING_OBJ)
-	url := jsUrl.Value.(*object.String).Value
+	url, ok := jsUrl.Value.(*object.String)
+	if !ok {
+		return evaluator.NewError(node, "invalid HTTP request: 'url' should be a STRING")
+	}
 
 	var method = "GET"
-	jsMethod, ok := jsReq.Get("method")
-	if ok {
-		checkTypeFatal(node, jsMethod.Value, object.STRING_OBJ)
-		method = jsMethod.Value.(*object.String).Value
+	if methodField, ok := reqObj.Get("method"); ok {
+		if methodFieldVal, ok := methodField.Value.(*object.String); ok {
+			method = methodFieldVal.Value
+		}
 	}
 
-	req, err := http.NewRequest(method, url, nil)
-	checkFatal(node, err)
+	req, err := http.NewRequest(method, url.Value, nil)
+	if err != nil {
+		return evaluator.NewError(node, err.Error())
+	}
 
 	log.Debugf("Performing HTTP request: %s %s", req.Method, req.URL.String())
 	start := time.Now()
@@ -125,30 +93,10 @@ func (su *SimUser) DoHTTP(node ast.Node, args ...object.Object) object.Object {
 	duration := end.Sub(start)
 	if err != nil {
 		log.Debugf("Request error: %s", err.Error())
+		return evaluator.NewError(node, err.Error())
 	} else {
 		log.Debugf("Response status: %s in %s", "res.Status", duration.String())
 	}
 
 	return evaluator.NULL
-}
-
-func checkFatal(node ast.Node, err error) {
-	if err != nil {
-		log.Fatalf("%s at %s\n", err.Error(), ast.PrintLocation(node))
-	}
-}
-
-func checkTypeFatal(node ast.Node, obj object.Object, expectedType object.ObjectType) {
-	if obj == nil || obj.Type() != expectedType {
-		log.Fatalf("%s: expected type %s, got %s\n", ast.PrintLocation(node), expectedType, obj.Type())
-	}
-}
-
-func checkArgsTypeFatal(node ast.Node, args []object.Object, argIndex int, expectedType object.ObjectType) {
-	if len(args) <= argIndex {
-		log.Fatalf("Expected at least %d arguments at %s\n", argIndex+1, ast.PrintLocation(node))
-	}
-	if args[argIndex] == nil || args[argIndex].Type() != expectedType {
-		log.Fatalf("%s: expected argument n°%d to be of type %s, got %s\n", ast.PrintLocation(node), argIndex+1, expectedType, args[argIndex].Type())
-	}
 }
