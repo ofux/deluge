@@ -40,7 +40,9 @@ func NewSimUser(name string, script ast.Node, recorder Recorder) *SimUser {
 		recorder:  recorder,
 	}
 
-	su.evaluator.AddBuiltin("http", su.ExecHTTPRequest)
+	if err := su.evaluator.AddBuiltin("http", su.ExecHTTPRequest); err != nil {
+		log.Fatal(err.Error())
+	}
 
 	return su
 }

@@ -36,8 +36,12 @@ func NewDeluge(script *ast.Program) *Deluge {
 		scenarioConfigs: make(map[string]*scenarioConfig),
 	}
 	ev := evaluator.NewEvaluator()
-	ev.AddBuiltin("deluge", builder.CreateDeluge)
-	ev.AddBuiltin("scenario", builder.CreateScenario)
+	if err := ev.AddBuiltin("deluge", builder.CreateDeluge); err != nil {
+		log.Fatal(err.Error())
+	}
+	if err := ev.AddBuiltin("scenario", builder.CreateScenario); err != nil {
+		log.Fatal(err.Error())
+	}
 	ev.Eval(script, object.NewEnvironment())
 
 	dlg := &Deluge{
