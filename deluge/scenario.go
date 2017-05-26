@@ -14,6 +14,7 @@ type Scenario struct {
 	script             ast.Node
 	duration           time.Duration
 	TotalSimUsersCalls int64
+	recorder           Recorder
 }
 
 func NewScenario(name string, concurrent int, duration time.Duration, script ast.Node) *Scenario {
@@ -22,10 +23,11 @@ func NewScenario(name string, concurrent int, duration time.Duration, script ast
 		simUsers: make([]*SimUser, concurrent),
 		duration: duration,
 		script:   script,
+		recorder: NewRecorder(concurrent),
 	}
 
 	for i := 0; i < concurrent; i++ {
-		s.simUsers[i] = NewSimUser(strconv.Itoa(i), s.script)
+		s.simUsers[i] = NewSimUser(strconv.Itoa(i), s.script, s.recorder)
 	}
 
 	return s
@@ -46,6 +48,7 @@ func (sc *Scenario) Run(duration time.Duration) {
 			ticker := time.NewTicker(sc.duration)
 			timer := time.NewTimer(duration)
 
+			i := 0
 			for {
 				if time.Now().Sub(start).Nanoseconds() > duration.Nanoseconds() {
 					log.Debugf("Terminate user simulation %s", su.Name)
@@ -54,7 +57,7 @@ func (sc *Scenario) Run(duration time.Duration) {
 
 				log.Debugf("Running user simulation %s", su.Name)
 				simUserCallCounter <- 1
-				su.Run()
+				su.Run(i)
 
 				if su.Status == DoneError {
 					return
@@ -66,10 +69,12 @@ func (sc *Scenario) Run(duration time.Duration) {
 					return
 				case <-ticker.C:
 				}
+				i++
 			}
 		}(su)
 	}
 	waitg.Wait()
+	sc.recorder.Close()
 
 	log.Infof("Scenario executed %d requests in %s", sc.TotalSimUsersCalls, time.Now().Sub(start).String())
 }

@@ -6,6 +6,7 @@ import (
 	"github.com/ofux/deluge-dsl/object"
 	log "github.com/sirupsen/logrus"
 	"net/http"
+	"strconv"
 	"time"
 )
 
@@ -25,15 +26,18 @@ type SimUser struct {
 	client        *http.Client
 	Status        SimUserStatus
 	SleepDuration time.Duration
+	recorder      Recorder
+	iteration     int
 }
 
-func NewSimUser(name string, script ast.Node) *SimUser {
+func NewSimUser(name string, script ast.Node, recorder Recorder) *SimUser {
 	su := &SimUser{
 		Name:      name,
 		script:    script,
 		evaluator: evaluator.NewEvaluator(),
 		client:    http.DefaultClient,
 		Status:    Virgin,
+		recorder:  recorder,
 	}
 
 	su.evaluator.AddBuiltin("http", su.ExecHTTPRequest)
@@ -41,7 +45,8 @@ func NewSimUser(name string, script ast.Node) *SimUser {
 	return su
 }
 
-func (su *SimUser) Run() {
+func (su *SimUser) Run(iteration int) {
+	su.iteration = iteration
 	su.Status = InProgress
 	env := object.NewEnvironment()
 	evaluated := su.evaluator.Eval(su.script, env)
@@ -62,7 +67,7 @@ func (su *SimUser) ExecHTTPRequest(node ast.Node, args ...object.Object) object.
 		return oErr
 	}
 
-	//name := args[0].(*object.String).Value
+	reqName := args[0].(*object.String).Value
 	reqObj := args[1].(*object.Hash)
 
 	jsUrl, ok := reqObj.Get("url")
@@ -88,14 +93,16 @@ func (su *SimUser) ExecHTTPRequest(node ast.Node, args ...object.Object) object.
 
 	log.Debugf("Performing HTTP request: %s %s", req.Method, req.URL.String())
 	start := time.Now()
-	//res, err := su.client.Do(req)
+	res, err := su.client.Do(req)
 	end := time.Now()
 	duration := end.Sub(start)
+
 	if err != nil {
 		log.Debugf("Request error: %s", err.Error())
 		return evaluator.NewError(node, err.Error())
 	} else {
 		log.Debugf("Response status: %s in %s", "res.Status", duration.String())
+		su.recorder.Record(su.iteration, reqName+"->"+strconv.Itoa(res.StatusCode), duration.Nanoseconds()/1000)
 	}
 
 	return evaluator.NULL

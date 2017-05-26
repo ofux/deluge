@@ -5,6 +5,7 @@ import (
 	"github.com/ofux/deluge-dsl/evaluator"
 	"github.com/ofux/deluge-dsl/object"
 	log "github.com/sirupsen/logrus"
+	"sync"
 	"time"
 )
 
@@ -56,9 +57,16 @@ func NewDeluge(script *ast.Program) *Deluge {
 func (d *Deluge) Run() {
 	log.Infof("Executing %d scenario(s)", len(d.scenarios))
 	start := time.Now()
+
+	var waitg sync.WaitGroup
 	for _, scenario := range d.scenarios {
-		scenario.Run(10 * time.Second)
+		waitg.Add(1)
+		go func(scenario *Scenario) {
+			defer waitg.Done()
+			scenario.Run(10 * time.Second)
+		}(scenario)
 	}
+	waitg.Wait()
 	log.Infof("Deluge executed %d scenario(s) in %s", len(d.scenarios), time.Now().Sub(start).String())
 }
 
