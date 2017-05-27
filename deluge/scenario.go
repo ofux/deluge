@@ -15,19 +15,24 @@ type Scenario struct {
 	duration           time.Duration
 	TotalSimUsersCalls int64
 	recorder           Recorder
+	log                *log.Entry
 }
 
 func NewScenario(name string, concurrent int, duration time.Duration, script ast.Node) *Scenario {
 	s := &Scenario{
 		Name:     name,
-		simUsers: make([]*SimUser, concurrent),
-		duration: duration,
 		script:   script,
+		duration: duration,
+		simUsers: make([]*SimUser, concurrent),
+
 		recorder: NewRecorder(concurrent),
+		log: log.New().WithFields(log.Fields{
+			"scenario": name,
+		}),
 	}
 
 	for i := 0; i < concurrent; i++ {
-		s.simUsers[i] = NewSimUser(strconv.Itoa(i), s.script, s.recorder)
+		s.simUsers[i] = NewSimUser(strconv.Itoa(i), s)
 	}
 
 	return s

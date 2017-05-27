@@ -21,23 +21,28 @@ const (
 
 type SimUser struct {
 	Name          string
-	script        ast.Node
+	scenario      *Scenario
 	evaluator     *evaluator.Evaluator
 	client        *http.Client
 	Status        SimUserStatus
 	SleepDuration time.Duration
 	recorder      Recorder
+	log           *log.Entry
 	iteration     int
 }
 
-func NewSimUser(name string, script ast.Node, recorder Recorder) *SimUser {
+func NewSimUser(name string, scenario *Scenario) *SimUser {
 	su := &SimUser{
 		Name:      name,
-		script:    script,
+		Status:    Virgin,
+		scenario:  scenario,
 		evaluator: evaluator.NewEvaluator(),
 		client:    http.DefaultClient,
-		Status:    Virgin,
-		recorder:  recorder,
+
+		recorder: scenario.recorder,
+		log: scenario.log.WithFields(log.Fields{
+			"user": name,
+		}),
 	}
 
 	if err := su.evaluator.AddBuiltin("http", su.ExecHTTPRequest); err != nil {
@@ -51,10 +56,10 @@ func (su *SimUser) Run(iteration int) {
 	su.iteration = iteration
 	su.Status = InProgress
 	env := object.NewEnvironment()
-	evaluated := su.evaluator.Eval(su.script, env)
+	evaluated := su.evaluator.Eval(su.scenario.script, env)
 
 	if evaluated != nil && evaluated.Type() == object.ERROR_OBJ {
-		log.Errorln(evaluated.Inspect())
+		su.log.Errorln(evaluated.Inspect())
 		su.Status = DoneError
 		return
 	}
@@ -93,17 +98,17 @@ func (su *SimUser) ExecHTTPRequest(node ast.Node, args ...object.Object) object.
 		return evaluator.NewError(node, err.Error())
 	}
 
-	log.Debugf("Performing HTTP request: %s %s", req.Method, req.URL.String())
+	su.log.Debugf("Performing HTTP request: %s %s", req.Method, req.URL.String())
 	start := time.Now()
 	res, err := su.client.Do(req)
 	end := time.Now()
 	duration := end.Sub(start)
 
 	if err != nil {
-		log.Debugf("Request error: %s", err.Error())
+		su.log.Debugf("Request error: %s", err.Error())
 		return evaluator.NewError(node, err.Error())
 	} else {
-		log.Debugf("Response status: %s in %s", "res.Status", duration.String())
+		su.log.Debugf("Response status: %s in %s", "res.Status", duration.String())
 		su.recorder.Record(su.iteration, reqName+"->"+strconv.Itoa(res.StatusCode), duration.Nanoseconds()/1000)
 	}
 

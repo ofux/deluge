@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"github.com/ofux/deluge-dsl/lexer"
 	"github.com/ofux/deluge-dsl/parser"
+	log "github.com/sirupsen/logrus"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -13,14 +15,26 @@ func NewSimUserTest(t *testing.T, js string) (*SimUser, Recorder) {
 	l := lexer.New(js)
 	p := parser.New(l)
 
-	program, ok := p.ParseProgram()
+	script, ok := p.ParseProgram()
 	if !ok {
 		PrintParserErrors(p.Errors())
 		t.Fatal("Parsing error(s)")
 	}
 
-	recorder := NewRecorder(1)
-	return NewSimUser("1", program, recorder), recorder
+	logger := log.New()
+	// discard DSL logs for testing
+	logger.Out = ioutil.Discard
+
+	sc := &Scenario{
+		Name:     "Test scenario",
+		script:   script,
+		recorder: NewRecorder(1),
+		log: logger.WithFields(log.Fields{
+			"scenario": "Test scenario",
+		}),
+	}
+
+	return NewSimUser("1", sc), sc.recorder
 }
 
 func checkSimUserStatus(t *testing.T, su *SimUser, status SimUserStatus) {
