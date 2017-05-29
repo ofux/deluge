@@ -3,6 +3,7 @@ package deluge
 import (
 	"errors"
 	hdr "github.com/codahale/hdrhistogram"
+	"sync"
 )
 
 type RecordingState int
@@ -21,10 +22,11 @@ type Recorder interface {
 }
 
 type QueuedRecorder struct {
-	recording    RecordingState
-	recordsQueue chan Record
-	histograms   map[string][]*hdr.Histogram
-	onTerminated chan struct{}
+	recording           RecordingState
+	recordsQueue        chan Record
+	recordingWaitGroup  *sync.WaitGroup
+	processingWaitGroup *sync.WaitGroup
+	histograms          map[string][]*hdr.Histogram
 }
 
 type Record struct {
@@ -35,10 +37,11 @@ type Record struct {
 
 func NewRecorder(concurrent int) Recorder {
 	recorder := &QueuedRecorder{
-		recording:    READY,
-		recordsQueue: make(chan Record, concurrent),
-		histograms:   make(map[string][]*hdr.Histogram),
-		onTerminated: make(chan struct{}, 1),
+		recording:           READY,
+		recordsQueue:        make(chan Record, concurrent),
+		recordingWaitGroup:  new(sync.WaitGroup),
+		processingWaitGroup: new(sync.WaitGroup),
+		histograms:          make(map[string][]*hdr.Histogram),
 	}
 	recorder.processRecords()
 	return recorder
@@ -48,11 +51,15 @@ func NewRecorder(concurrent int) Recorder {
 // This is safe to call this method from different goroutines.
 // Calling this method on a closed Recorder will cause a panic.
 func (r *QueuedRecorder) Record(iteration int, id string, value int64) {
-	r.recordsQueue <- Record{
-		iteration: iteration,
-		id:        id,
-		value:     value,
-	}
+	r.recordingWaitGroup.Add(1)
+	go func() {
+		defer r.recordingWaitGroup.Done()
+		r.recordsQueue <- Record{
+			iteration: iteration,
+			id:        id,
+			value:     value,
+		}
+	}()
 }
 
 // Close closes the Recorder, making the results available for read.
@@ -60,10 +67,12 @@ func (r *QueuedRecorder) Record(iteration int, id string, value int64) {
 func (r *QueuedRecorder) Close() {
 	if r.recording == RECORDING {
 		r.recording = TERMINATING
+		// wait for all records to be taken
+		r.recordingWaitGroup.Wait()
 		// ensure listener won't stay blocked
 		close(r.recordsQueue)
 		// wait for the end of recording
-		<-r.onTerminated
+		r.processingWaitGroup.Wait()
 		r.recording = TERMINATED
 	}
 }
@@ -77,11 +86,10 @@ func (r *QueuedRecorder) GetRecords() (map[string][]*hdr.Histogram, error) {
 
 func (r *QueuedRecorder) processRecords() {
 	r.recording = RECORDING
+	r.processingWaitGroup.Add(1)
 
 	go func() {
-		defer func() {
-			r.onTerminated <- struct{}{}
-		}()
+		defer r.processingWaitGroup.Done()
 
 		for {
 			rec, ok := <-r.recordsQueue
@@ -96,8 +104,9 @@ func (r *QueuedRecorder) processRecords() {
 			}
 
 			// TODO: optimize this
-			if len(histograms) < rec.iteration+1 {
-				histograms = append(histograms, createHistograms(rec.iteration+1-len(histograms))...)
+			if len(histograms) <= rec.iteration {
+				diff := rec.iteration + 1 - len(histograms)
+				histograms = append(histograms, createHistograms(diff)...)
 				r.histograms[rec.id] = histograms
 			}
 

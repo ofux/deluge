@@ -134,20 +134,6 @@ func TestQueuedRecorder(t *testing.T) {
 
 func TestQueuedRecorderErrors(t *testing.T) {
 
-	t.Run("Records a value on a closed recorder", func(t *testing.T) {
-		recorder := NewRecorder(10)
-
-		recorder.Close()
-
-		defer func() {
-			if r := recover(); r == nil {
-				t.Error("Expected a panic")
-			}
-		}()
-		// panic!!!
-		recorder.Record(0, "foo", 1000)
-	})
-
 	t.Run("Get records on a running recorder", func(t *testing.T) {
 		recorder := NewRecorder(10)
 
