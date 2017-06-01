@@ -10,12 +10,14 @@ import (
 )
 
 type Deluge struct {
-	Name      string
-	scenarios map[string]*Scenario
+	Name           string
+	globalDuration time.Duration
+	scenarios      map[string]*Scenario
 }
 
 type delugeBuilder struct {
 	name            string
+	globalDuration  time.Duration
 	scenarioCores   map[string]*scenarioCore
 	scenarioConfigs map[string]*scenarioConfig
 }
@@ -45,8 +47,9 @@ func NewDeluge(script *ast.Program) *Deluge {
 	ev.Eval(script, object.NewEnvironment())
 
 	dlg := &Deluge{
-		Name:      builder.name,
-		scenarios: make(map[string]*Scenario),
+		Name:           builder.name,
+		globalDuration: builder.globalDuration,
+		scenarios:      make(map[string]*Scenario),
 	}
 	for id, sConf := range builder.scenarioConfigs {
 		if sCore, ok := builder.scenarioCores[id]; ok {
@@ -67,7 +70,7 @@ func (d *Deluge) Run() {
 		waitg.Add(1)
 		go func(scenario *Scenario) {
 			defer waitg.Done()
-			scenario.Run(10 * time.Second)
+			scenario.Run(d.globalDuration)
 		}(scenario)
 	}
 	waitg.Wait()
@@ -75,8 +78,8 @@ func (d *Deluge) Run() {
 }
 
 func (d *delugeBuilder) CreateDeluge(node ast.Node, args ...object.Object) object.Object {
-	if len(args) != 2 {
-		log.Fatalf("Expected %d arguments at %s\n", 2, ast.PrintLocation(node))
+	if len(args) != 3 {
+		log.Fatalf("Expected %d arguments at %s\n", 3, ast.PrintLocation(node))
 	}
 
 	name, ok := args[0].(*object.String)
@@ -85,9 +88,19 @@ func (d *delugeBuilder) CreateDeluge(node ast.Node, args ...object.Object) objec
 	}
 	d.name = name.Value
 
-	conf, ok := args[1].(*object.Hash)
+	durationStr, ok := args[1].(*object.String)
 	if !ok {
-		log.Fatalf("Expected 2nd argument to be an object at %s\n", ast.PrintLocation(node))
+		log.Fatalf("Expected 2nd argument to be a string at %s\n", ast.PrintLocation(node))
+	}
+	duration, err := time.ParseDuration(durationStr.Value)
+	if err != nil {
+		log.Fatalf("Expected 2nd argument to be a valid duration at %s. Error: %s\n", ast.PrintLocation(node), err.Error())
+	}
+	d.globalDuration = duration
+
+	conf, ok := args[2].(*object.Hash)
+	if !ok {
+		log.Fatalf("Expected 3rd argument to be an object at %s\n", ast.PrintLocation(node))
 	}
 
 	for scenarioId, v := range conf.Pairs {
@@ -111,11 +124,11 @@ func (d *delugeBuilder) CreateDeluge(node ast.Node, args ...object.Object) objec
 		}
 		delayHashStr, ok := delayHashPair.Value.(*object.String)
 		if !ok {
-			log.Fatalf("Expected 'concurrent' value to be a duration in configuration at %s\n", ast.PrintLocation(node))
+			log.Fatalf("Expected 'concurrent' value to be a iterationDuration in configuration at %s\n", ast.PrintLocation(node))
 		}
 		delayHash, err := time.ParseDuration(delayHashStr.Value)
 		if err != nil {
-			log.Fatalf("Expected 'concurrent' value to be a duration in configuration at %s\n", ast.PrintLocation(node))
+			log.Fatalf("Expected 'concurrent' value to be a iterationDuration in configuration at %s\n", ast.PrintLocation(node))
 		}
 
 		_, ok = d.scenarioConfigs[string(scenarioId)]

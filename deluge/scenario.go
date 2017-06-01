@@ -9,21 +9,20 @@ import (
 )
 
 type Scenario struct {
-	Name               string
-	simUsers           []*SimUser
-	script             ast.Node
-	duration           time.Duration
-	TotalSimUsersCalls int64
-	recorder           Recorder
-	log                *log.Entry
+	Name              string
+	simUsers          []*SimUser
+	script            ast.Node
+	iterationDuration time.Duration
+	recorder          Recorder
+	log               *log.Entry
 }
 
 func NewScenario(name string, concurrent int, duration time.Duration, script ast.Node) *Scenario {
 	s := &Scenario{
-		Name:     name,
-		script:   script,
-		duration: duration,
-		simUsers: make([]*SimUser, concurrent),
+		Name:              name,
+		script:            script,
+		iterationDuration: duration,
+		simUsers:          make([]*SimUser, concurrent),
 
 		recorder: NewRecorder(concurrent),
 		log: log.New().WithFields(log.Fields{
@@ -38,11 +37,8 @@ func NewScenario(name string, concurrent int, duration time.Duration, script ast
 	return s
 }
 
-func (sc *Scenario) Run(duration time.Duration) {
+func (sc *Scenario) Run(globalDuration time.Duration) {
 	var waitg sync.WaitGroup
-
-	simUserCallCounter := sc.countSimUserCalls()
-	defer close(simUserCallCounter)
 
 	start := time.Now()
 
@@ -50,18 +46,17 @@ func (sc *Scenario) Run(duration time.Duration) {
 		waitg.Add(1)
 		go func(su *SimUser) {
 			defer waitg.Done()
-			ticker := time.NewTicker(sc.duration)
-			timer := time.NewTimer(duration)
+			ticker := time.NewTicker(sc.iterationDuration)
+			timer := time.NewTimer(globalDuration)
 
 			i := 0
 			for {
-				if time.Now().Sub(start).Nanoseconds() > duration.Nanoseconds() {
+				if time.Now().Sub(start).Nanoseconds() > globalDuration.Nanoseconds() {
 					log.Debugf("Terminate user simulation %s", su.Name)
 					return
 				}
 
 				log.Debugf("Running user simulation %s", su.Name)
-				simUserCallCounter <- 1
 				su.Run(i)
 
 				if su.Status == DoneError {
@@ -81,20 +76,5 @@ func (sc *Scenario) Run(duration time.Duration) {
 	waitg.Wait()
 	sc.recorder.Close()
 
-	log.Infof("Scenario executed %d requests in %s", sc.TotalSimUsersCalls, time.Now().Sub(start).String())
-}
-
-func (sc *Scenario) countSimUserCalls() chan int8 {
-	simCallCounter := make(chan int8, 10000)
-	go func() {
-		for {
-			_, ok := <-simCallCounter
-			if ok {
-				sc.TotalSimUsersCalls++
-			} else {
-				return
-			}
-		}
-	}()
-	return simCallCounter
+	log.Infof("Scenario executed in %s", time.Now().Sub(start).String())
 }

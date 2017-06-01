@@ -1,4 +1,4 @@
-deluge("Some name", {
+deluge("Some name", "10s", {
     "sc1": {
         "concurrent": 100,
         "delay": "2s"
