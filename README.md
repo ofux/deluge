@@ -1,4 +1,47 @@
-**Deluge** is an heavy load testing tool for web applications.
+**Deluge** is a load testing tool for web applications, web APIs, IoT, or any TCP based application.
+
+## Roadmap
+
+- [ ] core of the test runner, able to simulate concurrent users
+- [ ] flexible yet simple DSL to write test scenarios
+- [ ] recording, using HDRHistograms
+- [ ] reporting, on a simple HTML page using JSON to export recorded data
+- [ ] REST API (to run tests, get reports, etc.)
+    - /scenarios GET-POST-PUT-DELETE
+      ```json
+      {
+          "id": "sc1",
+          "name": "My Scenario 1",
+          "script": "base64-encoded-script"
+      }
+      ```
+    - /deluges GET-POST-PUT-DELETE
+      ```json
+      {
+          "id": "deluge1",
+          "name": "My Deluge",
+          "scenarios": {
+              "sc1": {
+                  "concurrent": 100,
+                  "delay": "2s"
+              }
+          }
+      }
+      ```
+    - /runs GET-POST-DELETE
+      ```json
+      {
+          "id": 876276,
+          "deluge_id": "deluge1",
+          "report": {
+              "...": "..."
+          }
+      }
+      ```
+- [ ] CLI
+- [ ] clustering or server mode to distribute concurrent users of a scenario across multiple Deluge instances (possibly cross-datacenter)
+- [ ] ready to work Docker image
+
 
 ## DSL
 

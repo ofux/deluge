@@ -34,12 +34,12 @@ scenario("myScenario", "My scenario", function () {
 	dlg := NewDeluge(program)
 	dlg.Run()
 
-	results, err := dlg.scenarios["myScenario"].recorder.GetRecords()
+	results, err := dlg.scenarios["myScenario"].httpRecorder.GetRecords()
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
 
-	const reqRec = "My request->201"
+	const reqRec = "My request"
 	result, ok := results[reqRec]
 	if !ok {
 		t.Fatalf("Expected to have some records for '%s'", reqRec)

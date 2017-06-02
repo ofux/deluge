@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/ofux/deluge-dsl/lexer"
 	"github.com/ofux/deluge-dsl/parser"
+	"github.com/ofux/deluge/deluge/recording"
 	log "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"net/http"
@@ -11,7 +12,7 @@ import (
 	"testing"
 )
 
-func NewSimUserTest(t *testing.T, js string) (*SimUser, Recorder) {
+func NewSimUserTest(t *testing.T, js string) *SimUser {
 	l := lexer.New(js)
 	p := parser.New(l)
 
@@ -26,15 +27,15 @@ func NewSimUserTest(t *testing.T, js string) (*SimUser, Recorder) {
 	logger.Out = ioutil.Discard
 
 	sc := &Scenario{
-		Name:     "Test scenario",
-		script:   script,
-		recorder: NewRecorder(1),
+		Name:         "Test scenario",
+		script:       script,
+		httpRecorder: recording.NewHTTPRecorder(1),
 		log: logger.WithFields(log.Fields{
 			"scenario": "Test scenario",
 		}),
 	}
 
-	return NewSimUser("1", sc), sc.recorder
+	return NewSimUser("1", sc)
 }
 
 func checkSimUserStatus(t *testing.T, su *SimUser, status SimUserStatus) {
@@ -45,7 +46,7 @@ func checkSimUserStatus(t *testing.T, su *SimUser, status SimUserStatus) {
 
 func TestSimUser_Assert(t *testing.T) {
 	t.Run("Assert true", func(t *testing.T) {
-		su, _ := NewSimUserTest(t, `
+		su := NewSimUserTest(t, `
 		assert(1+1 == 2)
 		`)
 		su.Run(0)
@@ -53,7 +54,7 @@ func TestSimUser_Assert(t *testing.T) {
 	})
 
 	t.Run("Assert false", func(t *testing.T) {
-		su, _ := NewSimUserTest(t, `
+		su := NewSimUserTest(t, `
 		assert(1+1 == 3)
 		`)
 		su.Run(0)
@@ -76,16 +77,15 @@ func TestSimUser_ExecHTTPRequest(t *testing.T) {
 
 		url := ts.URL
 		const reqName = "Some request"
-		const recName = reqName + "->200"
 
-		su, rec := NewSimUserTest(t, `
+		su := NewSimUserTest(t, `
 		http("`+reqName+`", {
 			"url": "`+url+`"
 		});
 		`)
 		su.Run(0)
 		checkSimUserStatus(t, su, DoneSuccess)
-		checkRecords(t, rec, recName, 1)
+		checkRecords(t, su.httpRecorder, reqName, 1)
 
 		if callCount != 1 {
 			t.Errorf("Expected %d call(s), got %d", 1, callCount)
@@ -106,9 +106,8 @@ func TestSimUser_ExecHTTPRequest(t *testing.T) {
 
 		url := ts.URL
 		const reqName = "Some request"
-		const recName = reqName + "->200"
 
-		su, rec := NewSimUserTest(t, `
+		su := NewSimUserTest(t, `
 				http("`+reqName+`", {
 					"url": "`+url+`",
 					"method": "POST"
@@ -116,7 +115,7 @@ func TestSimUser_ExecHTTPRequest(t *testing.T) {
 				`)
 		su.Run(0)
 		checkSimUserStatus(t, su, DoneSuccess)
-		checkRecords(t, rec, recName, 1)
+		checkRecords(t, su.httpRecorder, reqName, 1)
 
 		if callCount != 1 {
 			t.Errorf("Expected %d call(s), got %d", 1, callCount)
@@ -124,7 +123,7 @@ func TestSimUser_ExecHTTPRequest(t *testing.T) {
 	})
 
 	t.Run("Bad HTTP arguments", func(t *testing.T) {
-		su, _ := NewSimUserTest(t, `
+		su := NewSimUserTest(t, `
 				http("foo");
 				`)
 		su.Run(0)
@@ -132,7 +131,7 @@ func TestSimUser_ExecHTTPRequest(t *testing.T) {
 	})
 
 	t.Run("Bad HTTP name", func(t *testing.T) {
-		su, _ := NewSimUserTest(t, `
+		su := NewSimUserTest(t, `
 				http(1, {
 					"url": "http://plop.org",
 					"method": "POST"
@@ -143,7 +142,7 @@ func TestSimUser_ExecHTTPRequest(t *testing.T) {
 	})
 
 	t.Run("No HTTP url", func(t *testing.T) {
-		su, _ := NewSimUserTest(t, `
+		su := NewSimUserTest(t, `
 				http("foo", {
 					"method": "POST"
 				});
@@ -153,7 +152,7 @@ func TestSimUser_ExecHTTPRequest(t *testing.T) {
 	})
 
 	t.Run("Bad HTTP url", func(t *testing.T) {
-		su, _ := NewSimUserTest(t, `
+		su := NewSimUserTest(t, `
 				http("foo", {
 					"url": 42
 				});
@@ -163,7 +162,7 @@ func TestSimUser_ExecHTTPRequest(t *testing.T) {
 	})
 
 	t.Run("Bad HTTP url 2", func(t *testing.T) {
-		su, _ := NewSimUserTest(t, `
+		su := NewSimUserTest(t, `
 				http("foo", {
 					"url": "foobar"
 				});
@@ -173,7 +172,7 @@ func TestSimUser_ExecHTTPRequest(t *testing.T) {
 	})
 }
 
-func checkRecords(t *testing.T, rec Recorder, recName string, recCount int64) {
+func checkRecords(t *testing.T, rec *recording.HTTPRecorder, recName string, recCount int64) {
 	rec.Close()
 	records, err := rec.GetRecords()
 	if err != nil {

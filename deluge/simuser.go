@@ -4,9 +4,9 @@ import (
 	"github.com/ofux/deluge-dsl/ast"
 	"github.com/ofux/deluge-dsl/evaluator"
 	"github.com/ofux/deluge-dsl/object"
+	"github.com/ofux/deluge/deluge/recording"
 	log "github.com/sirupsen/logrus"
 	"net/http"
-	"strconv"
 	"time"
 )
 
@@ -26,7 +26,7 @@ type SimUser struct {
 	client        *http.Client
 	Status        SimUserStatus
 	SleepDuration time.Duration
-	recorder      Recorder
+	httpRecorder  *recording.HTTPRecorder
 	log           *log.Entry
 	iteration     int
 }
@@ -39,7 +39,7 @@ func NewSimUser(name string, scenario *Scenario) *SimUser {
 		evaluator: evaluator.NewEvaluator(),
 		client:    http.DefaultClient,
 
-		recorder: scenario.recorder,
+		httpRecorder: scenario.httpRecorder,
 		log: scenario.log.WithFields(log.Fields{
 			"user": name,
 		}),
@@ -109,7 +109,12 @@ func (su *SimUser) ExecHTTPRequest(node ast.Node, args ...object.Object) object.
 		return evaluator.NewError(node, err.Error())
 	} else {
 		su.log.Debugf("Response status: %s in %s", "res.Status", duration.String())
-		su.recorder.Record(su.iteration, reqName+"->"+strconv.Itoa(res.StatusCode), duration.Nanoseconds()/1000)
+		su.httpRecorder.Record(&recording.HTTPRecord{
+			Iteration:  su.iteration,
+			Name:       reqName,
+			Value:      duration.Nanoseconds() / 1000,
+			StatusCode: res.StatusCode,
+		})
 	}
 
 	return evaluator.NULL

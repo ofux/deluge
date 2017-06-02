@@ -1,4 +1,4 @@
-package deluge
+package recording
 
 import (
 	"sync"
@@ -8,10 +8,15 @@ import (
 
 func TestQueuedRecorder(t *testing.T) {
 
-	t.Run("Records 1 value", func(t *testing.T) {
-		recorder := NewRecorder(10)
+	t.Run("Records 1 Value", func(t *testing.T) {
+		recorder := NewHTTPRecorder(10)
 
-		recorder.Record(0, "foo", 1000)
+		recorder.Record(&HTTPRecord{
+			Iteration:  0,
+			Name:       "foo",
+			Value:      1000,
+			StatusCode: 200,
+		})
 
 		recorder.Close()
 
@@ -32,16 +37,21 @@ func TestQueuedRecorder(t *testing.T) {
 		}
 	})
 
-	t.Run("Records 100 values simultaneously on the same iteration", func(t *testing.T) {
+	t.Run("Records 100 values simultaneously on the same Iteration", func(t *testing.T) {
 		const concurrent = 100
-		recorder := NewRecorder(10)
+		recorder := NewHTTPRecorder(10)
 
 		var waitg sync.WaitGroup
 		for i := 0; i < concurrent; i++ {
 			waitg.Add(1)
 			go func(i int) {
 				defer waitg.Done()
-				recorder.Record(0, "foo", int64(100*i))
+				recorder.Record(&HTTPRecord{
+					Iteration:  0,
+					Name:       "foo",
+					Value:      int64(100 * i),
+					StatusCode: 200,
+				})
 			}(i)
 		}
 		waitg.Wait()
@@ -65,10 +75,15 @@ func TestQueuedRecorder(t *testing.T) {
 		}
 	})
 
-	t.Run("Records 1 value at a given iteration", func(t *testing.T) {
-		recorder := NewRecorder(10)
+	t.Run("Records 1 Value at a given Iteration", func(t *testing.T) {
+		recorder := NewHTTPRecorder(10)
 
-		recorder.Record(42, "foo", 1000)
+		recorder.Record(&HTTPRecord{
+			Iteration:  42,
+			Name:       "foo",
+			Value:      1000,
+			StatusCode: 200,
+		})
 
 		recorder.Close()
 
@@ -95,7 +110,7 @@ func TestQueuedRecorder(t *testing.T) {
 	t.Run("Records 100 values simultaneously on multiple iterations", func(t *testing.T) {
 		const concurrent = 100
 		const iterCount = 100
-		recorder := NewRecorder(10)
+		recorder := NewHTTPRecorder(10)
 
 		var waitg sync.WaitGroup
 		for i := 0; i < concurrent; i++ {
@@ -103,7 +118,12 @@ func TestQueuedRecorder(t *testing.T) {
 			go func(i int) {
 				defer waitg.Done()
 				for j := 0; j < iterCount; j++ {
-					recorder.Record(j, "foo", int64(100*i))
+					recorder.Record(&HTTPRecord{
+						Iteration:  j,
+						Name:       "foo",
+						Value:      int64(100 * i),
+						StatusCode: 200,
+					})
 					time.Sleep(time.Millisecond) // just to simulate some "real" scenario
 				}
 			}(i)
@@ -126,7 +146,7 @@ func TestQueuedRecorder(t *testing.T) {
 		}
 		for j := 0; j < iterCount; j++ {
 			if result[j].TotalCount() != concurrent {
-				t.Errorf("Expected to have totalCount = %d, got %d for iteration %d", concurrent, result[j].TotalCount(), j)
+				t.Errorf("Expected to have totalCount = %d, got %d for Iteration %d", concurrent, result[j].TotalCount(), j)
 			}
 		}
 	})
@@ -134,10 +154,15 @@ func TestQueuedRecorder(t *testing.T) {
 
 func TestQueuedRecorderErrors(t *testing.T) {
 
-	t.Run("Get records on a running recorder", func(t *testing.T) {
-		recorder := NewRecorder(10)
+	t.Run("Get records on a running httpRecorder", func(t *testing.T) {
+		recorder := NewHTTPRecorder(10)
 
-		recorder.Record(0, "foo", 1000)
+		recorder.Record(&HTTPRecord{
+			Iteration:  0,
+			Name:       "foo",
+			Value:      1000,
+			StatusCode: 200,
+		})
 
 		_, err := recorder.GetRecords()
 		if err == nil {

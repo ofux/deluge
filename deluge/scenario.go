@@ -2,6 +2,7 @@ package deluge
 
 import (
 	"github.com/ofux/deluge-dsl/ast"
+	"github.com/ofux/deluge/deluge/recording"
 	log "github.com/sirupsen/logrus"
 	"strconv"
 	"sync"
@@ -13,7 +14,7 @@ type Scenario struct {
 	simUsers          []*SimUser
 	script            ast.Node
 	iterationDuration time.Duration
-	recorder          Recorder
+	httpRecorder      *recording.HTTPRecorder
 	log               *log.Entry
 }
 
@@ -24,7 +25,7 @@ func NewScenario(name string, concurrent int, duration time.Duration, script ast
 		iterationDuration: duration,
 		simUsers:          make([]*SimUser, concurrent),
 
-		recorder: NewRecorder(concurrent),
+		httpRecorder: recording.NewHTTPRecorder(concurrent),
 		log: log.New().WithFields(log.Fields{
 			"scenario": name,
 		}),
@@ -74,7 +75,7 @@ func (sc *Scenario) Run(globalDuration time.Duration) {
 		}(su)
 	}
 	waitg.Wait()
-	sc.recorder.Close()
+	sc.httpRecorder.Close()
 
 	log.Infof("Scenario executed in %s", time.Now().Sub(start).String())
 }
