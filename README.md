@@ -1,3 +1,5 @@
+# <img src="https://cloud.githubusercontent.com/assets/595505/26764853/527aa67c-496f-11e7-8cf6-c494373d4049.png" width="50"/> Deluge
+
 **Deluge** is a load testing tool for web applications, web APIs, IoT, or any TCP based application.
 
 ## Roadmap
