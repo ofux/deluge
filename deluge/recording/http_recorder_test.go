@@ -1,17 +1,18 @@
 package recording
 
 import (
+	"github.com/ofux/deluge/deluge/recording/recordingtest"
 	"sync"
 	"testing"
 	"time"
 )
 
-func TestQueuedRecorder(t *testing.T) {
+func TestHTTPRecorder(t *testing.T) {
 
 	t.Run("Records 1 Value", func(t *testing.T) {
 		recorder := NewHTTPRecorder(10)
 
-		recorder.Record(&HTTPRecord{
+		recorder.Record(&HTTPRecordEntry{
 			Iteration:  0,
 			Name:       "foo",
 			Value:      1000,
@@ -25,16 +26,8 @@ func TestQueuedRecorder(t *testing.T) {
 			t.Fatalf(err.Error())
 		}
 
-		result, ok := results["foo"]
-		if !ok {
-			t.Fatalf("Expected to have some records for '%s'", "foo")
-		}
-		if len(result) != 1 {
-			t.Fatalf("Expected to have %d records for '%s', got %d", 1, "foo", len(result))
-		}
-		if result[0].TotalCount() != 1 {
-			t.Errorf("Expected to have totalCount = %d, got %d", 1, result[0].TotalCount())
-		}
+		result := results.PerIteration[0]
+		recordingtest.CheckHTTPRecord(t, result, "foo", 1, 200, Ok)
 	})
 
 	t.Run("Records 100 values simultaneously on the same Iteration", func(t *testing.T) {
@@ -46,7 +39,7 @@ func TestQueuedRecorder(t *testing.T) {
 			waitg.Add(1)
 			go func(i int) {
 				defer waitg.Done()
-				recorder.Record(&HTTPRecord{
+				recorder.Record(&HTTPRecordEntry{
 					Iteration:  0,
 					Name:       "foo",
 					Value:      int64(100 * i),
@@ -63,22 +56,14 @@ func TestQueuedRecorder(t *testing.T) {
 			t.Fatalf(err.Error())
 		}
 
-		result, ok := results["foo"]
-		if !ok {
-			t.Fatalf("Expected to have some records for '%s'", "foo")
-		}
-		if len(result) != 1 {
-			t.Fatalf("Expected to have %d records for '%s', got %d", 1, "foo", len(result))
-		}
-		if result[0].TotalCount() != concurrent {
-			t.Errorf("Expected to have totalCount = %d, got %d", concurrent, result[0].TotalCount())
-		}
+		result := results.PerIteration[0]
+		recordingtest.CheckHTTPRecord(t, result, "foo", concurrent, 200, Ok)
 	})
 
 	t.Run("Records 1 Value at a given Iteration", func(t *testing.T) {
 		recorder := NewHTTPRecorder(10)
 
-		recorder.Record(&HTTPRecord{
+		recorder.Record(&HTTPRecordEntry{
 			Iteration:  42,
 			Name:       "foo",
 			Value:      1000,
@@ -92,19 +77,11 @@ func TestQueuedRecorder(t *testing.T) {
 			t.Fatalf(err.Error())
 		}
 
-		result, ok := results["foo"]
-		if !ok {
-			t.Fatalf("Expected to have some records for '%s'", "foo")
+		result := results.PerIteration[42]
+		if len(results.PerIteration) != 43 {
+			t.Fatalf("Expected to have %d iterations, got %d", 43, len(results.PerIteration))
 		}
-		if len(result) != 43 {
-			t.Fatalf("Expected to have %d records for '%s', got %d", 43, "foo", len(result))
-		}
-		if result[0].TotalCount() != 0 {
-			t.Errorf("Expected to have totalCount = %d, got %d", 0, result[0].TotalCount())
-		}
-		if result[42].TotalCount() != 1 {
-			t.Errorf("Expected to have totalCount = %d, got %d", 1, result[42].TotalCount())
-		}
+		recordingtest.CheckHTTPRecord(t, result, "foo", 1, 200, Ok)
 	})
 
 	t.Run("Records 100 values simultaneously on multiple iterations", func(t *testing.T) {
@@ -118,7 +95,7 @@ func TestQueuedRecorder(t *testing.T) {
 			go func(i int) {
 				defer waitg.Done()
 				for j := 0; j < iterCount; j++ {
-					recorder.Record(&HTTPRecord{
+					recorder.Record(&HTTPRecordEntry{
 						Iteration:  j,
 						Name:       "foo",
 						Value:      int64(100 * i),
@@ -137,27 +114,19 @@ func TestQueuedRecorder(t *testing.T) {
 			t.Fatalf(err.Error())
 		}
 
-		result, ok := results["foo"]
-		if !ok {
-			t.Fatalf("Expected to have some records for '%s'", "foo")
-		}
-		if len(result) != iterCount {
-			t.Fatalf("Expected to have %d records for '%s', got %d", iterCount, "foo", len(result))
-		}
+		recordingtest.CheckHTTPRecord(t, results.Global, "foo", 1, 200, Ok)
 		for j := 0; j < iterCount; j++ {
-			if result[j].TotalCount() != concurrent {
-				t.Errorf("Expected to have totalCount = %d, got %d for Iteration %d", concurrent, result[j].TotalCount(), j)
-			}
+			recordingtest.CheckHTTPRecord(t, results.PerIteration[j], "foo", 1, 200, Ok)
 		}
 	})
 }
 
-func TestQueuedRecorderErrors(t *testing.T) {
+func TestHTTPRecorderErrors(t *testing.T) {
 
 	t.Run("Get records on a running httpRecorder", func(t *testing.T) {
 		recorder := NewHTTPRecorder(10)
 
-		recorder.Record(&HTTPRecord{
+		recorder.Record(&HTTPRecordEntry{
 			Iteration:  0,
 			Name:       "foo",
 			Value:      1000,

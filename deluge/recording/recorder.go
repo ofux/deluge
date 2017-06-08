@@ -1,6 +1,7 @@
 package recording
 
 import (
+	hdr "github.com/codahale/hdrhistogram"
 	"sync"
 )
 
@@ -13,11 +14,18 @@ const (
 	TERMINATED
 )
 
-type Record interface{}
+type OkKo int
+
+const (
+	Ok OkKo = iota
+	Ko
+)
+
+type RecordEntry interface{}
 
 type Recorder struct {
 	recording           RecordingState
-	recordsQueue        chan Record
+	recordsQueue        chan RecordEntry
 	recordingWaitGroup  *sync.WaitGroup
 	processingWaitGroup *sync.WaitGroup
 }
@@ -25,16 +33,16 @@ type Recorder struct {
 func NewRecorder(concurrent int) *Recorder {
 	return &Recorder{
 		recording:           READY,
-		recordsQueue:        make(chan Record, concurrent),
+		recordsQueue:        make(chan RecordEntry, concurrent),
 		recordingWaitGroup:  new(sync.WaitGroup),
 		processingWaitGroup: new(sync.WaitGroup),
 	}
 }
 
-// HTTPRecord records a new Value in the underlying appropriate HDRHistogram.
+// HTTPRecordEntry records a new Value in the underlying appropriate HDRHistogram.
 // This is safe to call this method from different goroutines.
 // Calling this method on a closed Recorder will cause a panic.
-func (r *Recorder) Record(rec Record) {
+func (r *Recorder) Record(rec RecordEntry) {
 	r.recordingWaitGroup.Add(1)
 	go func() {
 		defer r.recordingWaitGroup.Done()
@@ -57,7 +65,7 @@ func (r *Recorder) Close() {
 	}
 }
 
-func (r *Recorder) processRecords(processRecord func(Record)) {
+func (r *Recorder) processRecords(processRecord func(RecordEntry)) {
 	r.recording = RECORDING
 	r.processingWaitGroup.Add(1)
 
@@ -73,4 +81,8 @@ func (r *Recorder) processRecords(processRecord func(Record)) {
 		}
 	}()
 
+}
+
+func createHistogram() *hdr.Histogram {
+	return hdr.New(0, 3600000000, 3)
 }

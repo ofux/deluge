@@ -4,6 +4,8 @@ import (
 	"github.com/ofux/deluge-dsl/ast"
 	"github.com/ofux/deluge-dsl/lexer"
 	"github.com/ofux/deluge-dsl/parser"
+	"github.com/ofux/deluge/deluge/recording"
+	"github.com/ofux/deluge/deluge/recording/recordingtest"
 	"github.com/ofux/docilemonkey/docilemonkey"
 	"net/http"
 	"net/http/httptest"
@@ -14,6 +16,7 @@ func TestDeluge_Run(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(docilemonkey.Handler))
 	defer srv.Close()
 
+	const reqName = "My request"
 	program := compileTest(t, `
 deluge("Some name", "200ms", {
     "myScenario": {
@@ -24,7 +27,7 @@ deluge("Some name", "200ms", {
 
 scenario("myScenario", "My scenario", function () {
 
-    http("My request", {
+    http("`+reqName+`", {
         "url": "`+srv.URL+`/hello/toto?s=201",
         "method": "POST"
     });
@@ -34,21 +37,16 @@ scenario("myScenario", "My scenario", function () {
 	dlg := NewDeluge(program)
 	dlg.Run()
 
-	results, err := dlg.scenarios["myScenario"].httpRecorder.GetRecords()
+	records, err := dlg.scenarios["myScenario"].httpRecorder.GetRecords()
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
 
-	const reqRec = "My request"
-	result, ok := results[reqRec]
-	if !ok {
-		t.Fatalf("Expected to have some records for '%s'", reqRec)
+	if len(records.PerIteration) != 2 {
+		t.Fatalf("Expected to have %d iterations, got %d", 2, len(records.PerIteration))
 	}
-	if len(result) != 2 {
-		t.Fatalf("Expected to have %d records for '%s', got %d", 2, reqRec, len(result))
-	}
-	if result[0].TotalCount() != 100 {
-		t.Errorf("Expected to have totalCount = %d, got %d", 100, result[0].TotalCount())
+	for _, record := range records.PerIteration {
+		recordingtest.CheckHTTPRecord(t, record, reqName, 100, 201, recording.Ok)
 	}
 }
 

@@ -5,6 +5,7 @@ import (
 	"github.com/ofux/deluge-dsl/lexer"
 	"github.com/ofux/deluge-dsl/parser"
 	"github.com/ofux/deluge/deluge/recording"
+	"github.com/ofux/deluge/deluge/recording/recordingtest"
 	log "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"net/http"
@@ -178,14 +179,6 @@ func checkRecords(t *testing.T, rec *recording.HTTPRecorder, recName string, rec
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-	record, ok := records[recName]
-	if !ok {
-		t.Fatalf("Expected to have some records for '%s'", recName)
-	}
-	if len(record) != 1 {
-		t.Fatalf("Expected to have %d records for '%s', got %d", 1, recName, len(record))
-	}
-	if record[0].TotalCount() != recCount {
-		t.Errorf("Expected to have totalCount = %d, got %d", recCount, record[0].TotalCount())
-	}
+	record := records.PerIteration[0]
+	recordingtest.CheckHTTPRecord(t, record, recName, recCount, 200, recording.Ok)
 }
