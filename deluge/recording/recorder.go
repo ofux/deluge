@@ -14,11 +14,11 @@ const (
 	TERMINATED
 )
 
-type OkKo int
+type OkKo string
 
 const (
-	Ok OkKo = iota
-	Ko
+	Ok OkKo = "Ok"
+	Ko OkKo = "Ko"
 )
 
 type RecordEntry interface{}

@@ -1,9 +1,12 @@
 package deluge
 
 import (
+	"encoding/json"
 	"github.com/ofux/deluge-dsl/ast"
 	"github.com/ofux/deluge/deluge/recording"
+	"github.com/ofux/deluge/deluge/reporting"
 	log "github.com/sirupsen/logrus"
+	"io/ioutil"
 	"strconv"
 	"sync"
 	"time"
@@ -78,4 +81,17 @@ func (sc *Scenario) Run(globalDuration time.Duration) {
 	sc.httpRecorder.Close()
 
 	log.Infof("Scenario executed in %s", time.Now().Sub(start).String())
+	reporter := &reporting.HTTPReporter{}
+	if report, err := reporter.Report(sc.httpRecorder); err == nil {
+		if jsonReport, err := json.MarshalIndent(report, "", "    "); err == nil {
+			err = ioutil.WriteFile("output.json", jsonReport, 0644)
+			if err != nil {
+				log.Error(err)
+			}
+		} else {
+			log.Error(err)
+		}
+	} else {
+		log.Error(err)
+	}
 }

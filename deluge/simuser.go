@@ -112,7 +112,7 @@ func (su *SimUser) ExecHTTPRequest(node ast.Node, args ...object.Object) object.
 		su.httpRecorder.Record(&recording.HTTPRecordEntry{
 			Iteration:  su.iteration,
 			Name:       reqName,
-			Value:      duration.Nanoseconds() / 1000,
+			Value:      duration.Nanoseconds() / 1000000,
 			StatusCode: res.StatusCode,
 		})
 	}
