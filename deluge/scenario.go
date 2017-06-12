@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"strconv"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -43,6 +44,8 @@ func NewScenario(name string, concurrent int, duration time.Duration, script ast
 
 func (sc *Scenario) Run(globalDuration time.Duration) {
 	var waitg sync.WaitGroup
+	var userCount uint64 = 0
+	var userExecCount uint64 = 0
 
 	start := time.Now()
 
@@ -50,6 +53,9 @@ func (sc *Scenario) Run(globalDuration time.Duration) {
 		waitg.Add(1)
 		go func(su *SimUser) {
 			defer waitg.Done()
+			defer func() {
+				atomic.AddUint64(&userCount, 1)
+			}()
 			ticker := time.NewTicker(sc.iterationDuration)
 			timer := time.NewTimer(globalDuration)
 
@@ -74,13 +80,14 @@ func (sc *Scenario) Run(globalDuration time.Duration) {
 				case <-ticker.C:
 				}
 				i++
+				atomic.AddUint64(&userExecCount, 1)
 			}
 		}(su)
 	}
 	waitg.Wait()
 	sc.httpRecorder.Close()
 
-	log.Infof("Scenario executed in %s", time.Now().Sub(start).String())
+	log.Infof("Scenario executed in %s simulating %d users for %d executions", time.Now().Sub(start).String(), userCount, userExecCount)
 	reporter := &reporting.HTTPReporter{}
 	if report, err := reporter.Report(sc.httpRecorder); err == nil {
 		if jsonReport, err := json.MarshalIndent(report, "", "    "); err == nil {

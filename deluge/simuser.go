@@ -4,6 +4,7 @@ import (
 	"github.com/ofux/deluge-dsl/ast"
 	"github.com/ofux/deluge-dsl/evaluator"
 	"github.com/ofux/deluge-dsl/object"
+	"github.com/ofux/deluge/cleanhttp"
 	"github.com/ofux/deluge/deluge/recording"
 	log "github.com/sirupsen/logrus"
 	"net/http"
@@ -37,7 +38,7 @@ func NewSimUser(name string, scenario *Scenario) *SimUser {
 		Status:    Virgin,
 		scenario:  scenario,
 		evaluator: evaluator.NewEvaluator(),
-		client:    http.DefaultClient,
+		client:    cleanhttp.DefaultClient(),
 
 		httpRecorder: scenario.httpRecorder,
 		log: scenario.log.WithFields(log.Fields{
@@ -57,6 +58,8 @@ func (su *SimUser) Run(iteration int) {
 	su.Status = InProgress
 	env := object.NewEnvironment()
 	evaluated := su.evaluator.Eval(su.scenario.script, env)
+
+	su.client.Transport.(*http.Transport).CloseIdleConnections()
 
 	if evaluated != nil && evaluated.Type() == object.ERROR_OBJ {
 		su.log.Errorln(evaluated.Inspect())
@@ -112,7 +115,7 @@ func (su *SimUser) ExecHTTPRequest(node ast.Node, args ...object.Object) object.
 		su.httpRecorder.Record(&recording.HTTPRecordEntry{
 			Iteration:  su.iteration,
 			Name:       reqName,
-			Value:      duration.Nanoseconds() / 1000000,
+			Value:      duration.Nanoseconds() / 100000,
 			StatusCode: res.StatusCode,
 		})
 	}

@@ -45,6 +45,7 @@ scenario("myScenario", "My scenario", function () {
 	if len(records.PerIteration) != 2 {
 		t.Fatalf("Expected to have %d iterations, got %d", 2, len(records.PerIteration))
 	}
+	recordingtest.CheckHTTPRecord(t, records.Global, reqName, 200, 201, recording.Ok)
 	for _, record := range records.PerIteration {
 		recordingtest.CheckHTTPRecord(t, record, reqName, 100, 201, recording.Ok)
 	}
