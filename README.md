@@ -25,7 +25,7 @@ $ deluge run <filename containing deluge and scenario(s)>
 
 ### /jobs GET-POST-DELETE
 
-POST request body example *(application/text)*:
+POST request body example *(text/plain)*:
 
 ```js
 // The request body contains the script (written in deluge-DSL) to run
