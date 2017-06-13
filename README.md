@@ -20,67 +20,68 @@ $ deluge run <filename containing deluge and scenario(s)> -on-addr=187.32.87.353
 # Silently starts a worker, runs deluge, write report and shutdown worker. Uses REST API behind the scene.
 $ deluge run <filename containing deluge and scenario(s)>
 ```
+
 ## REST API
 
-- /deluges GET-POST-DELETE
-  ```json
-  # POST request
-  {
-      "name": "My Deluge",
-      "scenarios": [
-          {
-              "name": "My Scenario 1",
-              "concurrent": 100,
-              "delay": "2s",
-              "script": "base64-encoded-script"
-          }
-      ]
-  }
+### /jobs GET-POST-DELETE
 
-  # POST response
-  {
-      "id": 876276,
-      "name": "My Deluge",
-      "status": "running",
-      "scenarios": [
-          {
-              "name": "My Scenario 1",
-              "concurrent": 100,
-              "delay": "2s",
-              "script": "base64-encoded-script"
-          }
-      ],
-      "report": null
-  }
+POST request body example *(application/text)*:
 
-  # GET response (of a finished job)
-  {
-      "id": 876276,
-      "name": "My Deluge",
-      "status": "done",
-      "scenarios": [
-          {
-              "name": "My Scenario 1",
-              "concurrent": 100,
-              "delay": "2s",
-              "script": "base64-encoded-script"
-          }
-      ],
-      "report": {
-          "...": "..."
-      }
-  }
-  ```
+```js
+// The request body contains the script (written in deluge-DSL) to run
+deluge("Some name", "10s", {
+    "sc1": {
+        "concurrent": 100,
+        "delay": "2s"
+    }
+});
+
+scenario("sc1", "Some scenario", function () {
+
+    http("Some request", {
+        "url": "http://localhost:8080/hello/toto"
+    });
+
+});
+```
+
+POST/GET response body example of an **unfinished** job *(application/json)*:
+
+```json
+{
+    "job_id": 876276,
+    "status": "running",
+    "report": null
+}
+```
+
+POST/GET response body example of a **finished** job *(application/json)*:
+
+```json
+{
+    "job_id": 876276,
+    "status": "done",
+    "report": {
+        "Name": "My Deluge",
+        "Duration": "10s",
+        "ConcurrentUsersCount": 0,
+        "Stats": {
+            "Global": {  },
+            "...": "..."
+        }
+    }
+}
+```
 
 ## Roadmap
 
-- [ ] core of the test runner, able to simulate concurrent users
-- [ ] flexible yet simple DSL to write test scenarios
-- [ ] recording, using HDRHistograms
+- [x] core of the test runner, able to simulate concurrent users
+- [x] flexible yet simple DSL to write test scenarios
+- [x] recording, using HDRHistograms
 - [ ] reporting, on a simple HTML page using JSON to export recorded data
 - [ ] REST API (to run tests, get reports, etc.)
 - [ ] CLI
-- [ ] clustering or server mode to distribute concurrent users of a scenario across multiple Deluge instances (possibly cross-datacenter)
+- [ ] 'clustering' or 'server mode' to distribute concurrent users of a scenario across multiple Deluge instances (possibly cross-datacenter)
 - [ ] ready to work Docker image
 
 
