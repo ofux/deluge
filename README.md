@@ -2,6 +2,76 @@
 
 **Deluge** is a load testing tool for web applications, web APIs, IoT, or any TCP based application.
 
+## CLI
+
+```sh
+# Starts an orchestrator listening on the given port
+$ deluge start orchestrator -port=9090
+
+# Starts a worker listening on the given port as a slave of the given orchestrator
+$ deluge start worker -port=8080 -orchestrator=187.32.87.353:9090
+
+# Starts a worker listening on the given port without orchestrator
+$ deluge start worker -port=8080
+
+# Runs the deluge on the given worker/orchestrator. Uses REST API behind the scene.
+$ deluge run <filename containing deluge and scenario(s)> -on-addr=187.32.87.353:9090
+
+# Silently starts a worker, runs deluge, write report and shutdown worker. Uses REST API behind the scene.
+$ deluge run <filename containing deluge and scenario(s)>
+```
+## REST API
+
+- /deluges GET-POST-DELETE
+  ```json
+  # POST request
+  {
+      "name": "My Deluge",
+      "scenarios": [
+          {
+              "name": "My Scenario 1",
+              "concurrent": 100,
+              "delay": "2s",
+              "script": "base64-encoded-script"
+          }
+      ]
+  }
+
+  # POST response
+  {
+      "id": 876276,
+      "name": "My Deluge",
+      "status": "running",
+      "scenarios": [
+          {
+              "name": "My Scenario 1",
+              "concurrent": 100,
+              "delay": "2s",
+              "script": "base64-encoded-script"
+          }
+      ],
+      "report": null
+  }
+
+  # GET response (of a finished job)
+  {
+      "id": 876276,
+      "name": "My Deluge",
+      "status": "done",
+      "scenarios": [
+          {
+              "name": "My Scenario 1",
+              "concurrent": 100,
+              "delay": "2s",
+              "script": "base64-encoded-script"
+          }
+      ],
+      "report": {
+          "...": "..."
+      }
+  }
+  ```
+
 ## Roadmap
 
 - [ ] core of the test runner, able to simulate concurrent users
@@ -9,37 +79,6 @@
 - [ ] recording, using HDRHistograms
 - [ ] reporting, on a simple HTML page using JSON to export recorded data
 - [ ] REST API (to run tests, get reports, etc.)
-    - /scenarios GET-POST-PUT-DELETE
-      ```json
-      {
-          "id": "sc1",
-          "name": "My Scenario 1",
-          "script": "base64-encoded-script"
-      }
-      ```
-    - /deluges GET-POST-PUT-DELETE
-      ```json
-      {
-          "id": "deluge1",
-          "name": "My Deluge",
-          "scenarios": {
-              "sc1": {
-                  "concurrent": 100,
-                  "delay": "2s"
-              }
-          }
-      }
-      ```
-    - /runs GET-POST-DELETE
-      ```json
-      {
-          "id": 876276,
-          "deluge_id": "deluge1",
-          "report": {
-              "...": "..."
-          }
-      }
-      ```
 - [ ] CLI
 - [ ] clustering or server mode to distribute concurrent users of a scenario across multiple Deluge instances (possibly cross-datacenter)
 - [ ] ready to work Docker image
