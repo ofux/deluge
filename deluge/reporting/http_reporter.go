@@ -7,7 +7,6 @@ import (
 type HTTPReporter struct{}
 
 type HTTPReport struct {
-	*Report
 	Stats *HTTPStatsOverTime
 }
 
@@ -27,14 +26,13 @@ type HTTPRequestStats struct {
 	PerOkKo   map[recording.OkKo]*Stats
 }
 
-func (r *HTTPReporter) Report(httpRecorder *recording.HTTPRecorder) (interface{}, error) {
+func (r *HTTPReporter) Report(httpRecorder *recording.HTTPRecorder) (Report, error) {
 	records, err := httpRecorder.GetRecords()
 	if err != nil {
 		return nil, err
 	}
 
 	report := &HTTPReport{
-		Report: &Report{},
 		Stats: &HTTPStatsOverTime{
 			Global:       newHTTPStats(records.Global),
 			PerIteration: make([]*HTTPStats, 0, 16),

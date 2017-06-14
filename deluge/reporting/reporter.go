@@ -2,18 +2,13 @@ package reporting
 
 import (
 	hdr "github.com/codahale/hdrhistogram"
-	"github.com/golang/protobuf/ptypes/duration"
 	"github.com/ofux/deluge/deluge/recording"
 )
 
-type Reporter interface {
-	Report(recording.Recorder) (interface{}, error)
-}
+type Report interface{}
 
-type Report struct {
-	Name                 string
-	Duration             duration.Duration
-	ConcurrentUsersCount int
+type Reporter interface {
+	Report(recording.Recorder) (Report, error)
 }
 
 type Stats struct {
@@ -22,18 +17,16 @@ type Stats struct {
 	MaxTime                int64
 	MeanTime               float64
 	ValueAtQuantiles       map[int]int64
-	Distribution           []hdr.Bar
 	CumulativeDistribution []hdr.Bracket
 }
 
 func newStatsFromHistogram(histo *hdr.Histogram) *Stats {
 	stats := &Stats{
-		CallCount:        histo.TotalCount(),
-		MinTime:          histo.Min(),
-		MaxTime:          histo.Max(),
-		MeanTime:         histo.Mean(),
-		ValueAtQuantiles: make(map[int]int64),
-		//Distribution:           histo.Distribution(),
+		CallCount:              histo.TotalCount(),
+		MinTime:                histo.Min(),
+		MaxTime:                histo.Max(),
+		MeanTime:               histo.Mean(),
+		ValueAtQuantiles:       make(map[int]int64),
 		CumulativeDistribution: histo.CumulativeDistribution(),
 	}
 	stats.ValueAtQuantiles[50] = histo.ValueAtQuantile(50)

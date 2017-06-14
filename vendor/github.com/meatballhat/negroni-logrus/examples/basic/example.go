@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/urfave/negroni"
 	"github.com/meatballhat/negroni-logrus"
+	"github.com/urfave/negroni"
 )
 
 func main() {

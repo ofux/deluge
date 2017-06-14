@@ -25,11 +25,13 @@ type SimUser struct {
 	scenario      *Scenario
 	evaluator     *evaluator.Evaluator
 	client        *http.Client
-	Status        SimUserStatus
 	SleepDuration time.Duration
 	httpRecorder  *recording.HTTPRecorder
 	log           *log.Entry
 	iteration     int
+
+	Status SimUserStatus
+	Error  *object.Error
 }
 
 func NewSimUser(name string, scenario *Scenario) *SimUser {
@@ -62,8 +64,9 @@ func (su *SimUser) Run(iteration int) {
 	su.client.Transport.(*http.Transport).CloseIdleConnections()
 
 	if evaluated != nil && evaluated.Type() == object.ERROR_OBJ {
-		su.log.Errorln(evaluated.Inspect())
 		su.Status = DoneError
+		su.Error = evaluated.(*object.Error)
+		su.log.Errorln(evaluated.Inspect())
 		return
 	}
 

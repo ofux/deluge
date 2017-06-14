@@ -1,38 +1,53 @@
 package deluge
 
 import (
-	"encoding/json"
 	"github.com/ofux/deluge-dsl/ast"
+	"github.com/ofux/deluge-dsl/object"
 	"github.com/ofux/deluge/deluge/recording"
 	"github.com/ofux/deluge/deluge/reporting"
 	log "github.com/sirupsen/logrus"
-	"io/ioutil"
 	"strconv"
 	"sync"
 	"sync/atomic"
 	"time"
 )
 
+type ScenarioStatus int
+
+const (
+	ScenarioVirgin ScenarioStatus = iota
+	ScenarioInProgress
+	ScenarioDoneSuccess
+	ScenarioDoneError
+)
+
 type Scenario struct {
 	Name              string
 	simUsers          []*SimUser
 	script            ast.Node
-	iterationDuration time.Duration
+	IterationDuration time.Duration
 	httpRecorder      *recording.HTTPRecorder
 	log               *log.Entry
+
+	Status ScenarioStatus
+	Errors []*object.Error
+	Report reporting.Report
 }
 
 func NewScenario(name string, concurrent int, duration time.Duration, script ast.Node) *Scenario {
 	s := &Scenario{
 		Name:              name,
 		script:            script,
-		iterationDuration: duration,
+		IterationDuration: duration,
 		simUsers:          make([]*SimUser, concurrent),
 
 		httpRecorder: recording.NewHTTPRecorder(concurrent),
 		log: log.New().WithFields(log.Fields{
 			"scenario": name,
 		}),
+
+		Status: ScenarioVirgin,
+		Errors: make([]*object.Error, 0),
 	}
 
 	for i := 0; i < concurrent; i++ {
@@ -49,6 +64,8 @@ func (sc *Scenario) Run(globalDuration time.Duration) {
 
 	start := time.Now()
 
+	sc.Status = ScenarioInProgress
+
 	for _, su := range sc.simUsers {
 		waitg.Add(1)
 		go func(su *SimUser) {
@@ -56,7 +73,7 @@ func (sc *Scenario) Run(globalDuration time.Duration) {
 			defer func() {
 				atomic.AddUint64(&userCount, 1)
 			}()
-			ticker := time.NewTicker(sc.iterationDuration)
+			ticker := time.NewTicker(sc.IterationDuration)
 			timer := time.NewTimer(globalDuration)
 
 			i := 0
@@ -87,17 +104,19 @@ func (sc *Scenario) Run(globalDuration time.Duration) {
 	waitg.Wait()
 	sc.httpRecorder.Close()
 
+	sc.Status = ScenarioDoneSuccess
+	for _, su := range sc.simUsers {
+		if su.Status == DoneError {
+			sc.Status = ScenarioDoneError
+			sc.Errors = append(sc.Errors, su.Error)
+		}
+	}
+
 	log.Infof("Scenario executed in %s simulating %d users for %d executions", time.Now().Sub(start).String(), userCount, userExecCount)
+
 	reporter := &reporting.HTTPReporter{}
 	if report, err := reporter.Report(sc.httpRecorder); err == nil {
-		if jsonReport, err := json.MarshalIndent(report, "", "    "); err == nil {
-			err = ioutil.WriteFile("output.json", jsonReport, 0644)
-			if err != nil {
-				log.Error(err)
-			}
-		} else {
-			log.Error(err)
-		}
+		sc.Report = report
 	} else {
 		log.Error(err)
 	}

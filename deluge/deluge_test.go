@@ -34,10 +34,10 @@ scenario("myScenario", "My scenario", function () {
 
 });`)
 
-	dlg := NewDeluge(program)
+	dlg := NewDeluge("foo", program)
 	dlg.Run()
 
-	records, err := dlg.scenarios["myScenario"].httpRecorder.GetRecords()
+	records, err := dlg.Scenarios["myScenario"].httpRecorder.GetRecords()
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -70,7 +70,7 @@ scenario("myScenario", "My scenario", function () {
 });`)
 
 	for i := 0; i < b.N; i++ {
-		NewDeluge(program)
+		NewDeluge("foo", program)
 	}
 }
 

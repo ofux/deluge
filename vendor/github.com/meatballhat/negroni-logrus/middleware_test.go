@@ -10,8 +10,8 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
-	"github.com/urfave/negroni"
 	"github.com/stretchr/testify/assert"
+	"github.com/urfave/negroni"
 )
 
 var (

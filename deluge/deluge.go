@@ -9,10 +9,22 @@ import (
 	"time"
 )
 
+type DelugeStatus int
+
+const (
+	DelugeVirgin DelugeStatus = iota
+	DelugeInProgress
+	DelugeDoneSuccess
+	DelugeDoneError
+)
+
 type Deluge struct {
+	ID             string
 	Name           string
-	globalDuration time.Duration
-	scenarios      map[string]*Scenario
+	GlobalDuration time.Duration
+	Scenarios      map[string]*Scenario
+
+	Status DelugeStatus
 }
 
 type delugeBuilder struct {
@@ -32,7 +44,7 @@ type scenarioConfig struct {
 	duration   time.Duration
 }
 
-func NewDeluge(script *ast.Program) *Deluge {
+func NewDeluge(ID string, script *ast.Program) *Deluge {
 	builder := &delugeBuilder{
 		scenarioCores:   make(map[string]*scenarioCore),
 		scenarioConfigs: make(map[string]*scenarioConfig),
@@ -47,13 +59,15 @@ func NewDeluge(script *ast.Program) *Deluge {
 	ev.Eval(script, object.NewEnvironment())
 
 	dlg := &Deluge{
+		ID:             ID,
 		Name:           builder.name,
-		globalDuration: builder.globalDuration,
-		scenarios:      make(map[string]*Scenario),
+		GlobalDuration: builder.globalDuration,
+		Scenarios:      make(map[string]*Scenario),
+		Status:         DelugeVirgin,
 	}
 	for id, sConf := range builder.scenarioConfigs {
 		if sCore, ok := builder.scenarioCores[id]; ok {
-			dlg.scenarios[id] = NewScenario(sCore.name, sConf.concurrent, sConf.duration, sCore.script)
+			dlg.Scenarios[id] = NewScenario(sCore.name, sConf.concurrent, sConf.duration, sCore.script)
 		} else {
 			log.Fatalf("Scenario '%s' is configured but not defined.", id)
 		}
@@ -62,19 +76,30 @@ func NewDeluge(script *ast.Program) *Deluge {
 }
 
 func (d *Deluge) Run() {
-	log.Infof("Executing %d scenario(s)", len(d.scenarios))
+	log.Infof("Executing %d scenario(s)", len(d.Scenarios))
 	start := time.Now()
 
+	d.Status = DelugeInProgress
+
 	var waitg sync.WaitGroup
-	for _, scenario := range d.scenarios {
+	for _, scenario := range d.Scenarios {
 		waitg.Add(1)
 		go func(scenario *Scenario) {
 			defer waitg.Done()
-			scenario.Run(d.globalDuration)
+			scenario.Run(d.GlobalDuration)
 		}(scenario)
 	}
 	waitg.Wait()
-	log.Infof("Deluge executed %d scenario(s) in %s", len(d.scenarios), time.Now().Sub(start).String())
+
+	d.Status = DelugeDoneSuccess
+	for _, scenario := range d.Scenarios {
+		if scenario.Status == ScenarioDoneError {
+			d.Status = DelugeDoneError
+			break
+		}
+	}
+
+	log.Infof("Deluge executed %d scenario(s) in %s", len(d.Scenarios), time.Now().Sub(start).String())
 }
 
 func (d *delugeBuilder) CreateDeluge(node ast.Node, args ...object.Object) object.Object {
@@ -124,11 +149,11 @@ func (d *delugeBuilder) CreateDeluge(node ast.Node, args ...object.Object) objec
 		}
 		delayHashStr, ok := delayHashPair.Value.(*object.String)
 		if !ok {
-			log.Fatalf("Expected 'concurrent' value to be a iterationDuration in configuration at %s\n", ast.PrintLocation(node))
+			log.Fatalf("Expected 'concurrent' value to be a IterationDuration in configuration at %s\n", ast.PrintLocation(node))
 		}
 		delayHash, err := time.ParseDuration(delayHashStr.Value)
 		if err != nil {
-			log.Fatalf("Expected 'concurrent' value to be a iterationDuration in configuration at %s\n", ast.PrintLocation(node))
+			log.Fatalf("Expected 'concurrent' value to be a IterationDuration in configuration at %s\n", ast.PrintLocation(node))
 		}
 
 		_, ok = d.scenarioConfigs[string(scenarioId)]

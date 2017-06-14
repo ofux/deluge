@@ -1,5 +1,5 @@
-hash: 899a61d8044d110f710445f60bca73e7139a9013f9b0035048cbfeced1eef58a
-updated: 2017-06-12T22:24:36.346126916+02:00
+hash: 16841d42e277c315026616262a524b4f53a23e94bf8d8a52432e1159b8307140
+updated: 2017-06-13T21:21:21.111315463+02:00
 imports:
 - name: github.com/codahale/hdrhistogram
   version: 3a0bb77429bd3a61596f5e8a3172445844342120
@@ -14,6 +14,8 @@ imports:
   version: bcd8bc72b08df0f70df986b97f95590779502d31
 - name: github.com/meatballhat/negroni-logrus
   version: ff88b9c4368b30d6585dcb23f0403b2e88d3f345
+- name: github.com/satori/go.uuid
+  version: 879c5887cd475cd7864858769793b2ceb0d44feb
 - name: github.com/sirupsen/logrus
   version: 202f25545ea4cf9b191ff7f846df5d87c9382c2b
 - name: github.com/spf13/cobra
