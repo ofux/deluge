@@ -114,6 +114,7 @@ func (su *SimUser) ExecHTTPRequest(node ast.Node, args ...object.Object) object.
 		su.log.Debugf("Request error: %s", err.Error())
 		return evaluator.NewError(node, err.Error())
 	} else {
+		defer res.Body.Close()
 		su.log.Debugf("Response status: %s in %s", "res.Status", duration.String())
 		su.httpRecorder.Record(&recording.HTTPRecordEntry{
 			Iteration:  su.iteration,
