@@ -17,7 +17,7 @@ type JobsHandler struct {
 }
 
 func (d *JobsHandler) GetBasePath() string {
-	return "/jobs"
+	return "/v1/jobs"
 }
 
 func (d *JobsHandler) GetRoutes() []Route {
@@ -50,6 +50,13 @@ func NewDelugeHandler() *JobsHandler {
 		Method:      http.MethodGet,
 		Pattern:     "",
 		HandlerFunc: jobsHandler.GetAllJobs,
+	})
+	// Delete one Job
+	routes = append(routes, Route{
+		Name:        "Delete a job",
+		Method:      http.MethodDelete,
+		Pattern:     "/{id}",
+		HandlerFunc: jobsHandler.DeleteJob,
 	})
 
 	jobsHandler.routes = routes
@@ -99,4 +106,16 @@ func (d *JobsHandler) GetAllJobs(w http.ResponseWriter, r *http.Request) {
 	}
 
 	SendJSONWithHTTPCode(w, dlgsDTO, http.StatusOK)
+}
+
+func (d *JobsHandler) DeleteJob(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id := vars["id"]
+	ok := repo.Jobs.Delete(id)
+	if !ok {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
 }
