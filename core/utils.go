@@ -1,4 +1,4 @@
-package deluge
+package core
 
 import (
 	"fmt"

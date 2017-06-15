@@ -1,4 +1,4 @@
-package deluge
+package core
 
 import (
 	"github.com/ofux/deluge-dsl/ast"
@@ -50,7 +50,7 @@ func NewDeluge(ID string, script *ast.Program) *Deluge {
 		scenarioConfigs: make(map[string]*scenarioConfig),
 	}
 	ev := evaluator.NewEvaluator()
-	if err := ev.AddBuiltin("deluge", builder.CreateDeluge); err != nil {
+	if err := ev.AddBuiltin("core", builder.CreateDeluge); err != nil {
 		log.Fatal(err.Error())
 	}
 	if err := ev.AddBuiltin("scenario", builder.CreateScenario); err != nil {

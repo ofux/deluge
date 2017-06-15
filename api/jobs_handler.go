@@ -6,12 +6,12 @@ import (
 	"github.com/ofux/deluge-dsl/parser"
 	"github.com/ofux/deluge/api/dto"
 	"github.com/ofux/deluge/api/repo"
-	"github.com/ofux/deluge/deluge"
+	"github.com/ofux/deluge/core"
 	"io/ioutil"
 	"net/http"
 )
 
-// JobsHandler handles requests for 'deluge' resource
+// JobsHandler handles requests for 'core' resource
 type JobsHandler struct {
 	routes []Route
 }
@@ -76,7 +76,7 @@ func (d *JobsHandler) CreateJob(w http.ResponseWriter, r *http.Request) {
 
 	program, ok := p.ParseProgram()
 	if !ok {
-		SendJSONError(w, deluge.SPrintParserErrors(p.Errors()), http.StatusBadRequest)
+		SendJSONError(w, core.SPrintParserErrors(p.Errors()), http.StatusBadRequest)
 		return
 	}
 

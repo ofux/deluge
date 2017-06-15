@@ -1,11 +1,11 @@
-package deluge
+package core
 
 import (
 	"github.com/ofux/deluge-dsl/ast"
 	"github.com/ofux/deluge-dsl/lexer"
 	"github.com/ofux/deluge-dsl/parser"
-	"github.com/ofux/deluge/deluge/recording"
-	"github.com/ofux/deluge/deluge/recording/recordingtest"
+	"github.com/ofux/deluge/core/recording"
+	"github.com/ofux/deluge/core/recording/recordingtest"
 	"github.com/ofux/docilemonkey/docilemonkey"
 	"net/http"
 	"net/http/httptest"
@@ -18,7 +18,7 @@ func TestDeluge_Run(t *testing.T) {
 
 	const reqName = "My request"
 	program := compileTest(t, `
-deluge("Some name", "200ms", {
+core("Some name", "200ms", {
     "myScenario": {
         "concurrent": 100,
         "delay": "100ms"
@@ -54,7 +54,7 @@ scenario("myScenario", "My scenario", function () {
 func BenchmarkNewDeluge(b *testing.B) {
 
 	program := compileTest(b, `
-deluge("Some name", "200ms", {
+core("Some name", "200ms", {
     "myScenario": {
         "concurrent": 100,
         "delay": "100ms"

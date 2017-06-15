@@ -1,11 +1,11 @@
-package deluge
+package core
 
 import (
 	"fmt"
 	"github.com/ofux/deluge-dsl/lexer"
 	"github.com/ofux/deluge-dsl/parser"
-	"github.com/ofux/deluge/deluge/recording"
-	"github.com/ofux/deluge/deluge/recording/recordingtest"
+	"github.com/ofux/deluge/core/recording"
+	"github.com/ofux/deluge/core/recording/recordingtest"
 	log "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"net/http"

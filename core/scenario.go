@@ -1,10 +1,10 @@
-package deluge
+package core
 
 import (
 	"github.com/ofux/deluge-dsl/ast"
 	"github.com/ofux/deluge-dsl/object"
-	"github.com/ofux/deluge/deluge/recording"
-	"github.com/ofux/deluge/deluge/reporting"
+	"github.com/ofux/deluge/core/recording"
+	"github.com/ofux/deluge/core/reporting"
 	log "github.com/sirupsen/logrus"
 	"strconv"
 	"sync"

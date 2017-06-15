@@ -4,8 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"github.com/ofux/deluge-dsl/object"
-	"github.com/ofux/deluge/deluge"
-	"github.com/ofux/deluge/deluge/reporting"
+	"github.com/ofux/deluge/core"
+	"github.com/ofux/deluge/core/reporting"
 	"time"
 )
 
@@ -49,7 +49,7 @@ type Scenario struct {
 	Report            reporting.Report
 }
 
-func MapDeluge(d *deluge.Deluge) *Deluge {
+func MapDeluge(d *core.Deluge) *Deluge {
 	dDTO := &Deluge{
 		ID:             d.ID,
 		Name:           d.Name,
@@ -63,7 +63,7 @@ func MapDeluge(d *deluge.Deluge) *Deluge {
 	return dDTO
 }
 
-func MapDelugeLite(d *deluge.Deluge) *DelugeLite {
+func MapDelugeLite(d *core.Deluge) *DelugeLite {
 	dDTO := &DelugeLite{
 		ID:     d.ID,
 		Name:   d.Name,
@@ -72,7 +72,7 @@ func MapDelugeLite(d *deluge.Deluge) *DelugeLite {
 	return dDTO
 }
 
-func MapScenario(sc *deluge.Scenario) *Scenario {
+func MapScenario(sc *core.Scenario) *Scenario {
 	return &Scenario{
 		Name:              sc.Name,
 		IterationDuration: sc.IterationDuration,
@@ -82,30 +82,30 @@ func MapScenario(sc *deluge.Scenario) *Scenario {
 	}
 }
 
-func MapScenarioStatus(st deluge.ScenarioStatus) ScenarioStatus {
+func MapScenarioStatus(st core.ScenarioStatus) ScenarioStatus {
 	switch st {
-	case deluge.ScenarioVirgin:
+	case core.ScenarioVirgin:
 		return ScenarioVirgin
-	case deluge.ScenarioInProgress:
+	case core.ScenarioInProgress:
 		return ScenarioInProgress
-	case deluge.ScenarioDoneSuccess:
+	case core.ScenarioDoneSuccess:
 		return ScenarioDoneSuccess
-	case deluge.ScenarioDoneError:
+	case core.ScenarioDoneError:
 		return ScenarioDoneError
 	}
 	panic(errors.New(fmt.Sprintf("Invalid scenario status %d", st)))
 }
 
-func MapDelugeStatus(st deluge.DelugeStatus) DelugeStatus {
+func MapDelugeStatus(st core.DelugeStatus) DelugeStatus {
 	switch st {
-	case deluge.DelugeVirgin:
+	case core.DelugeVirgin:
 		return DelugeVirgin
-	case deluge.DelugeInProgress:
+	case core.DelugeInProgress:
 		return DelugeInProgress
-	case deluge.DelugeDoneSuccess:
+	case core.DelugeDoneSuccess:
 		return DelugeDoneSuccess
-	case deluge.DelugeDoneError:
+	case core.DelugeDoneError:
 		return DelugeDoneError
 	}
-	panic(errors.New(fmt.Sprintf("Invalid deluge status %d", st)))
+	panic(errors.New(fmt.Sprintf("Invalid core status %d", st)))
 }

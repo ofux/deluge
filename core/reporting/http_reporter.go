@@ -1,7 +1,7 @@
 package reporting
 
 import (
-	"github.com/ofux/deluge/deluge/recording"
+	"github.com/ofux/deluge/core/recording"
 )
 
 type HTTPReporter struct{}

@@ -2,7 +2,7 @@ package reporting
 
 import (
 	hdr "github.com/codahale/hdrhistogram"
-	"github.com/ofux/deluge/deluge/recording"
+	"github.com/ofux/deluge/core/recording"
 )
 
 type Report interface{}
