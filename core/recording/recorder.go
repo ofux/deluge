@@ -30,10 +30,10 @@ type Recorder struct {
 	processingWaitGroup *sync.WaitGroup
 }
 
-func NewRecorder(concurrent int) *Recorder {
+func NewRecorder() *Recorder {
 	return &Recorder{
 		recording:           READY,
-		recordsQueue:        make(chan RecordEntry, concurrent),
+		recordsQueue:        make(chan RecordEntry),
 		recordingWaitGroup:  new(sync.WaitGroup),
 		processingWaitGroup: new(sync.WaitGroup),
 	}

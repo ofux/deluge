@@ -158,7 +158,7 @@ func (d *delugeBuilder) CreateDeluge(node ast.Node, args ...object.Object) objec
 
 		_, ok = d.scenarioConfigs[string(scenarioId)]
 		if ok {
-			log.Fatalf("Scenario '%s' is already configured", scenarioId)
+			log.Fatalf("Scenario '%v' is already configured", scenarioId)
 		}
 
 		d.scenarioConfigs[string(scenarioId)] = &scenarioConfig{

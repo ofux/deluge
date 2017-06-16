@@ -33,9 +33,9 @@ type HTTPRecordEntry struct {
 	StatusCode int
 }
 
-func NewHTTPRecorder(concurrent int) *HTTPRecorder {
+func NewHTTPRecorder() *HTTPRecorder {
 	recorder := &HTTPRecorder{
-		Recorder: NewRecorder(concurrent),
+		Recorder: NewRecorder(),
 		records: &HTTPRecordsOverTime{
 			Global: &HTTPRecord{
 				HTTPRequestRecord: HTTPRequestRecord{

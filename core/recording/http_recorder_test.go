@@ -11,7 +11,7 @@ import (
 func TestHTTPRecorder(t *testing.T) {
 
 	t.Run("Records 1 Value", func(t *testing.T) {
-		recorder := recording.NewHTTPRecorder(10)
+		recorder := recording.NewHTTPRecorder()
 
 		recorder.Record(&recording.HTTPRecordEntry{
 			Iteration:  0,
@@ -33,7 +33,7 @@ func TestHTTPRecorder(t *testing.T) {
 
 	t.Run("Records 100 values simultaneously on the same Iteration", func(t *testing.T) {
 		const concurrent = 100
-		recorder := recording.NewHTTPRecorder(10)
+		recorder := recording.NewHTTPRecorder()
 
 		var waitg sync.WaitGroup
 		for i := 0; i < concurrent; i++ {
@@ -62,7 +62,7 @@ func TestHTTPRecorder(t *testing.T) {
 	})
 
 	t.Run("Records 1 Value at a given Iteration", func(t *testing.T) {
-		recorder := recording.NewHTTPRecorder(10)
+		recorder := recording.NewHTTPRecorder()
 
 		recorder.Record(&recording.HTTPRecordEntry{
 			Iteration:  42,
@@ -88,7 +88,7 @@ func TestHTTPRecorder(t *testing.T) {
 	t.Run("Records 100 values simultaneously on multiple iterations", func(t *testing.T) {
 		const concurrent = 100
 		const iterCount = 100
-		recorder := recording.NewHTTPRecorder(10)
+		recorder := recording.NewHTTPRecorder()
 
 		var waitg sync.WaitGroup
 		for i := 0; i < concurrent; i++ {
@@ -125,7 +125,7 @@ func TestHTTPRecorder(t *testing.T) {
 func TestHTTPRecorderErrors(t *testing.T) {
 
 	t.Run("Get records on a running httpRecorder", func(t *testing.T) {
-		recorder := recording.NewHTTPRecorder(10)
+		recorder := recording.NewHTTPRecorder()
 
 		recorder.Record(&recording.HTTPRecordEntry{
 			Iteration:  0,

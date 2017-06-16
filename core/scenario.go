@@ -44,7 +44,7 @@ func NewScenario(name string, concurrent int, iterationDuration time.Duration, s
 		IterationDuration: iterationDuration,
 		simUsers:          make([]*SimUser, concurrent),
 
-		httpRecorder: recording.NewHTTPRecorder(concurrent),
+		httpRecorder: recording.NewHTTPRecorder(),
 		log: logEntry.WithFields(log.Fields{
 			"scenario": name,
 		}),
