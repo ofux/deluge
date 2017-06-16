@@ -6,6 +6,7 @@ import (
 	"github.com/ofux/deluge/core/recording"
 	"github.com/ofux/deluge/core/reporting"
 	log "github.com/sirupsen/logrus"
+	"runtime"
 	"strconv"
 	"sync"
 	"sync/atomic"
@@ -29,20 +30,22 @@ type Scenario struct {
 	httpRecorder      *recording.HTTPRecorder
 	log               *log.Entry
 
-	Status ScenarioStatus
-	Errors []*object.Error
-	Report reporting.Report
+	Status             ScenarioStatus
+	Errors             []*object.Error
+	Report             reporting.Report
+	EffectiveUserCount uint64
+	EffectiveExecCount uint64
 }
 
-func NewScenario(name string, concurrent int, duration time.Duration, script ast.Node) *Scenario {
+func NewScenario(name string, concurrent int, iterationDuration time.Duration, script ast.Node, logEntry *log.Entry) *Scenario {
 	s := &Scenario{
 		Name:              name,
 		script:            script,
-		IterationDuration: duration,
+		IterationDuration: iterationDuration,
 		simUsers:          make([]*SimUser, concurrent),
 
 		httpRecorder: recording.NewHTTPRecorder(concurrent),
-		log: log.New().WithFields(log.Fields{
+		log: logEntry.WithFields(log.Fields{
 			"scenario": name,
 		}),
 
@@ -59,10 +62,9 @@ func NewScenario(name string, concurrent int, duration time.Duration, script ast
 
 func (sc *Scenario) Run(globalDuration time.Duration) {
 	var waitg sync.WaitGroup
-	var userCount uint64 = 0
-	var userExecCount uint64 = 0
 
 	start := time.Now()
+	endTime := start.Add(globalDuration)
 
 	sc.Status = ScenarioInProgress
 
@@ -71,33 +73,36 @@ func (sc *Scenario) Run(globalDuration time.Duration) {
 		go func(su *SimUser) {
 			defer waitg.Done()
 			defer func() {
-				atomic.AddUint64(&userCount, 1)
+				atomic.AddUint64(&sc.EffectiveUserCount, 1)
 			}()
-			ticker := time.NewTicker(sc.IterationDuration)
-			timer := time.NewTimer(globalDuration)
 
 			i := 0
-			for {
-				if time.Now().Sub(start).Nanoseconds() > globalDuration.Nanoseconds() {
-					log.Debugf("Terminate user simulation %s", su.Name)
-					return
-				}
+			for time.Now().Before(endTime) {
+				iterationEndTime := time.Now().Add(sc.IterationDuration)
 
-				log.Debugf("Running user simulation %s", su.Name)
+				sc.log.Debugf("Running user simulation %s", su.Name)
 				su.Run(i)
+				i++
+				atomic.AddUint64(&sc.EffectiveExecCount, 1)
 
 				if su.Status == DoneError {
 					return
 				}
 
-				select {
-				case <-timer.C:
-					log.Debugf("Terminate user simulation %s", su.Name)
+				// Check if we're going to reach endTime
+				if iterationEndTime.Before(endTime) {
+					// Wait till the end of iteration as defined in scenario configuration
+					if time.Now().Before(iterationEndTime) {
+						time.Sleep(time.Until(iterationEndTime))
+					} else {
+						// In case we already reached iterationEndTime, we do not sleep, but we add a schedule point
+						// because we cannot assume there is one in the simulation execution itself.
+						runtime.Gosched()
+					}
+				} else {
+					sc.log.Debugf("Terminate user simulation %s", su.Name)
 					return
-				case <-ticker.C:
 				}
-				i++
-				atomic.AddUint64(&userExecCount, 1)
 			}
 		}(su)
 	}
@@ -112,12 +117,12 @@ func (sc *Scenario) Run(globalDuration time.Duration) {
 		}
 	}
 
-	log.Infof("Scenario executed in %s simulating %d users for %d executions", time.Now().Sub(start).String(), userCount, userExecCount)
+	sc.log.Infof("Scenario executed in %s simulating %d users for %d executions", time.Now().Sub(start).String(), sc.EffectiveUserCount, sc.EffectiveExecCount)
 
 	reporter := &reporting.HTTPReporter{}
 	if report, err := reporter.Report(sc.httpRecorder); err == nil {
 		sc.Report = report
 	} else {
-		log.Error(err)
+		sc.log.Error(err)
 	}
 }

@@ -171,6 +171,17 @@ func TestSimUser_ExecHTTPRequest(t *testing.T) {
 		su.Run(0)
 		checkSimUserStatus(t, su, DoneError)
 	})
+
+	t.Run("Bad HTTP method", func(t *testing.T) {
+		su := NewSimUserTest(t, `
+				http("foo", {
+					"url": "http://plop.org",
+					"method": "BAD BAD BAD"
+				});
+				`)
+		su.Run(0)
+		checkSimUserStatus(t, su, DoneError)
+	})
 }
 
 func checkRecords(t *testing.T, rec *recording.HTTPRecorder, recName string, recCount int64) {
