@@ -23,7 +23,7 @@ $ deluge run <filename containing deluge and scenario(s)>
 
 ## REST API
 
-### /jobs GET-POST-DELETE
+### /v1/jobs GET-POST-DELETE
 
 POST request body example *(text/plain)*:
 
