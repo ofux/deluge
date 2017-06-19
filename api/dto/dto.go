@@ -107,5 +107,5 @@ func MapDelugeStatus(st core.DelugeStatus) DelugeStatus {
 	case core.DelugeDoneError:
 		return DelugeDoneError
 	}
-	panic(errors.New(fmt.Sprintf("Invalid core status %d", st)))
+	panic(errors.New(fmt.Sprintf("Invalid deluge status %d", st)))
 }

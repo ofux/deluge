@@ -18,7 +18,7 @@ func TestDeluge_Run(t *testing.T) {
 
 	const reqName = "My request"
 	program := compileTest(t, `
-core("Some name", "200ms", {
+deluge("Some name", "200ms", {
     "myScenario": {
         "concurrent": 100,
         "delay": "100ms"
@@ -54,7 +54,7 @@ scenario("myScenario", "My scenario", function () {
 func BenchmarkNewDeluge(b *testing.B) {
 
 	program := compileTest(b, `
-core("Some name", "200ms", {
+deluge("Some name", "200ms", {
     "myScenario": {
         "concurrent": 100,
         "delay": "100ms"

@@ -7,7 +7,7 @@ import (
 	"strconv"
 )
 
-func Serve(port int) {
+func NewServer() *negroni.Negroni {
 	// web server
 	n := negroni.New()
 
@@ -22,6 +22,9 @@ func Serve(port int) {
 	// route handler goes last
 	n.UseHandler(NewRouter(NewDelugeHandler()))
 
-	// serve
-	n.Run(":" + strconv.Itoa(port))
+	return n
+}
+
+func Serve(port int) {
+	NewServer().Run(":" + strconv.Itoa(port))
 }

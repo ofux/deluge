@@ -11,7 +11,7 @@ import (
 	"net/http"
 )
 
-// JobsHandler handles requests for 'core' resource
+// JobsHandler handles requests for 'jobs' resource
 type JobsHandler struct {
 	routes []Route
 }
