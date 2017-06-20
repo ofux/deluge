@@ -1,11 +1,9 @@
 package main
 
 import (
-	"flag"
-	"github.com/ofux/deluge/api"
+	"github.com/ofux/deluge/cmd"
 )
 
 func main() {
-	var port = *flag.Int("listen", 33033, "server port")
-	api.Serve(port)
+	cmd.Execute()
 }

@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"github.com/ofux/deluge/api/dto"
 	log "github.com/sirupsen/logrus"
 	"net/http"
 )
@@ -32,5 +33,5 @@ func SendJSONOk(w http.ResponseWriter, d interface{}) {
 
 // SendJSONError sends error with a custom message and error code
 func SendJSONError(w http.ResponseWriter, error string, code int) {
-	SendJSONWithHTTPCode(w, struct{ Error string }{error}, code)
+	SendJSONWithHTTPCode(w, dto.Error{error}, code)
 }

@@ -107,7 +107,21 @@ func (sc *Scenario) Run(globalDuration time.Duration) {
 		}(su)
 	}
 	waitg.Wait()
+
+	sc.end()
+
+	sc.log.Infof("Scenario executed in %s simulating %d users for %d executions", time.Now().Sub(start).String(), sc.EffectiveUserCount, sc.EffectiveExecCount)
+}
+
+func (sc *Scenario) end() {
+
 	sc.httpRecorder.Close()
+	reporter := &reporting.HTTPReporter{}
+	if report, err := reporter.Report(sc.httpRecorder); err == nil {
+		sc.Report = report
+	} else {
+		sc.log.Error(err)
+	}
 
 	sc.Status = ScenarioDoneSuccess
 	for _, su := range sc.simUsers {
@@ -117,12 +131,6 @@ func (sc *Scenario) Run(globalDuration time.Duration) {
 		}
 	}
 
-	sc.log.Infof("Scenario executed in %s simulating %d users for %d executions", time.Now().Sub(start).String(), sc.EffectiveUserCount, sc.EffectiveExecCount)
-
-	reporter := &reporting.HTTPReporter{}
-	if report, err := reporter.Report(sc.httpRecorder); err == nil {
-		sc.Report = report
-	} else {
-		sc.log.Error(err)
-	}
+	// we don't need simulated users anymore
+	sc.simUsers = nil
 }
