@@ -2,23 +2,33 @@
 
 **Deluge** is a load testing tool for web applications, web APIs, IoT, or any TCP based application.
 
+## Features
+
+- It’s fast
+- It's stupid simple
+- No dependency hell, single binary made with go
+- Rest API
+- Pain-less, brain-less DSL
+- Scales vertically and horizontally
+- Nice reporting
+
 ## CLI
 
 ```sh
 # Starts an orchestrator listening on the given port
-$ deluge start orchestrator -port=9090
+$ deluge start orchestrator --port=9090
 
 # Starts a worker listening on the given port as a slave of the given orchestrator
-$ deluge start worker -port=8080 -orchestrator=187.32.87.353:9090
+$ deluge start worker --port=8080 --orchestrator=187.32.87.353:9090
 
 # Starts a worker listening on the given port without orchestrator
-$ deluge start worker -port=8080
+$ deluge start worker --port=8080
 
 # Runs the deluge on the given worker/orchestrator. Uses REST API behind the scene.
-$ deluge run <filename containing deluge and scenario(s)> -on-addr=187.32.87.353:9090
+$ deluge run <filename containing deluge's scenario(s)> <output filename> --remote=http://mydeluge.net:33033
 
 # Silently starts a worker, runs deluge, write report and shutdown worker. Uses REST API behind the scene.
-$ deluge run <filename containing deluge and scenario(s)>
+$ deluge run <filename containing deluge's scenario(s)> <output filename>
 ```
 
 ## REST API
@@ -49,9 +59,19 @@ POST/GET response body example of an **unfinished** job *(application/json)*:
 
 ```json
 {
-    "job_id": 876276,
-    "status": "running",
-    "report": null
+    "ID": "0b0781d9-0cae-47e2-8196-a5cc6e24e086",
+    "Name": "Some name",
+    "Status": "InProgress",
+    "GlobalDuration": 30000000000,
+    "Scenarios": {
+        "sc1": {
+            "Name": "Some scenario",
+            "IterationDuration": 0,
+            "Status": "InProgress",
+            "Errors": [],
+            "Report": null
+        }
+    }
 }
 ```
 
@@ -59,15 +79,17 @@ POST/GET response body example of a **finished** job *(application/json)*:
 
 ```json
 {
-    "job_id": 876276,
-    "status": "done",
-    "report": {
-        "Name": "My Deluge",
-        "Duration": "10s",
-        "ConcurrentUsersCount": 0,
-        "Stats": {
-            "Global": {  },
-            "...": "..."
+    "ID": "0b0781d9-0cae-47e2-8196-a5cc6e24e086",
+    "Name": "Some name",
+    "Status": "DoneSuccess",
+    "GlobalDuration": 30000000000,
+    "Scenarios": {
+        "sc1": {
+            "Name": "Some scenario",
+            "IterationDuration": 0,
+            "Status": "DoneSuccess",
+            "Errors": [],
+            "Report": { "...": "..." }
         }
     }
 }
