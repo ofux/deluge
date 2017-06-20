@@ -8,8 +8,8 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/meatballhat/negroni-logrus"
 	"github.com/urfave/negroni"
+	"github.com/meatballhat/negroni-logrus"
 )
 
 var quiet bool

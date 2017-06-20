@@ -108,6 +108,7 @@ func (m *Middleware) ServeHTTP(rw http.ResponseWriter, r *http.Request, next htt
 
 	for _, u := range m.excludeURLs {
 		if r.URL.Path == u {
+			next(rw, r)
 			return
 		}
 	}
