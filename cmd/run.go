@@ -16,7 +16,7 @@ import (
 )
 
 var (
-	runWorkerAddr string
+	runRemoteAddr string
 )
 
 // serveCmd represents the serve command
@@ -25,7 +25,7 @@ var runCmd = &cobra.Command{
 	Short: "Runs deluge script from the given file.",
 	Long: `Runs deluge script from the given file.
 
-If a worker address is given (see --worker flag) the script will be executed by this worker.
+If a worker/orchestrator address is given (see --remote flag) the script will be executed by this worker/orchestrator.
 Otherwise, a local worker will be silently started on a random port to run the script and will be shutdown right after.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) != 2 {
@@ -49,14 +49,14 @@ Otherwise, a local worker will be silently started on a random port to run the s
 			}
 		}()
 
-		if runWorkerAddr == "" {
+		if runRemoteAddr == "" {
 			l, err := net.Listen("tcp", ":0")
 			if err != nil {
 				die(err, 1)
 			}
 			l.Close()
 			randomPort := l.Addr().(*net.TCPAddr).Port
-			runWorkerAddr = "http://localhost:" + strconv.Itoa(randomPort)
+			runRemoteAddr = "http://localhost:" + strconv.Itoa(randomPort)
 			go api.Serve(randomPort)
 		}
 
@@ -81,7 +81,7 @@ Otherwise, a local worker will be silently started on a random port to run the s
 func init() {
 	RootCmd.AddCommand(runCmd)
 
-	runCmd.Flags().StringVarP(&runWorkerAddr, "worker", "w", "", "The worker address on which the deluge script will be executed")
+	runCmd.Flags().StringVarP(&runRemoteAddr, "remote", "w", "", "The worker/orchestrator address on which the deluge script will be executed")
 
 }
 
@@ -91,7 +91,7 @@ func die(err error, code int) {
 }
 
 func postDeluge(fileContent []byte) *dto.Deluge {
-	resp, err := http.Post(runWorkerAddr+"/v1/jobs", "text/plain", bytes.NewReader(fileContent))
+	resp, err := http.Post(runRemoteAddr+"/v1/jobs", "text/plain", bytes.NewReader(fileContent))
 	if err != nil {
 		die(err, 2)
 	}
@@ -116,7 +116,7 @@ func postDeluge(fileContent []byte) *dto.Deluge {
 }
 
 func getDeluge(id string) *dto.Deluge {
-	resp, err := http.Get(runWorkerAddr + "/v1/jobs/" + id)
+	resp, err := http.Get(runRemoteAddr + "/v1/jobs/" + id)
 	if err != nil {
 		die(err, 2)
 	}
