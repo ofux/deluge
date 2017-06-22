@@ -1,6 +1,8 @@
 package repo
 
 import (
+	"errors"
+	"fmt"
 	"github.com/ofux/deluge-dsl/ast"
 	"github.com/ofux/deluge/core"
 	"github.com/satori/go.uuid"
@@ -23,9 +25,16 @@ func NewJobsRepository() *JobsRepository {
 	}
 }
 
-func (jr *JobsRepository) Create(program *ast.Program) *core.Deluge {
+func (jr *JobsRepository) Create(program *ast.Program) (*core.Deluge, error) {
+	return jr.CreateWithID(program, uuid.NewV4().String())
+}
+
+func (jr *JobsRepository) CreateWithID(program *ast.Program, id string) (*core.Deluge, error) {
+	if _, ok := jr.jobs[id]; ok {
+		return nil, errors.New(fmt.Sprintf("Cannot create job with id '%s'. A job with this id already exists.", id))
+	}
+
 	start := time.Now()
-	id := uuid.NewV4().String()
 	dlg := core.NewDeluge(id, program)
 	log.Infof("Deluge initialized in %s", time.Now().Sub(start).String())
 
@@ -33,7 +42,7 @@ func (jr *JobsRepository) Create(program *ast.Program) *core.Deluge {
 	jr.jobs[id] = dlg
 	jr.jobsMutex.Unlock()
 
-	return dlg
+	return dlg, nil
 }
 
 func (jr *JobsRepository) Get(id string) (*core.Deluge, bool) {

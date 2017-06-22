@@ -11,7 +11,7 @@ import (
 	"net/http"
 )
 
-// JobsWorkerHandler handles requests for 'jobs' resource
+// JobsWorkerHandler handles requests for 'jobs' resource as a worker
 type JobsWorkerHandler struct {
 	routes []Route
 }
@@ -67,7 +67,7 @@ func NewJobsWorkerHandler() *JobsWorkerHandler {
 func (d *JobsWorkerHandler) CreateJob(w http.ResponseWriter, r *http.Request) {
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		SendJSONError(w, "Error reading request body", http.StatusBadRequest)
+		SendJSONError(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -80,7 +80,18 @@ func (d *JobsWorkerHandler) CreateJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	dlg := repo.Jobs.Create(program)
+	jobID := r.FormValue("id")
+	var dlg *core.Deluge
+	if jobID == "" {
+		dlg, err = repo.Jobs.Create(program)
+	} else {
+		dlg, err = repo.Jobs.CreateWithID(program, jobID)
+	}
+	if err != nil {
+		SendJSONError(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
 	go dlg.Run()
 
 	SendJSONWithHTTPCode(w, dto.MapDeluge(dlg), http.StatusAccepted)
