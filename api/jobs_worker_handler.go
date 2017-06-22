@@ -11,22 +11,22 @@ import (
 	"net/http"
 )
 
-// JobsHandler handles requests for 'jobs' resource
-type JobsHandler struct {
+// JobsWorkerHandler handles requests for 'jobs' resource
+type JobsWorkerHandler struct {
 	routes []Route
 }
 
-func (d *JobsHandler) GetBasePath() string {
+func (d *JobsWorkerHandler) GetBasePath() string {
 	return "/v1/jobs"
 }
 
-func (d *JobsHandler) GetRoutes() []Route {
+func (d *JobsWorkerHandler) GetRoutes() []Route {
 	return d.routes
 }
 
-// NewTaskController creates a new task controller to manage tasks
-func NewDelugeHandler() *JobsHandler {
-	jobsHandler := &JobsHandler{}
+// NewJobsWorkerHandler adds handlers to handle jobs as a worker
+func NewJobsWorkerHandler() *JobsWorkerHandler {
+	jobsHandler := &JobsWorkerHandler{}
 
 	// build routes
 	routes := []Route{}
@@ -64,7 +64,7 @@ func NewDelugeHandler() *JobsHandler {
 	return jobsHandler
 }
 
-func (d *JobsHandler) CreateJob(w http.ResponseWriter, r *http.Request) {
+func (d *JobsWorkerHandler) CreateJob(w http.ResponseWriter, r *http.Request) {
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		SendJSONError(w, "Error reading request body", http.StatusBadRequest)
@@ -86,7 +86,7 @@ func (d *JobsHandler) CreateJob(w http.ResponseWriter, r *http.Request) {
 	SendJSONWithHTTPCode(w, dto.MapDeluge(dlg), http.StatusAccepted)
 }
 
-func (d *JobsHandler) GetJob(w http.ResponseWriter, r *http.Request) {
+func (d *JobsWorkerHandler) GetJob(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
 	dlg, ok := repo.Jobs.Get(id)
@@ -98,7 +98,7 @@ func (d *JobsHandler) GetJob(w http.ResponseWriter, r *http.Request) {
 	SendJSONWithHTTPCode(w, dto.MapDeluge(dlg), http.StatusOK)
 }
 
-func (d *JobsHandler) GetAllJobs(w http.ResponseWriter, r *http.Request) {
+func (d *JobsWorkerHandler) GetAllJobs(w http.ResponseWriter, r *http.Request) {
 	dlgs := repo.Jobs.GetAll()
 	dlgsDTO := make([]*dto.DelugeLite, 0, len(dlgs))
 	for _, dlg := range dlgs {
@@ -108,7 +108,7 @@ func (d *JobsHandler) GetAllJobs(w http.ResponseWriter, r *http.Request) {
 	SendJSONWithHTTPCode(w, dlgsDTO, http.StatusOK)
 }
 
-func (d *JobsHandler) DeleteJob(w http.ResponseWriter, r *http.Request) {
+func (d *JobsWorkerHandler) DeleteJob(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
 	ok := repo.Jobs.Delete(id)

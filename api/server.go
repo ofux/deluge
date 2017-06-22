@@ -12,7 +12,7 @@ func NewServer() *negroni.Negroni {
 	n := negroni.New()
 
 	// add middleware for logging
-	n.Use(negronilogrus.NewMiddlewareFromLogger(log.StandardLogger(), "task"))
+	n.Use(negronilogrus.NewMiddlewareFromLogger(log.StandardLogger(), "deluge"))
 
 	// add recovery middleware in case of panic in handler func
 	recovery := negroni.NewRecovery()
@@ -20,7 +20,7 @@ func NewServer() *negroni.Negroni {
 	n.Use(recovery)
 
 	// route handler goes last
-	n.UseHandler(NewRouter(NewDelugeHandler()))
+	n.UseHandler(NewRouter(NewJobsWorkerHandler()))
 
 	return n
 }
