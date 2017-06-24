@@ -7,8 +7,10 @@ import (
 	"github.com/ofux/deluge/api/dto"
 	"github.com/ofux/deluge/api/repo"
 	"github.com/ofux/deluge/core"
+	log "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 )
 
 // JobsWorkerHandler handles requests for 'jobs' resource as a worker
@@ -70,6 +72,10 @@ func (d *JobsWorkerHandler) CreateJob(w http.ResponseWriter, r *http.Request) {
 		SendJSONError(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+	if len(body) == 0 {
+		SendJSONError(w, "Missing body", http.StatusBadRequest)
+		return
+	}
 
 	l := lexer.New(string(body))
 	p := parser.New(l)
@@ -92,7 +98,28 @@ func (d *JobsWorkerHandler) CreateJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	go dlg.Run()
+	webhookURL := r.FormValue("webhook")
+	if webhookURL == "" {
+		dlg.Run()
+	} else {
+		_, err = url.ParseRequestURI(webhookURL)
+		if err != nil {
+			SendJSONError(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		go func() {
+			<-dlg.Run()
+			resp, err := http.Get(webhookURL)
+			if err != nil {
+				log.Warnf("Error calling webhook (%s): %v", webhookURL, err)
+				return
+			}
+			defer resp.Body.Close()
+			if resp.StatusCode >= 400 {
+				log.Warnf("The call to the webhook (%s) returned an error status: %d (%s)", webhookURL, resp.StatusCode, resp.Status)
+			}
+		}()
+	}
 
 	SendJSONWithHTTPCode(w, dto.MapDeluge(dlg), http.StatusAccepted)
 }

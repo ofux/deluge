@@ -75,7 +75,17 @@ func NewDeluge(ID string, script *ast.Program) *Deluge {
 	return dlg
 }
 
-func (d *Deluge) Run() {
+// Run runs the deluge asynchronously. It returns a channel that will be closed once the execution is finished.
+func (d *Deluge) Run() <-chan struct{} {
+	end := make(chan struct{})
+	go func() {
+		defer close(end)
+		d.run()
+	}()
+	return end
+}
+
+func (d *Deluge) run() {
 	log.Infof("Executing %d scenario(s)", len(d.Scenarios))
 	start := time.Now()
 

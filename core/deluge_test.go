@@ -35,7 +35,7 @@ scenario("myScenario", "My scenario", function () {
 });`)
 
 	dlg := NewDeluge("foo", program)
-	dlg.Run()
+	<-dlg.Run()
 
 	records, err := dlg.Scenarios["myScenario"].httpRecorder.GetRecords()
 	if err != nil {

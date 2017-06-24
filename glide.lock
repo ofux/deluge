@@ -1,10 +1,10 @@
-hash: 16841d42e277c315026616262a524b4f53a23e94bf8d8a52432e1159b8307140
-updated: 2017-06-20T17:57:42.086683+02:00
+hash: c81025e95f67912a4480fbd916002f5ac8689914c0324bcc51ca67c8f6aeff2b
+updated: 2017-06-24T14:40:11.506571097+02:00
 imports:
 - name: github.com/codahale/hdrhistogram
   version: 3a0bb77429bd3a61596f5e8a3172445844342120
 - name: github.com/golang/protobuf
-  version: e325f446bebc2998605911c0a2650d9920361d4a
+  version: 6a1fa9404c0aebf36c879bc50152edcc953910d2
   subpackages:
   - ptypes/duration
 - name: github.com/gorilla/context
@@ -20,19 +20,31 @@ imports:
 - name: github.com/sirupsen/logrus
   version: 202f25545ea4cf9b191ff7f846df5d87c9382c2b
 - name: github.com/spf13/cobra
-  version: 99b5d838ca16c25cc4944e323684f8415e8b10ba
+  version: d638dcb7c7c1c9b62f3a6297a17834980d245dc7
   subpackages:
   - cobra
 - name: github.com/spf13/pflag
   version: e57e3eeb33f795204c1ca35f56c44f83227c6e66
+- name: github.com/stretchr/testify
+  version: 69483b4bd14f5845b5a1e55bca19e954e827f1d0
+  subpackages:
+  - assert
 - name: github.com/urfave/negroni
   version: fde5e16d32adc7ad637e9cd9ad21d4ebc6192535
 - name: golang.org/x/sys
-  version: fb4cac33e3196ff7f507ab9b2d2a44b0142f5b5a
+  version: c23410a886927bab8ca5e80b08af6a56faeb330d
   subpackages:
   - unix
 testImports:
+- name: github.com/davecgh/go-spew
+  version: 6d212800a42e8ab5c146b8ace3490ee17e5225f9
+  subpackages:
+  - spew
 - name: github.com/ofux/docilemonkey
   version: 6b338cf0a246aa9ceea7b07386040bac057586b6
   subpackages:
   - docilemonkey
+- name: github.com/pmezard/go-difflib
+  version: d8ed2627bdf02c080bf22230dbb337003b7aba2d
+  subpackages:
+  - difflib

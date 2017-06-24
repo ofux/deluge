@@ -81,7 +81,7 @@ Otherwise, a local worker will be silently started on a random port to run the s
 func init() {
 	RootCmd.AddCommand(runCmd)
 
-	runCmd.Flags().StringVarP(&runRemoteAddr, "remote", "w", "", "The worker/orchestrator address on which the deluge script will be executed")
+	runCmd.Flags().StringVarP(&runRemoteAddr, "remote", "r", "", "The worker/orchestrator address on which the deluge script will be executed")
 
 }
 
