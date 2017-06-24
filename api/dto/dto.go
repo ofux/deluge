@@ -50,6 +50,7 @@ type Scenario struct {
 }
 
 func MapDeluge(d *core.Deluge) *Deluge {
+	d.Mutex.Lock()
 	dDTO := &Deluge{
 		ID:             d.ID,
 		Name:           d.Name,
@@ -57,18 +58,23 @@ func MapDeluge(d *core.Deluge) *Deluge {
 		Status:         MapDelugeStatus(d.Status),
 		Scenarios:      make(map[string]*Scenario),
 	}
-	for k, v := range d.Scenarios {
-		dDTO.Scenarios[k] = MapScenario(v)
+	d.Mutex.Unlock()
+	for scID, sc := range d.Scenarios {
+		sc.Mutex.Lock()
+		dDTO.Scenarios[scID] = MapScenario(sc)
+		sc.Mutex.Unlock()
 	}
 	return dDTO
 }
 
 func MapDelugeLite(d *core.Deluge) *DelugeLite {
+	d.Mutex.Lock()
 	dDTO := &DelugeLite{
 		ID:     d.ID,
 		Name:   d.Name,
 		Status: MapDelugeStatus(d.Status),
 	}
+	d.Mutex.Unlock()
 	return dDTO
 }
 

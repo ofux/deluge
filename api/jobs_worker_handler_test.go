@@ -9,6 +9,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestJobsWorkerHandler_CreateJob(t *testing.T) {
@@ -140,7 +141,14 @@ func TestJobsWorkerHandler_CreateJob(t *testing.T) {
 		w := httptest.NewRecorder()
 		workerHandler := &JobsWorkerHandler{}
 
-		r := httptest.NewRequest("POST", "http://example.com/v1/jobs?webhook=", strings.NewReader(`
+		webhook := make(chan struct{})
+		webhookSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			id := r.FormValue("job_id")
+			assert.Len(t, id, 36)
+			close(webhook)
+		}))
+
+		r := httptest.NewRequest("POST", "http://example.com/v1/jobs?webhook="+webhookSrv.URL, strings.NewReader(`
 			deluge("`+dlgName+`", "200ms", {
 				"myScenario": {
 					"concurrent": 10,
@@ -159,11 +167,23 @@ func TestJobsWorkerHandler_CreateJob(t *testing.T) {
 		assert.Equal(t, dlg.Name, dlgName)
 		assert.True(t, dlg.Status == dto.DelugeVirgin || dlg.Status == dto.DelugeInProgress)
 		assert.Len(t, dlg.Scenarios, 1)
-		assert.Contains(t, dlg.Scenarios, scenarioKey)
-		assert.Equal(t, dlg.Scenarios[scenarioKey].Name, scenarioName)
-		assert.Len(t, dlg.Scenarios[scenarioKey].Errors, 0)
-		assert.True(t, dlg.Scenarios[scenarioKey].Status == dto.ScenarioVirgin || dlg.Scenarios[scenarioKey].Status == dto.ScenarioInProgress)
+
+		assert.True(t, isChanClosed(webhook, 50, 100*time.Millisecond))
 	})
+}
+
+func isChanClosed(ch chan struct{}, maxIterations int, iterationTime time.Duration) bool {
+	for i := 0; i < maxIterations; i++ {
+		select {
+		case _, ok := <-ch:
+			if !ok {
+				return true
+			}
+		default:
+			time.Sleep(iterationTime)
+		}
+	}
+	return false
 }
 
 func deserializeDeluge(t *testing.T, body *bytes.Buffer) *dto.Deluge {

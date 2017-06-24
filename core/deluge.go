@@ -25,6 +25,7 @@ type Deluge struct {
 	Scenarios      map[string]*Scenario
 
 	Status DelugeStatus
+	Mutex  *sync.Mutex
 }
 
 type delugeBuilder struct {
@@ -64,6 +65,7 @@ func NewDeluge(ID string, script *ast.Program) *Deluge {
 		GlobalDuration: builder.globalDuration,
 		Scenarios:      make(map[string]*Scenario),
 		Status:         DelugeVirgin,
+		Mutex:          &sync.Mutex{},
 	}
 	for id, sConf := range builder.scenarioConfigs {
 		if sCore, ok := builder.scenarioCores[id]; ok {
@@ -77,19 +79,21 @@ func NewDeluge(ID string, script *ast.Program) *Deluge {
 
 // Run runs the deluge asynchronously. It returns a channel that will be closed once the execution is finished.
 func (d *Deluge) Run() <-chan struct{} {
-	end := make(chan struct{})
+	done := make(chan struct{})
 	go func() {
-		defer close(end)
+		defer close(done)
 		d.run()
 	}()
-	return end
+	return done
 }
 
 func (d *Deluge) run() {
 	log.Infof("Executing %d scenario(s)", len(d.Scenarios))
 	start := time.Now()
 
+	d.Mutex.Lock()
 	d.Status = DelugeInProgress
+	d.Mutex.Unlock()
 
 	var waitg sync.WaitGroup
 	for _, scenario := range d.Scenarios {
@@ -101,6 +105,7 @@ func (d *Deluge) run() {
 	}
 	waitg.Wait()
 
+	d.Mutex.Lock()
 	d.Status = DelugeDoneSuccess
 	for _, scenario := range d.Scenarios {
 		if scenario.Status == ScenarioDoneError {
@@ -108,6 +113,7 @@ func (d *Deluge) run() {
 			break
 		}
 	}
+	d.Mutex.Unlock()
 
 	log.Infof("Deluge executed %d scenario(s) in %s", len(d.Scenarios), time.Now().Sub(start).String())
 }

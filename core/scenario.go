@@ -35,6 +35,7 @@ type Scenario struct {
 	Report             reporting.Report
 	EffectiveUserCount uint64
 	EffectiveExecCount uint64
+	Mutex              *sync.Mutex
 }
 
 func NewScenario(name string, concurrent int, iterationDuration time.Duration, script ast.Node, logEntry *log.Entry) *Scenario {
@@ -51,6 +52,8 @@ func NewScenario(name string, concurrent int, iterationDuration time.Duration, s
 
 		Status: ScenarioVirgin,
 		Errors: make([]*object.Error, 0),
+
+		Mutex: &sync.Mutex{},
 	}
 
 	for i := 0; i < concurrent; i++ {
@@ -66,7 +69,9 @@ func (sc *Scenario) Run(globalDuration time.Duration) {
 	start := time.Now()
 	endTime := start.Add(globalDuration)
 
+	sc.Mutex.Lock()
 	sc.Status = ScenarioInProgress
+	sc.Mutex.Unlock()
 
 	for _, su := range sc.simUsers {
 		waitg.Add(1)
@@ -108,7 +113,9 @@ func (sc *Scenario) Run(globalDuration time.Duration) {
 	}
 	waitg.Wait()
 
+	sc.Mutex.Lock()
 	sc.end()
+	sc.Mutex.Unlock()
 
 	sc.log.Infof("Scenario executed in %s simulating %d users for %d executions", time.Now().Sub(start).String(), sc.EffectiveUserCount, sc.EffectiveExecCount)
 }
