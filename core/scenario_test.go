@@ -32,8 +32,8 @@ func TestScenario_Run(t *testing.T) {
 		});
 		`)
 
-		scenario := NewScenario("foo", 50, 50*time.Millisecond, program, logTest)
-		scenario.Run(200 * time.Millisecond)
+		scenario := newScenario("foo", 50, 50*time.Millisecond, program, logTest)
+		scenario.run(200*time.Millisecond, nil)
 
 		records, err := scenario.httpRecorder.GetRecords()
 		if err != nil {
@@ -53,7 +53,7 @@ func TestScenario_Run(t *testing.T) {
 		recordingtest.CheckHTTPRecord(t, records.Global, reqName, int64(scenario.EffectiveExecCount), 201, recording.Ok)
 		for i, record := range records.PerIteration {
 			if i < iterCount-1 {
-				recordingtest.CheckHTTPRecord(t, record, reqName, 50, 201, recording.Ok)
+				recordingtest.CheckHTTPRecord(t, record, reqName, 1, 201, recording.Ok)
 			}
 		}
 	})
@@ -67,8 +67,8 @@ func TestScenario_Run(t *testing.T) {
 		pause("50ms");
 		`)
 
-		scenario := NewScenario("foo", 50, 1*time.Millisecond, program, logTest)
-		scenario.Run(200 * time.Millisecond)
+		scenario := newScenario("foo", 50, 1*time.Millisecond, program, logTest)
+		scenario.run(200*time.Millisecond, nil)
 
 		if scenario.EffectiveUserCount != 50 {
 			t.Fatalf("Expected to have %d simulated users, got %d", 50, scenario.EffectiveUserCount)
@@ -87,8 +87,8 @@ func TestScenario_Run(t *testing.T) {
 		doesntexists();
 		`)
 
-		scenario := NewScenario("foo", 50, 1*time.Millisecond, program, logTest)
-		scenario.Run(200 * time.Millisecond)
+		scenario := newScenario("foo", 50, 1*time.Millisecond, program, logTest)
+		scenario.run(200*time.Millisecond, nil)
 
 		if len(scenario.Errors) != 50 {
 			t.Fatalf("Expected to have %d errors, got %d", 50, len(scenario.Errors))

@@ -1,12 +1,13 @@
 package core
 
 import (
+	"errors"
+	"fmt"
 	"github.com/ofux/deluge-dsl/ast"
 	"github.com/ofux/deluge-dsl/object"
 	"github.com/ofux/deluge/core/recording"
 	"github.com/ofux/deluge/core/reporting"
 	log "github.com/sirupsen/logrus"
-	"runtime"
 	"strconv"
 	"sync"
 	"sync/atomic"
@@ -20,11 +21,12 @@ const (
 	ScenarioInProgress
 	ScenarioDoneSuccess
 	ScenarioDoneError
+	ScenarioInterrupted
 )
 
 type Scenario struct {
 	Name              string
-	simUsers          []*SimUser
+	simUsers          []*simUser
 	script            ast.Node
 	IterationDuration time.Duration
 	httpRecorder      *recording.HTTPRecorder
@@ -38,12 +40,12 @@ type Scenario struct {
 	Mutex              *sync.Mutex
 }
 
-func NewScenario(name string, concurrent int, iterationDuration time.Duration, script ast.Node, logEntry *log.Entry) *Scenario {
+func newScenario(name string, concurrent int, iterationDuration time.Duration, script ast.Node, logEntry *log.Entry) *Scenario {
 	s := &Scenario{
 		Name:              name,
 		script:            script,
 		IterationDuration: iterationDuration,
-		simUsers:          make([]*SimUser, concurrent),
+		simUsers:          make([]*simUser, concurrent),
 
 		httpRecorder: recording.NewHTTPRecorder(),
 		log: logEntry.WithFields(log.Fields{
@@ -57,58 +59,30 @@ func NewScenario(name string, concurrent int, iterationDuration time.Duration, s
 	}
 
 	for i := 0; i < concurrent; i++ {
-		s.simUsers[i] = NewSimUser(strconv.Itoa(i), s)
+		s.simUsers[i] = newSimUser(strconv.Itoa(i), s)
 	}
 
 	return s
 }
 
-func (sc *Scenario) Run(globalDuration time.Duration) {
+func (sc *Scenario) run(globalDuration time.Duration, interrupt chan struct{}) {
 	var waitg sync.WaitGroup
 
 	start := time.Now()
 	endTime := start.Add(globalDuration)
 
 	sc.Mutex.Lock()
+	if sc.Status != ScenarioVirgin {
+		panic(errors.New(fmt.Sprintf("Cannot run a scenario with status %d", sc.Status)))
+	}
 	sc.Status = ScenarioInProgress
 	sc.Mutex.Unlock()
 
 	for _, su := range sc.simUsers {
 		waitg.Add(1)
-		go func(su *SimUser) {
+		go func(su *simUser) {
 			defer waitg.Done()
-			defer func() {
-				atomic.AddUint64(&sc.EffectiveUserCount, 1)
-			}()
-
-			i := 0
-			for time.Now().Before(endTime) {
-				iterationEndTime := time.Now().Add(sc.IterationDuration)
-
-				sc.log.Debugf("Running user simulation %s", su.Name)
-				su.Run(i)
-				i++
-				atomic.AddUint64(&sc.EffectiveExecCount, 1)
-
-				if su.Status == DoneError {
-					return
-				}
-
-				// Check if we're going to reach endTime
-				if iterationEndTime.Before(endTime) {
-					// Wait till the end of iteration as defined in scenario configuration
-					if time.Now().Before(iterationEndTime) {
-						time.Sleep(time.Until(iterationEndTime))
-					} else {
-						// In case we already reached iterationEndTime, we do not sleep, but we add a schedule point
-						// because we cannot assume there is one in the simulation execution itself.
-						runtime.Gosched()
-					}
-				} else {
-					sc.log.Debugf("Terminate user simulation %s", su.Name)
-					return
-				}
-			}
+			sc.runSimUser(su, endTime, interrupt)
 		}(su)
 	}
 	waitg.Wait()
@@ -118,6 +92,45 @@ func (sc *Scenario) Run(globalDuration time.Duration) {
 	sc.Mutex.Unlock()
 
 	sc.log.Infof("Scenario executed in %s simulating %d users for %d executions", time.Now().Sub(start).String(), sc.EffectiveUserCount, sc.EffectiveExecCount)
+}
+
+func (sc *Scenario) runSimUser(su *simUser, endTime time.Time, interrupt chan struct{}) {
+	defer func() {
+		atomic.AddUint64(&sc.EffectiveUserCount, 1)
+	}()
+
+	i := 0
+	for time.Now().Before(endTime) {
+		select {
+		case <-interrupt:
+			su.status = UserInterrupted
+			sc.log.Debugf("Terminate user simulation %s because of interrupt signal.", su.name)
+			return
+		default:
+			iterationEndTime := time.Now().Add(sc.IterationDuration)
+
+			sc.log.Debugf("Running user simulation %s", su.name)
+			su.run(i)
+			i++
+			atomic.AddUint64(&sc.EffectiveExecCount, 1)
+
+			if su.status == UserDoneError {
+				sc.log.Debugf("Terminate user simulation %s because an error occured.", su.name)
+				return
+			}
+
+			// Check if we're going to reach endTime
+			if iterationEndTime.Before(endTime) {
+				// Wait till the end of iteration as defined in scenario configuration
+				if time.Now().Before(iterationEndTime) {
+					time.Sleep(time.Until(iterationEndTime))
+				}
+			} else {
+				sc.log.Debugf("Terminate user simulation %s.", su.name)
+				return
+			}
+		}
+	}
 }
 
 func (sc *Scenario) end() {
@@ -132,9 +145,11 @@ func (sc *Scenario) end() {
 
 	sc.Status = ScenarioDoneSuccess
 	for _, su := range sc.simUsers {
-		if su.Status == DoneError {
+		if su.status == UserDoneError {
 			sc.Status = ScenarioDoneError
-			sc.Errors = append(sc.Errors, su.Error)
+			sc.Errors = append(sc.Errors, su.execError)
+		} else if su.status == UserInterrupted && sc.Status != ScenarioDoneError {
+			sc.Status = ScenarioInterrupted
 		}
 	}
 

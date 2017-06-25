@@ -13,7 +13,7 @@ import (
 	"testing"
 )
 
-func NewSimUserTest(t *testing.T, js string) *SimUser {
+func NewSimUserTest(t *testing.T, js string) *simUser {
 	l := lexer.New(js)
 	p := parser.New(l)
 
@@ -36,12 +36,12 @@ func NewSimUserTest(t *testing.T, js string) *SimUser {
 		}),
 	}
 
-	return NewSimUser("1", sc)
+	return newSimUser("1", sc)
 }
 
-func checkSimUserStatus(t *testing.T, su *SimUser, status SimUserStatus) {
-	if su.Status != status {
-		t.Fatalf("Bad SimUser status %d, expected %d", su.Status, status)
+func checkSimUserStatus(t *testing.T, su *simUser, status simUserStatus) {
+	if su.status != status {
+		t.Fatalf("Bad simUser status %d, expected %d", su.status, status)
 	}
 }
 
@@ -50,16 +50,16 @@ func TestSimUser_Assert(t *testing.T) {
 		su := NewSimUserTest(t, `
 		assert(1+1 == 2)
 		`)
-		su.Run(0)
-		checkSimUserStatus(t, su, DoneSuccess)
+		su.run(0)
+		checkSimUserStatus(t, su, UserDoneSuccess)
 	})
 
 	t.Run("Assert false", func(t *testing.T) {
 		su := NewSimUserTest(t, `
 		assert(1+1 == 3)
 		`)
-		su.Run(0)
-		checkSimUserStatus(t, su, DoneError)
+		su.run(0)
+		checkSimUserStatus(t, su, UserDoneError)
 	})
 }
 
@@ -84,8 +84,8 @@ func TestSimUser_ExecHTTPRequest(t *testing.T) {
 			"url": "`+url+`"
 		});
 		`)
-		su.Run(0)
-		checkSimUserStatus(t, su, DoneSuccess)
+		su.run(0)
+		checkSimUserStatus(t, su, UserDoneSuccess)
 		checkRecords(t, su.httpRecorder, reqName, 1)
 
 		if callCount != 1 {
@@ -114,8 +114,8 @@ func TestSimUser_ExecHTTPRequest(t *testing.T) {
 					"method": "POST"
 				});
 				`)
-		su.Run(0)
-		checkSimUserStatus(t, su, DoneSuccess)
+		su.run(0)
+		checkSimUserStatus(t, su, UserDoneSuccess)
 		checkRecords(t, su.httpRecorder, reqName, 1)
 
 		if callCount != 1 {
@@ -127,8 +127,8 @@ func TestSimUser_ExecHTTPRequest(t *testing.T) {
 		su := NewSimUserTest(t, `
 				http("foo");
 				`)
-		su.Run(0)
-		checkSimUserStatus(t, su, DoneError)
+		su.run(0)
+		checkSimUserStatus(t, su, UserDoneError)
 	})
 
 	t.Run("Bad HTTP name", func(t *testing.T) {
@@ -138,8 +138,8 @@ func TestSimUser_ExecHTTPRequest(t *testing.T) {
 					"method": "POST"
 				});
 				`)
-		su.Run(0)
-		checkSimUserStatus(t, su, DoneError)
+		su.run(0)
+		checkSimUserStatus(t, su, UserDoneError)
 	})
 
 	t.Run("No HTTP url", func(t *testing.T) {
@@ -148,8 +148,8 @@ func TestSimUser_ExecHTTPRequest(t *testing.T) {
 					"method": "POST"
 				});
 				`)
-		su.Run(0)
-		checkSimUserStatus(t, su, DoneError)
+		su.run(0)
+		checkSimUserStatus(t, su, UserDoneError)
 	})
 
 	t.Run("Bad HTTP url", func(t *testing.T) {
@@ -158,8 +158,8 @@ func TestSimUser_ExecHTTPRequest(t *testing.T) {
 					"url": 42
 				});
 				`)
-		su.Run(0)
-		checkSimUserStatus(t, su, DoneError)
+		su.run(0)
+		checkSimUserStatus(t, su, UserDoneError)
 	})
 
 	t.Run("Bad HTTP url 2", func(t *testing.T) {
@@ -168,8 +168,8 @@ func TestSimUser_ExecHTTPRequest(t *testing.T) {
 					"url": "foobar"
 				});
 				`)
-		su.Run(0)
-		checkSimUserStatus(t, su, DoneError)
+		su.run(0)
+		checkSimUserStatus(t, su, UserDoneError)
 	})
 
 	t.Run("Bad HTTP method", func(t *testing.T) {
@@ -179,8 +179,8 @@ func TestSimUser_ExecHTTPRequest(t *testing.T) {
 					"method": "BAD BAD BAD"
 				});
 				`)
-		su.Run(0)
-		checkSimUserStatus(t, su, DoneError)
+		su.run(0)
+		checkSimUserStatus(t, su, UserDoneError)
 	})
 }
 

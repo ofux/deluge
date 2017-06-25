@@ -7,48 +7,86 @@ import (
 	"github.com/ofux/deluge/core/recording"
 	"github.com/ofux/deluge/core/recording/recordingtest"
 	"github.com/ofux/docilemonkey/docilemonkey"
+	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 )
 
 func TestDeluge_Run(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(docilemonkey.Handler))
-	defer srv.Close()
 
-	const reqName = "My request"
-	program := compileTest(t, `
-deluge("Some name", "200ms", {
-    "myScenario": {
-        "concurrent": 100,
-        "delay": "100ms"
-    }
-});
+	t.Run("Run a simple deluge", func(t *testing.T) {
+		srv := httptest.NewServer(http.HandlerFunc(docilemonkey.Handler))
+		defer srv.Close()
 
-scenario("myScenario", "My scenario", function () {
+		const reqName = "My request"
+		program := compileTest(t, `
+	deluge("Some name", "200ms", {
+		"myScenario": {
+			"concurrent": 100,
+			"delay": "100ms"
+		}
+	});
 
-    http("`+reqName+`", {
-        "url": "`+srv.URL+`/hello/toto?s=201",
-        "method": "POST"
-    });
+	scenario("myScenario", "My scenario", function () {
 
-});`)
+		http("`+reqName+`", {
+			"url": "`+srv.URL+`/hello/toto?s=201",
+			"method": "POST"
+		});
 
-	dlg := NewDeluge("foo", program)
-	<-dlg.Run()
+	});`)
 
-	records, err := dlg.Scenarios["myScenario"].httpRecorder.GetRecords()
-	if err != nil {
-		t.Fatalf(err.Error())
-	}
+		dlg := NewDeluge("foo", program)
+		<-dlg.Run()
 
-	if len(records.PerIteration) != 2 {
-		t.Fatalf("Expected to have %d iterations, got %d", 2, len(records.PerIteration))
-	}
-	recordingtest.CheckHTTPRecord(t, records.Global, reqName, 200, 201, recording.Ok)
-	for _, record := range records.PerIteration {
-		recordingtest.CheckHTTPRecord(t, record, reqName, 100, 201, recording.Ok)
-	}
+		records, err := dlg.Scenarios["myScenario"].httpRecorder.GetRecords()
+		if err != nil {
+			t.Fatalf(err.Error())
+		}
+
+		if len(records.PerIteration) != 2 {
+			t.Fatalf("Expected to have %d iterations, got %d", 2, len(records.PerIteration))
+		}
+		recordingtest.CheckHTTPRecord(t, records.Global, reqName, int64(dlg.Scenarios["myScenario"].EffectiveExecCount), 201, recording.Ok)
+	})
+
+	t.Run("Run and interrupt a deluge", func(t *testing.T) {
+		srv := httptest.NewServer(http.HandlerFunc(docilemonkey.Handler))
+		defer srv.Close()
+
+		const reqName = "My request"
+		program := compileTest(t, `
+	deluge("Some name", "20s", {
+		"myScenario": {
+			"concurrent": 100,
+			"delay": "500ms"
+		}
+	});
+
+	scenario("myScenario", "My scenario", function () {
+
+		http("`+reqName+`", {
+			"url": "`+srv.URL+`/hello/toto?s=200",
+			"method": "PUT"
+		});
+
+	});`)
+
+		dlg := NewDeluge("foo", program)
+		start := time.Now()
+		done := dlg.Run()
+		time.Sleep(100 * time.Millisecond)
+		dlg.Interrupt()
+		<-done
+		elapsedTime := time.Now().Sub(start)
+		if elapsedTime.Seconds() > 10 {
+			t.Errorf("Looks like deluge was not interrupted")
+		}
+
+		assert.Equal(t, DelugeInterrupted, dlg.Status)
+	})
 }
 
 func BenchmarkNewDeluge(b *testing.B) {

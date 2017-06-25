@@ -16,6 +16,7 @@ const (
 	DelugeInProgress
 	DelugeDoneSuccess
 	DelugeDoneError
+	DelugeInterrupted
 )
 
 type Deluge struct {
@@ -24,8 +25,9 @@ type Deluge struct {
 	GlobalDuration time.Duration
 	Scenarios      map[string]*Scenario
 
-	Status DelugeStatus
-	Mutex  *sync.Mutex
+	Status    DelugeStatus
+	Mutex     *sync.Mutex
+	interrupt chan struct{}
 }
 
 type delugeBuilder struct {
@@ -51,10 +53,10 @@ func NewDeluge(ID string, script *ast.Program) *Deluge {
 		scenarioConfigs: make(map[string]*scenarioConfig),
 	}
 	ev := evaluator.NewEvaluator()
-	if err := ev.AddBuiltin("deluge", builder.CreateDeluge); err != nil {
+	if err := ev.AddBuiltin("deluge", builder.dslCreateDeluge); err != nil {
 		log.Fatal(err.Error())
 	}
-	if err := ev.AddBuiltin("scenario", builder.CreateScenario); err != nil {
+	if err := ev.AddBuiltin("scenario", builder.dslCreateScenario); err != nil {
 		log.Fatal(err.Error())
 	}
 	ev.Eval(script, object.NewEnvironment())
@@ -66,10 +68,11 @@ func NewDeluge(ID string, script *ast.Program) *Deluge {
 		Scenarios:      make(map[string]*Scenario),
 		Status:         DelugeVirgin,
 		Mutex:          &sync.Mutex{},
+		interrupt:      make(chan struct{}),
 	}
 	for id, sConf := range builder.scenarioConfigs {
 		if sCore, ok := builder.scenarioCores[id]; ok {
-			dlg.Scenarios[id] = NewScenario(sCore.name, sConf.concurrent, sConf.iterationDuration, sCore.script, log.New().WithField("deluge", dlg.Name))
+			dlg.Scenarios[id] = newScenario(sCore.name, sConf.concurrent, sConf.iterationDuration, sCore.script, log.New().WithField("deluge", dlg.Name))
 		} else {
 			log.Fatalf("Scenario '%s' is configured but not defined.", id)
 		}
@@ -92,6 +95,10 @@ func (d *Deluge) run() {
 	start := time.Now()
 
 	d.Mutex.Lock()
+	if d.Status != DelugeVirgin {
+		log.Warnf("Cannot run a deluge %s with status %d", d.ID, d.Status)
+		return
+	}
 	d.Status = DelugeInProgress
 	d.Mutex.Unlock()
 
@@ -100,25 +107,42 @@ func (d *Deluge) run() {
 		waitg.Add(1)
 		go func(scenario *Scenario) {
 			defer waitg.Done()
-			scenario.Run(d.GlobalDuration)
+			scenario.run(d.GlobalDuration, d.interrupt)
 		}(scenario)
 	}
 	waitg.Wait()
 
 	d.Mutex.Lock()
-	d.Status = DelugeDoneSuccess
-	for _, scenario := range d.Scenarios {
-		if scenario.Status == ScenarioDoneError {
-			d.Status = DelugeDoneError
-			break
-		}
-	}
+	d.end()
 	d.Mutex.Unlock()
 
 	log.Infof("Deluge executed %d scenario(s) in %s", len(d.Scenarios), time.Now().Sub(start).String())
 }
 
-func (d *delugeBuilder) CreateDeluge(node ast.Node, args ...object.Object) object.Object {
+func (d *Deluge) end() {
+	if d.Status == DelugeInProgress {
+		d.Status = DelugeDoneSuccess
+		for _, scenario := range d.Scenarios {
+			if scenario.Status == ScenarioDoneError {
+				d.Status = DelugeDoneError
+				break
+			}
+		}
+	}
+}
+
+func (d *Deluge) Interrupt() {
+	d.Mutex.Lock()
+	if d.Status == DelugeVirgin || d.Status == DelugeInProgress {
+		d.Status = DelugeInterrupted
+		d.Mutex.Unlock()
+		close(d.interrupt)
+	} else {
+		d.Mutex.Unlock()
+	}
+}
+
+func (d *delugeBuilder) dslCreateDeluge(node ast.Node, args ...object.Object) object.Object {
 	if len(args) != 3 {
 		log.Fatalf("Expected %d arguments at %s\n", 3, ast.PrintLocation(node))
 	}
@@ -186,7 +210,7 @@ func (d *delugeBuilder) CreateDeluge(node ast.Node, args ...object.Object) objec
 	return evaluator.NULL
 }
 
-func (d *delugeBuilder) CreateScenario(node ast.Node, args ...object.Object) object.Object {
+func (d *delugeBuilder) dslCreateScenario(node ast.Node, args ...object.Object) object.Object {
 	if len(args) != 3 {
 		log.Fatalf("Expected %d arguments at %s\n", 3, ast.PrintLocation(node))
 	}

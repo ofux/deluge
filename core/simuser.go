@@ -11,33 +11,34 @@ import (
 	"time"
 )
 
-type SimUserStatus int
+type simUserStatus int
 
 const (
-	Virgin SimUserStatus = iota
-	InProgress
-	DoneSuccess
-	DoneError
+	UserVirgin simUserStatus = iota
+	UserInProgress
+	UserDoneSuccess
+	UserDoneError
+	UserInterrupted
 )
 
-type SimUser struct {
-	Name          string
+type simUser struct {
+	name          string
 	scenario      *Scenario
 	evaluator     *evaluator.Evaluator
 	client        *http.Client
-	SleepDuration time.Duration
+	sleepDuration time.Duration
 	httpRecorder  *recording.HTTPRecorder
 	log           *log.Entry
 	iteration     int
 
-	Status SimUserStatus
-	Error  *object.Error
+	status    simUserStatus
+	execError *object.Error
 }
 
-func NewSimUser(name string, scenario *Scenario) *SimUser {
-	su := &SimUser{
-		Name:      name,
-		Status:    Virgin,
+func newSimUser(name string, scenario *Scenario) *simUser {
+	su := &simUser{
+		name:      name,
+		status:    UserVirgin,
 		scenario:  scenario,
 		evaluator: evaluator.NewEvaluator(),
 		client:    cleanhttp.DefaultClient(),
@@ -48,34 +49,34 @@ func NewSimUser(name string, scenario *Scenario) *SimUser {
 		}),
 	}
 
-	if err := su.evaluator.AddBuiltin("http", su.ExecHTTPRequest); err != nil {
+	if err := su.evaluator.AddBuiltin("http", su.execHTTPRequest); err != nil {
 		log.Fatal(err.Error())
 	}
 
 	return su
 }
 
-func (su *SimUser) Run(iteration int) {
+func (su *simUser) run(iteration int) {
 	su.iteration = iteration
-	su.Status = InProgress
+	su.status = UserInProgress
 	env := object.NewEnvironment()
 	evaluated := su.evaluator.Eval(su.scenario.script, env)
 
 	su.client.Transport.(*http.Transport).CloseIdleConnections()
 
 	if evaluated != nil && evaluated.Type() == object.ERROR_OBJ {
-		su.Status = DoneError
-		su.Error = evaluated.(*object.Error)
+		su.status = UserDoneError
+		su.execError = evaluated.(*object.Error)
 		su.log.Errorln(evaluated.Inspect())
 		return
 	}
 
-	if su.Status == InProgress {
-		su.Status = DoneSuccess
+	if su.status == UserInProgress {
+		su.status = UserDoneSuccess
 	}
 }
 
-func (su *SimUser) ExecHTTPRequest(node ast.Node, args ...object.Object) object.Object {
+func (su *simUser) execHTTPRequest(node ast.Node, args ...object.Object) object.Object {
 	if oErr := evaluator.AssertArgsType(node, args, object.STRING_OBJ, object.HASH_OBJ); oErr != nil {
 		return oErr
 	}
