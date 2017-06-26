@@ -9,18 +9,14 @@
 - No dependency hell, single binary made with go
 - Rest API
 - Pain-less, brain-less DSL
-- Scales vertically and horizontally
-- Nice reporting
+- Scales vertically and horizontally *(in progress)*
+- Nice reporting *(in progress)*
 
 ## CLI
 
+### Done
+
 ```sh
-# Starts an orchestrator listening on the given port
-$ deluge start orchestrator --port=9090
-
-# Starts a worker listening on the given port as a slave of the given orchestrator
-$ deluge start worker --port=8080 --orchestrator=187.32.87.353:9090
-
 # Starts a worker listening on the given port without orchestrator
 $ deluge start worker --port=8080
 
@@ -29,6 +25,16 @@ $ deluge run <filename containing deluge's scenario(s)> <output filename> --remo
 
 # Silently starts a worker, runs deluge, write report and shutdown worker. Uses REST API behind the scene.
 $ deluge run <filename containing deluge's scenario(s)> <output filename>
+```
+
+### In progress
+
+```sh
+# Starts an orchestrator listening on the given port
+$ deluge start orchestrator --port=9090
+
+# Starts a worker listening on the given port as a slave of the given orchestrator
+$ deluge start worker --port=8080 --orchestrator=187.32.87.353:9090
 ```
 
 ## REST API
@@ -95,24 +101,13 @@ POST/GET response body example of a **finished** job *(application/json)*:
 }
 ```
 
-## Roadmap
-
-- [x] core of the test runner, able to simulate concurrent users
-- [x] flexible yet simple DSL to write test scenarios
-- [x] recording, using HDRHistograms
-- [ ] reporting, on a simple HTML page using JSON to export recorded data
-- [ ] REST API (to run tests, get reports, etc.)
-- [ ] CLI
-- [ ] 'clustering' or 'server mode' to distribute concurrent users of a scenario across multiple Deluge instances (possibly cross-datacenter)
-- [ ] ready to work Docker image
-
 
 ## DSL
 
-The DSL consists of a simple but efficient language inspired from Javascript's syntax with native support of emiting requests on different protocols.
+The DSL consists of a simple, extremely-easy-to-learn language with native support for emiting requests with different protocols.
 
-Supported protocols (out of the box) are:
-- [ ] HTTP
+Supported protocols to make some requests (out of the box) are:
+- [x] HTTP
 - [ ] TCP
 - [ ] MQTT
 - [ ] gRPC
@@ -120,40 +115,32 @@ Supported protocols (out of the box) are:
 Everything has been made so it is extremely easy to perform requests as show in this example:
 
 ```js
-let req = {
-  "URL": "..."
-};
+deluge("Some name", "5s", {
+    "sc1": {
+        "concurrent": 100,
+        "delay": "2s"
+    }
+});
 
-let res = http(req);
-// or
-let res = tcp(req);
-// or
-let res = mqtt(req);
-// or
-let res = grpc(req);
+scenario("sc1", "Some scenario", function () {
 
-if (res["status"] != 200) {
-  fail();
-}
+    http("Some request", {
+        "url": "http://localhost:8080/hello/foo"
+    });
 
-assert(res["status"] == 200);
-
-// launch async
-async whatever();
-async function(){
-  // ...
-}()
-wait
-
-async "group1" whatever();
-async "group1" whatever();
-wait "group1"
+});
 ```
 
-## Libs
+## Upcoming
 
-- [ ] [logrus](https://github.com/sirupsen/logrus) for the logs
-- [ ] [cobra](https://github.com/spf13/cobra) for the CLI
+- [ ] nice HTML report
+- [ ] ability to distribute concurrent users of a scenario across multiple Deluge instances (possibly cross-datacenter)
+- [ ] Docker image
+
+## Some libs we use
+
+- [x] [logrus](https://github.com/sirupsen/logrus) for the logs
+- [x] [cobra](https://github.com/spf13/cobra) for the CLI
 - [ ] [grpc-go](https://github.com/grpc/grpc-go) for gRPC
 - [ ] [surgemq](https://github.com/influxdata/surgemq) for MQTT
-- [ ] [hdrhistogram](https://github.com/codahale/hdrhistogram) for HDR Histogram
+- [x] [hdrhistogram](https://github.com/codahale/hdrhistogram) for HDR Histogram
