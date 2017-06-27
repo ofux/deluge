@@ -22,23 +22,24 @@ func TestDeluge_Run(t *testing.T) {
 
 		const reqName = "My request"
 		program := compileTest(t, `
-	deluge("Some name", "200ms", {
-		"myScenario": {
-			"concurrent": 100,
-			"delay": "100ms"
-		}
-	});
-
-	scenario("myScenario", "My scenario", function () {
-
-		http("`+reqName+`", {
-			"url": "`+srv.URL+`/hello/toto?s=201",
-			"method": "POST"
+		deluge("Some name", "200ms", {
+			"myScenario": {
+				"concurrent": 100,
+				"delay": "100ms"
+			}
 		});
 
-	});`)
+		scenario("myScenario", "My scenario", function () {
 
-		dlg := NewDeluge("foo", program)
+			http("`+reqName+`", {
+				"url": "`+srv.URL+`/hello/toto?s=201",
+				"method": "POST"
+			});
+
+		});`)
+
+		dlg, err := NewDeluge("foo", program)
+		assert.NoError(t, err)
 		<-dlg.Run()
 
 		records, err := dlg.Scenarios["myScenario"].httpRecorder.GetRecords()
@@ -58,23 +59,25 @@ func TestDeluge_Run(t *testing.T) {
 
 		const reqName = "My request"
 		program := compileTest(t, `
-	deluge("Some name", "20s", {
-		"myScenario": {
-			"concurrent": 100,
-			"delay": "500ms"
-		}
-	});
-
-	scenario("myScenario", "My scenario", function () {
-
-		http("`+reqName+`", {
-			"url": "`+srv.URL+`/hello/toto?s=200",
-			"method": "PUT"
+		deluge("Some name", "20s", {
+			"myScenario": {
+				"concurrent": 100,
+				"delay": "500ms"
+			}
 		});
 
-	});`)
+		scenario("myScenario", "My scenario", function () {
 
-		dlg := NewDeluge("foo", program)
+			http("`+reqName+`", {
+				"url": "`+srv.URL+`/hello/toto?s=200",
+				"method": "PUT"
+			});
+
+		});`)
+
+		dlg, err := NewDeluge("foo", program)
+		assert.NoError(t, err)
+
 		start := time.Now()
 		done := dlg.Run()
 		time.Sleep(100 * time.Millisecond)
@@ -91,6 +94,161 @@ func TestDeluge_Run(t *testing.T) {
 		dlg.Interrupt()
 		assert.Equal(t, DelugeInterrupted, dlg.Status)
 	})
+}
+
+func TestDeluge_Run_With_Deluge_Errors(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected string
+	}{
+		{
+			`
+			deluge("Some name", "200ms", {
+				"myScenario": {
+					"concurrent": 100,
+					"delay": "100ms"
+				}
+			});`,
+			"Scenario 'myScenario' is configured but not defined.",
+		},
+		{
+			`deluge("200ms", {
+				"myScenario": {
+					"concurrent": 100,
+					"delay": "100ms"
+				}
+			});`,
+			"RUNTIME ERROR: Expected 3 arguments at",
+		},
+		{
+			`deluge(1, "200ms", {
+				"myScenario": {
+					"concurrent": 100,
+					"delay": "100ms"
+				}
+			});`,
+			"RUNTIME ERROR: Expected 1st argument to be a string at",
+		},
+		{
+			`deluge("Some name", 200, {
+				"myScenario": {
+					"concurrent": 100,
+					"delay": "100ms"
+				}
+			});`,
+			"RUNTIME ERROR: Expected 2nd argument to be a string at",
+		},
+		{
+			`deluge("Some name", "200", {
+				"myScenario": {
+					"concurrent": 100,
+					"delay": "100ms"
+				}
+			});`,
+			"RUNTIME ERROR: Expected 2nd argument to be a valid duration at",
+		},
+		{
+			`deluge("Some name", "200ms", "bad");`,
+			"RUNTIME ERROR: Expected 3rd argument to be an object at",
+		},
+		{
+			`deluge("Some name", "200ms", {
+				"myScenario": "bad"
+			});`,
+			"RUNTIME ERROR: Expected scenario configuration to be an object at",
+		},
+		{
+			`deluge("Some name", "200ms", {
+				"myScenario": {
+					"delay": "100ms"
+				}
+			});`,
+			"RUNTIME ERROR: Expected 'concurrent' value in configuration at",
+		},
+		{
+			`deluge("Some name", "200ms", {
+				"myScenario": {
+					"concurrent": 100
+				}
+			});`,
+			"RUNTIME ERROR: Expected 'delay' value in configuration at",
+		},
+		{
+			`deluge("Some name", "200ms", {
+				"myScenario": {
+					"concurrent": "100",
+					"delay": "100ms"
+				}
+			});`,
+			"RUNTIME ERROR: Expected 'concurrent' value to be an integer in configuration at",
+		},
+		{
+			`deluge("Some name", "200ms", {
+				"myScenario": {
+					"concurrent": 100,
+					"delay": 100
+				}
+			});`,
+			"RUNTIME ERROR: Expected 'delay' value to be a valid duration in configuration at",
+		},
+		{
+			`deluge("Some name", "200ms", {
+				"myScenario": {
+					"concurrent": 100,
+					"delay": "100"
+				}
+			});`,
+			"RUNTIME ERROR: Expected 'delay' value to be a valid duration in configuration at",
+		},
+	}
+
+	for _, tt := range tests {
+		program := compileTest(t, tt.input)
+		_, err := NewDeluge("foo", program)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), tt.expected)
+	}
+}
+
+func TestDeluge_Run_With_Scenario_Errors(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected string
+	}{
+		{
+			`
+			scenario("My scenario", function () {})`,
+			"RUNTIME ERROR: Expected 3 arguments at",
+		},
+		{
+			`
+			scenario(1, "My scenario", function () {})`,
+			"RUNTIME ERROR: Expected 1st argument to be a string at",
+		},
+		{
+			`
+			scenario("myScenario", 1, function () {})`,
+			"RUNTIME ERROR: Expected 2nd argument to be a string at",
+		},
+		{
+			`
+			scenario("myScenario", "My scenario", "bad")`,
+			"RUNTIME ERROR: Expected 3rd argument to be a function at",
+		},
+		{
+			`
+			scenario("myScenario", "My scenario 1", function () {});
+			scenario("myScenario", "My scenario 2", function () {});`,
+			"RUNTIME ERROR: Scenario 'myScenario' is already defined",
+		},
+	}
+
+	for _, tt := range tests {
+		program := compileTest(t, tt.input)
+		_, err := NewDeluge("foo", program)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), tt.expected)
+	}
 }
 
 func BenchmarkNewDeluge(b *testing.B) {

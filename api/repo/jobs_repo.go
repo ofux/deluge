@@ -35,7 +35,10 @@ func (jr *JobsRepository) CreateWithID(program *ast.Program, id string) (*core.D
 	}
 
 	start := time.Now()
-	dlg := core.NewDeluge(id, program)
+	dlg, err := core.NewDeluge(id, program)
+	if err != nil {
+		return nil, err
+	}
 	log.Infof("Deluge initialized in %s", time.Now().Sub(start).String())
 
 	jr.jobsMutex.Lock()
