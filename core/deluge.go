@@ -1,9 +1,9 @@
 package core
 
 import (
-	"github.com/ofux/deluge-dsl/ast"
-	"github.com/ofux/deluge-dsl/evaluator"
-	"github.com/ofux/deluge-dsl/object"
+	"github.com/ofux/deluge/dsl/ast"
+	"github.com/ofux/deluge/dsl/evaluator"
+	"github.com/ofux/deluge/dsl/object"
 	log "github.com/sirupsen/logrus"
 	"sync"
 	"time"

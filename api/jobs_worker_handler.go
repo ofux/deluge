@@ -2,11 +2,11 @@ package api
 
 import (
 	"github.com/gorilla/mux"
-	"github.com/ofux/deluge-dsl/lexer"
-	"github.com/ofux/deluge-dsl/parser"
 	"github.com/ofux/deluge/api/dto"
 	"github.com/ofux/deluge/api/repo"
 	"github.com/ofux/deluge/core"
+	"github.com/ofux/deluge/dsl/lexer"
+	"github.com/ofux/deluge/dsl/parser"
 	log "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"net/http"

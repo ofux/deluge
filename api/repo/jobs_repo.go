@@ -3,8 +3,8 @@ package repo
 import (
 	"errors"
 	"fmt"
-	"github.com/ofux/deluge-dsl/ast"
 	"github.com/ofux/deluge/core"
+	"github.com/ofux/deluge/dsl/ast"
 	"github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
 	"sync"

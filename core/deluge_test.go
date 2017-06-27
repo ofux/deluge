@@ -1,11 +1,11 @@
 package core
 
 import (
-	"github.com/ofux/deluge-dsl/ast"
-	"github.com/ofux/deluge-dsl/lexer"
-	"github.com/ofux/deluge-dsl/parser"
 	"github.com/ofux/deluge/core/recording"
 	"github.com/ofux/deluge/core/recording/recordingtest"
+	"github.com/ofux/deluge/dsl/ast"
+	"github.com/ofux/deluge/dsl/lexer"
+	"github.com/ofux/deluge/dsl/parser"
 	"github.com/ofux/docilemonkey/docilemonkey"
 	"github.com/stretchr/testify/assert"
 	"net/http"

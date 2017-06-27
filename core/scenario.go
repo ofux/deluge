@@ -3,10 +3,10 @@ package core
 import (
 	"errors"
 	"fmt"
-	"github.com/ofux/deluge-dsl/ast"
-	"github.com/ofux/deluge-dsl/object"
 	"github.com/ofux/deluge/core/recording"
 	"github.com/ofux/deluge/core/reporting"
+	"github.com/ofux/deluge/dsl/ast"
+	"github.com/ofux/deluge/dsl/object"
 	log "github.com/sirupsen/logrus"
 	"strconv"
 	"sync"
