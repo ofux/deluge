@@ -6,9 +6,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/meatballhat/negroni-logrus"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/negroni"
+	"github.com/meatballhat/negroni-logrus"
 )
 
 func main() {

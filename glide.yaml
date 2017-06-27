@@ -1,24 +1,21 @@
 package: github.com/ofux/deluge
 import:
 - package: github.com/codahale/hdrhistogram
-- package: github.com/golang/protobuf
-  subpackages:
-  - ptypes/duration
 - package: github.com/gorilla/mux
   version: ~1.4.0
 - package: github.com/meatballhat/negroni-logrus
-- package: github.com/sirupsen/logrus
-  version: ~1.0.0
-- package: github.com/urfave/negroni
-  version: ~0.2.0
-- package: github.com/spf13/cobra
-  subpackages:
-  - cobra
 - package: github.com/satori/go.uuid
   version: ~1.1.0
-- package: github.com/stretchr/testify
-  version: ~1.1.4
+- package: github.com/sirupsen/logrus
+  version: ~1.0.0
+- package: github.com/spf13/cobra
+- package: github.com/urfave/negroni
+  version: ~0.2.0
 testImport:
 - package: github.com/ofux/docilemonkey
   subpackages:
   - docilemonkey
+- package: github.com/stretchr/testify
+  version: ~1.1.4
+  subpackages:
+  - assert
