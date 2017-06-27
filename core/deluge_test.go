@@ -86,6 +86,10 @@ func TestDeluge_Run(t *testing.T) {
 		}
 
 		assert.Equal(t, DelugeInterrupted, dlg.Status)
+
+		// Should do nothing, should not panic
+		dlg.Interrupt()
+		assert.Equal(t, DelugeInterrupted, dlg.Status)
 	})
 }
 

@@ -31,6 +31,27 @@ func TestHTTPRecorder(t *testing.T) {
 		recordingtest.CheckHTTPRecord(t, result, "foo", 1, 200, recording.Ok)
 	})
 
+	t.Run("Records 1 Value code 500", func(t *testing.T) {
+		recorder := recording.NewHTTPRecorder()
+
+		recorder.Record(&recording.HTTPRecordEntry{
+			Iteration:  0,
+			Name:       "foo",
+			Value:      1000,
+			StatusCode: 500,
+		})
+
+		recorder.Close()
+
+		results, err := recorder.GetRecords()
+		if err != nil {
+			t.Fatalf(err.Error())
+		}
+
+		result := results.PerIteration[0]
+		recordingtest.CheckHTTPRecord(t, result, "foo", 1, 500, recording.Ko)
+	})
+
 	t.Run("Records 100 values simultaneously on the same Iteration", func(t *testing.T) {
 		const concurrent = 100
 		recorder := recording.NewHTTPRecorder()
