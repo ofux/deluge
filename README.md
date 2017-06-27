@@ -1,5 +1,7 @@
 ![deluge_title](https://user-images.githubusercontent.com/595505/27251395-53b0eb7e-5346-11e7-8b4f-efe8308c3eae.png)
 
+[![Build Status](https://travis-ci.org/ofux/deluge.svg?branch=master)](https://travis-ci.org/ofux/deluge)
+
 **Deluge** is a load testing tool for web applications, web APIs, IoT, or any TCP based application.
 
 ## Features
