@@ -6,4 +6,7 @@ go:
 install: true
 
 script:
-  - go test -race -v -cpu=2 $(go list ./... | grep -v /vendor/)
+  - ./test.sh
+
+after_success:
+  - bash <(curl -s https://codecov.io/bash) -t 42faab44-f756-4e1f-b187-d031ed3f34b9
