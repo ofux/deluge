@@ -3,5 +3,7 @@ language: go
 go:
   - 1.8.x
 
+install:
+
 script:
   - go test -race -v -cpu=2 $(go list ./... | grep -v /vendor/)
