@@ -115,7 +115,7 @@ func (sc *Scenario) runSimUser(su *simUser, endTime time.Time, interrupt chan st
 			atomic.AddUint64(&sc.EffectiveExecCount, 1)
 
 			if su.status == UserDoneError {
-				sc.log.Debugf("Terminate user simulation %s because an error occured.", su.name)
+				sc.log.Debugf("Terminate user simulation %s because an error occurred.", su.name)
 				return
 			}
 
