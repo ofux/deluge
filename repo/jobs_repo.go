@@ -30,10 +30,8 @@ func (jr *JobsRepository) Create(program *ast.Program) (*core.Deluge, error) {
 }
 
 func (jr *JobsRepository) CreateWithID(program *ast.Program, id string) (*core.Deluge, error) {
-	if _, ok := jr.jobs[id]; ok {
-		return nil, errors.New(fmt.Sprintf("Cannot create job with id '%s'. A job with this id already exists.", id))
-	}
 
+	// Initialize the deluge (potentially long, so we do that outside of mutex-lock)
 	start := time.Now()
 	dlg, err := core.NewDeluge(id, program)
 	if err != nil {
@@ -42,35 +40,39 @@ func (jr *JobsRepository) CreateWithID(program *ast.Program, id string) (*core.D
 	log.Infof("Deluge initialized in %s", time.Now().Sub(start).String())
 
 	jr.jobsMutex.Lock()
-	jr.jobs[id] = dlg
-	jr.jobsMutex.Unlock()
+	defer jr.jobsMutex.Unlock()
 
+	// Checks that ID is not already taken before inserting it in the repository
+	if _, ok := jr.jobs[id]; ok {
+		return nil, errors.New(fmt.Sprintf("Cannot create job with id '%s'. A job with this id already exists.", id))
+	}
+	jr.jobs[id] = dlg
 	return dlg, nil
 }
 
 func (jr *JobsRepository) Get(id string) (*core.Deluge, bool) {
 	jr.jobsMutex.Lock()
+	defer jr.jobsMutex.Unlock()
 	dlg, ok := jr.jobs[id]
-	jr.jobsMutex.Unlock()
 	return dlg, ok
 }
 
 func (jr *JobsRepository) GetAll() []*core.Deluge {
 	jr.jobsMutex.Lock()
+	defer jr.jobsMutex.Unlock()
 	all := make([]*core.Deluge, 0, len(jr.jobs))
 	for _, v := range jr.jobs {
 		all = append(all, v)
 	}
-	jr.jobsMutex.Unlock()
 	return all
 }
 
 func (jr *JobsRepository) Delete(id string) bool {
 	jr.jobsMutex.Lock()
+	defer jr.jobsMutex.Unlock()
 	if _, ok := jr.jobs[id]; ok {
 		delete(jr.jobs, id)
 		return true
 	}
-	jr.jobsMutex.Unlock()
 	return false
 }
