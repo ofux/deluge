@@ -47,8 +47,8 @@ func TestDeluge_Run(t *testing.T) {
 			t.Fatalf(err.Error())
 		}
 
-		if len(records.PerIteration) != 2 {
-			t.Fatalf("Expected to have %d iterations, got %d", 2, len(records.PerIteration))
+		if len(records.PerIteration) < 1 || len(records.PerIteration) > 2 {
+			t.Fatalf("Expected to have 1 or 2 iterations, got %d", len(records.PerIteration))
 		}
 		recordingtest.CheckHTTPRecord(t, records.Global, reqName, int64(dlg.Scenarios["myScenario"].EffectiveExecCount), 201, recording.Ok)
 	})
