@@ -90,7 +90,11 @@ func TestDeluge_Run(t *testing.T) {
 
 		assert.Equal(t, DelugeInterrupted, dlg.Status)
 
-		// Should do nothing, should not panic
+		// Should do nothing, should not panic, should not cause race condition
+		go func() {
+			dlg.Interrupt()
+			assert.Equal(t, DelugeInterrupted, dlg.Status)
+		}()
 		dlg.Interrupt()
 		assert.Equal(t, DelugeInterrupted, dlg.Status)
 	})

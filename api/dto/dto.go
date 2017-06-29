@@ -16,6 +16,7 @@ const (
 	DelugeInProgress  DelugeStatus = "InProgress"
 	DelugeDoneSuccess DelugeStatus = "DoneSuccess"
 	DelugeDoneError   DelugeStatus = "DoneError"
+	DelugeInterrupted DelugeStatus = "DelugeInterrupted"
 )
 
 type ScenarioStatus string
@@ -25,6 +26,7 @@ const (
 	ScenarioInProgress  ScenarioStatus = "InProgress"
 	ScenarioDoneSuccess ScenarioStatus = "DoneSuccess"
 	ScenarioDoneError   ScenarioStatus = "DoneError"
+	ScenarioInterrupted ScenarioStatus = "ScenarioInterrupted"
 )
 
 type Deluge struct {
@@ -98,6 +100,8 @@ func MapScenarioStatus(st core.ScenarioStatus) ScenarioStatus {
 		return ScenarioDoneSuccess
 	case core.ScenarioDoneError:
 		return ScenarioDoneError
+	case core.ScenarioInterrupted:
+		return ScenarioInterrupted
 	}
 	panic(errors.New(fmt.Sprintf("Invalid scenario status %d", st)))
 }
@@ -112,6 +116,8 @@ func MapDelugeStatus(st core.DelugeStatus) DelugeStatus {
 		return DelugeDoneSuccess
 	case core.DelugeDoneError:
 		return DelugeDoneError
+	case core.DelugeInterrupted:
+		return DelugeInterrupted
 	}
 	panic(errors.New(fmt.Sprintf("Invalid deluge status %d", st)))
 }

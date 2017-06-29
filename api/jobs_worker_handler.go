@@ -60,6 +60,13 @@ func NewJobsWorkerHandler() *JobsWorkerHandler {
 		Pattern:     "/{id}",
 		HandlerFunc: jobsHandler.DeleteJob,
 	})
+	// Interrupt a Job
+	routes = append(routes, Route{
+		Name:        "Interrupt a job",
+		Method:      http.MethodPut,
+		Pattern:     "/interrupt/{id}",
+		HandlerFunc: jobsHandler.InterruptJob,
+	})
 
 	jobsHandler.routes = routes
 
@@ -158,5 +165,18 @@ func (d *JobsWorkerHandler) DeleteJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	w.WriteHeader(http.StatusOK)
+}
+
+func (d *JobsWorkerHandler) InterruptJob(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id := vars["id"]
+	dlg, ok := repo.Jobs.Get(id)
+	if !ok {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+
+	dlg.Interrupt()
 	w.WriteHeader(http.StatusOK)
 }

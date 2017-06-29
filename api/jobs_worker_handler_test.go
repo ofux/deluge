@@ -290,6 +290,7 @@ func TestJobsOrchestratorHandler_DeleteJob(t *testing.T) {
 		router.ServeHTTP(w, r)
 
 		assert.Equal(t, http.StatusOK, w.Code)
+		assert.Equal(t, core.DelugeDoneSuccess, dlg.Status)
 
 		w = httptest.NewRecorder()
 		r = httptest.NewRequest("GET", "http://example.com/v1/jobs", nil)
@@ -334,6 +335,98 @@ func TestJobsOrchestratorHandler_DeleteJob(t *testing.T) {
 		assert.Equal(t, http.StatusOK, w.Code)
 		dlgs := deserializeArrayOfDeluges(t, w.Body)
 		assert.Len(t, dlgs, 2)
+	})
+}
+
+func TestJobsOrchestratorHandler_InterruptJob(t *testing.T) {
+	var router = NewRouter(NewJobsWorkerHandler())
+
+	t.Run("Interrupt a successful job", func(t *testing.T) {
+		repo.Jobs = repo.NewJobsRepository()
+
+		const givenID = "givenID"
+		repo.Jobs.CreateWithID(getTestProgram(t), givenID)
+		dlg, _ := repo.Jobs.Get(givenID)
+		dlg.Status = core.DelugeDoneSuccess
+
+		w := httptest.NewRecorder()
+		r := httptest.NewRequest("PUT", "http://example.com/v1/jobs/interrupt/"+givenID, nil)
+		router.ServeHTTP(w, r)
+
+		// Check status hasn't changed
+		assert.Equal(t, http.StatusOK, w.Code)
+		assert.Equal(t, core.DelugeDoneSuccess, dlg.Status)
+
+		// Check deluge is still there with the same status
+		w = httptest.NewRecorder()
+		r = httptest.NewRequest("GET", "http://example.com/v1/jobs/"+givenID, nil)
+		router.ServeHTTP(w, r)
+		assert.Equal(t, http.StatusOK, w.Code)
+		dlgGet := deserializeDeluge(t, w.Body)
+		assert.Equal(t, givenID, dlgGet.ID)
+		assert.Equal(t, dto.DelugeDoneSuccess, dlgGet.Status)
+	})
+
+	t.Run("Interrupt a job done with errors", func(t *testing.T) {
+		repo.Jobs = repo.NewJobsRepository()
+
+		const givenID = "givenID"
+		repo.Jobs.CreateWithID(getTestProgram(t), givenID)
+		dlg, _ := repo.Jobs.Get(givenID)
+		dlg.Status = core.DelugeDoneError
+
+		w := httptest.NewRecorder()
+		r := httptest.NewRequest("PUT", "http://example.com/v1/jobs/interrupt/"+givenID, nil)
+		router.ServeHTTP(w, r)
+
+		// Check status hasn't changed
+		assert.Equal(t, http.StatusOK, w.Code)
+		assert.Equal(t, core.DelugeDoneError, dlg.Status)
+
+		// Check deluge is still there with the same status
+		w = httptest.NewRecorder()
+		r = httptest.NewRequest("GET", "http://example.com/v1/jobs/"+givenID, nil)
+		router.ServeHTTP(w, r)
+		assert.Equal(t, http.StatusOK, w.Code)
+		dlgGet := deserializeDeluge(t, w.Body)
+		assert.Equal(t, givenID, dlgGet.ID)
+		assert.Equal(t, dto.DelugeDoneError, dlgGet.Status)
+	})
+
+	t.Run("Interrupt a job in progress", func(t *testing.T) {
+		repo.Jobs = repo.NewJobsRepository()
+
+		const givenID = "givenID"
+		repo.Jobs.CreateWithID(getTestProgram(t), givenID)
+		dlg, _ := repo.Jobs.Get(givenID)
+		dlg.Status = core.DelugeInProgress
+
+		w := httptest.NewRecorder()
+		r := httptest.NewRequest("PUT", "http://example.com/v1/jobs/interrupt/"+givenID, nil)
+		router.ServeHTTP(w, r)
+
+		// Check deluge status has been changed
+		assert.Equal(t, http.StatusOK, w.Code)
+		assert.Equal(t, core.DelugeInterrupted, dlg.Status)
+
+		// Check deluge is still there with status interrupted
+		w = httptest.NewRecorder()
+		r = httptest.NewRequest("GET", "http://example.com/v1/jobs/"+givenID, nil)
+		router.ServeHTTP(w, r)
+		assert.Equal(t, http.StatusOK, w.Code)
+		dlgGet := deserializeDeluge(t, w.Body)
+		assert.Equal(t, givenID, dlgGet.ID)
+		assert.Equal(t, dto.DelugeInterrupted, dlgGet.Status)
+	})
+
+	t.Run("Interrupt a non-existing job", func(t *testing.T) {
+		repo.Jobs = repo.NewJobsRepository()
+
+		w := httptest.NewRecorder()
+		r := httptest.NewRequest("PUT", "http://example.com/v1/jobs/interrupt/badID", nil)
+		router.ServeHTTP(w, r)
+
+		assert.Equal(t, http.StatusNotFound, w.Code)
 	})
 }
 
