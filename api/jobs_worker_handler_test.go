@@ -4,6 +4,11 @@ import (
 	"bytes"
 	"encoding/json"
 	"github.com/ofux/deluge/api/dto"
+	"github.com/ofux/deluge/core"
+	"github.com/ofux/deluge/dsl/ast"
+	"github.com/ofux/deluge/dsl/lexer"
+	"github.com/ofux/deluge/dsl/parser"
+	"github.com/ofux/deluge/repo"
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
@@ -17,9 +22,11 @@ func TestJobsWorkerHandler_CreateJob(t *testing.T) {
 	const scenarioKey = "myScenario"
 	const scenarioName = "My scenario"
 
+	var router = NewRouter(NewJobsWorkerHandler())
+
 	t.Run("Create a job", func(t *testing.T) {
+		repo.Jobs = repo.NewJobsRepository()
 		w := httptest.NewRecorder()
-		workerHandler := &JobsWorkerHandler{}
 
 		r := httptest.NewRequest("POST", "http://example.com/v1/jobs", strings.NewReader(`
 			deluge("`+dlgName+`", "200ms", {
@@ -33,7 +40,7 @@ func TestJobsWorkerHandler_CreateJob(t *testing.T) {
 
 			});
 		`))
-		workerHandler.CreateJob(w, r)
+		router.ServeHTTP(w, r)
 
 		assert.Equal(t, w.Code, http.StatusAccepted)
 		dlg := deserializeDeluge(t, w.Body)
@@ -47,15 +54,14 @@ func TestJobsWorkerHandler_CreateJob(t *testing.T) {
 	})
 
 	t.Run("Create a job with syntax error in script", func(t *testing.T) {
-
+		repo.Jobs = repo.NewJobsRepository()
 		w := httptest.NewRecorder()
-		workerHandler := &JobsWorkerHandler{}
 
 		r := httptest.NewRequest("POST", "http://example.com/v1/jobs", strings.NewReader(`
 			deluge("`+dlgName+`", "200ms", {
 			};
 		`))
-		workerHandler.CreateJob(w, r)
+		router.ServeHTTP(w, r)
 
 		assert.Equal(t, http.StatusBadRequest, w.Code)
 		errDto := deserializeError(t, w.Body)
@@ -63,12 +69,11 @@ func TestJobsWorkerHandler_CreateJob(t *testing.T) {
 	})
 
 	t.Run("Create a job without body", func(t *testing.T) {
-
+		repo.Jobs = repo.NewJobsRepository()
 		w := httptest.NewRecorder()
-		workerHandler := &JobsWorkerHandler{}
 
 		r := httptest.NewRequest("POST", "http://example.com/v1/jobs", nil)
-		workerHandler.CreateJob(w, r)
+		router.ServeHTTP(w, r)
 
 		assert.Equal(t, http.StatusBadRequest, w.Code)
 		errDto := deserializeError(t, w.Body)
@@ -76,8 +81,8 @@ func TestJobsWorkerHandler_CreateJob(t *testing.T) {
 	})
 
 	t.Run("Create a job with a specific ID", func(t *testing.T) {
+		repo.Jobs = repo.NewJobsRepository()
 		w := httptest.NewRecorder()
-		workerHandler := &JobsWorkerHandler{}
 
 		const dlgID = "foo"
 		r := httptest.NewRequest("POST", "http://example.com/v1/jobs?id="+dlgID, strings.NewReader(`
@@ -92,7 +97,7 @@ func TestJobsWorkerHandler_CreateJob(t *testing.T) {
 
 			});
 		`))
-		workerHandler.CreateJob(w, r)
+		router.ServeHTTP(w, r)
 
 		assert.Equal(t, w.Code, http.StatusAccepted)
 		dlg := deserializeDeluge(t, w.Body)
@@ -107,7 +112,8 @@ func TestJobsWorkerHandler_CreateJob(t *testing.T) {
 	})
 
 	t.Run("Create a job with an existing ID", func(t *testing.T) {
-		workerHandler := &JobsWorkerHandler{}
+		repo.Jobs = repo.NewJobsRepository()
+		repo.Jobs = repo.NewJobsRepository()
 
 		const dlgID = "bar"
 		const body = `
@@ -124,22 +130,22 @@ func TestJobsWorkerHandler_CreateJob(t *testing.T) {
 		`
 		r := httptest.NewRequest("POST", "http://example.com/v1/jobs?id="+dlgID, strings.NewReader(body))
 		w := httptest.NewRecorder()
-		workerHandler.CreateJob(w, r)
+		router.ServeHTTP(w, r)
 		assert.Equal(t, w.Code, http.StatusAccepted)
 		dlg := deserializeDeluge(t, w.Body)
 		assert.Equal(t, dlg.ID, dlgID)
 
 		r = httptest.NewRequest("POST", "http://example.com/v1/jobs?id="+dlgID, strings.NewReader(body))
 		w = httptest.NewRecorder()
-		workerHandler.CreateJob(w, r)
+		router.ServeHTTP(w, r)
 		assert.Equal(t, http.StatusBadRequest, w.Code)
 		errDto := deserializeError(t, w.Body)
 		assert.Equal(t, "Cannot create job with id 'bar'. A job with this id already exists.", errDto.Error)
 	})
 
 	t.Run("Create a job with a webhook", func(t *testing.T) {
+		repo.Jobs = repo.NewJobsRepository()
 		w := httptest.NewRecorder()
-		workerHandler := &JobsWorkerHandler{}
 
 		webhook := make(chan struct{})
 		webhookSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -160,7 +166,7 @@ func TestJobsWorkerHandler_CreateJob(t *testing.T) {
 
 			});
 		`))
-		workerHandler.CreateJob(w, r)
+		router.ServeHTTP(w, r)
 
 		assert.Equal(t, w.Code, http.StatusAccepted)
 		dlg := deserializeDeluge(t, w.Body)
@@ -169,6 +175,165 @@ func TestJobsWorkerHandler_CreateJob(t *testing.T) {
 		assert.Len(t, dlg.Scenarios, 1)
 
 		assert.True(t, isChanClosed(webhook, 50, 100*time.Millisecond))
+	})
+
+	t.Run("Create a job with a bad webhook URL", func(t *testing.T) {
+		repo.Jobs = repo.NewJobsRepository()
+		w := httptest.NewRecorder()
+
+		r := httptest.NewRequest("POST", "http://example.com/v1/jobs?webhook=not%5Ea%7Cvalid%3Eurl", strings.NewReader(`
+			deluge("`+dlgName+`", "200ms", {
+				"myScenario": {
+					"concurrent": 10,
+					"delay": "100ms"
+				}
+			});
+
+			scenario("`+scenarioKey+`", "`+scenarioName+`", function () {
+
+			});
+		`))
+		router.ServeHTTP(w, r)
+
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+		errDto := deserializeError(t, w.Body)
+		assert.Equal(t, "parse not^a|valid>url: invalid URI for request", errDto.Error)
+	})
+}
+
+func TestJobsWorkerHandler_GetJob(t *testing.T) {
+
+	var router = NewRouter(NewJobsWorkerHandler())
+
+	t.Run("Get a job", func(t *testing.T) {
+		repo.Jobs = repo.NewJobsRepository()
+
+		const givenID = "givenID"
+		repo.Jobs.CreateWithID(getTestProgram(t), givenID)
+
+		w := httptest.NewRecorder()
+		r := httptest.NewRequest("GET", "http://example.com/v1/jobs/"+givenID, nil)
+		router.ServeHTTP(w, r)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+		dlg := deserializeDeluge(t, w.Body)
+		assert.Equal(t, dlg.ID, givenID)
+		assert.Equal(t, dlg.Name, "Some name")
+	})
+
+	t.Run("Get a job that does not exist", func(t *testing.T) {
+		repo.Jobs = repo.NewJobsRepository()
+
+		repo.Jobs.CreateWithID(getTestProgram(t), "givenID")
+
+		w := httptest.NewRecorder()
+		r := httptest.NewRequest("GET", "http://example.com/v1/jobs/badID", nil)
+		router.ServeHTTP(w, r)
+
+		assert.Equal(t, http.StatusNotFound, w.Code)
+	})
+}
+
+func TestJobsWorkerHandler_GetAllJobs(t *testing.T) {
+
+	var router = NewRouter(NewJobsWorkerHandler())
+
+	t.Run("Get all jobs", func(t *testing.T) {
+		repo.Jobs = repo.NewJobsRepository()
+
+		const givenID1 = "givenID1"
+		const givenID2 = "givenID2"
+		const givenID3 = "givenID3"
+		repo.Jobs.CreateWithID(getTestProgram(t), givenID1)
+		repo.Jobs.CreateWithID(getTestProgram(t), givenID2)
+		repo.Jobs.CreateWithID(getTestProgram(t), givenID3)
+
+		w := httptest.NewRecorder()
+		r := httptest.NewRequest("GET", "http://example.com/v1/jobs", nil)
+		router.ServeHTTP(w, r)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+		dlgs := deserializeArrayOfDeluges(t, w.Body)
+		assert.Len(t, dlgs, 3)
+	})
+
+	t.Run("Get all jobs of an empty repo", func(t *testing.T) {
+		repo.Jobs = repo.NewJobsRepository()
+
+		w := httptest.NewRecorder()
+		r := httptest.NewRequest("GET", "http://example.com/v1/jobs", nil)
+		router.ServeHTTP(w, r)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+		dlgs := deserializeArrayOfDeluges(t, w.Body)
+		assert.Len(t, dlgs, 0)
+	})
+}
+
+func TestJobsOrchestratorHandler_DeleteJob(t *testing.T) {
+	var router = NewRouter(NewJobsWorkerHandler())
+
+	t.Run("Delete a finished job", func(t *testing.T) {
+		repo.Jobs = repo.NewJobsRepository()
+
+		const givenID1 = "givenID1"
+		const givenID2 = "givenID2"
+		const givenID3 = "givenID3"
+		repo.Jobs.CreateWithID(getTestProgram(t), givenID1)
+		repo.Jobs.CreateWithID(getTestProgram(t), givenID2)
+		repo.Jobs.CreateWithID(getTestProgram(t), givenID3)
+		dlg, _ := repo.Jobs.Get(givenID2)
+		dlg.Status = core.DelugeDoneSuccess
+
+		w := httptest.NewRecorder()
+		r := httptest.NewRequest("DELETE", "http://example.com/v1/jobs/"+givenID2, nil)
+		router.ServeHTTP(w, r)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+
+		w = httptest.NewRecorder()
+		r = httptest.NewRequest("GET", "http://example.com/v1/jobs", nil)
+		router.ServeHTTP(w, r)
+		assert.Equal(t, http.StatusOK, w.Code)
+		dlgs := deserializeArrayOfDeluges(t, w.Body)
+		assert.Len(t, dlgs, 2)
+	})
+
+	t.Run("Delete a non-existing job", func(t *testing.T) {
+		repo.Jobs = repo.NewJobsRepository()
+
+		w := httptest.NewRecorder()
+		r := httptest.NewRequest("DELETE", "http://example.com/v1/jobs/badID", nil)
+		router.ServeHTTP(w, r)
+
+		assert.Equal(t, http.StatusNotFound, w.Code)
+	})
+
+	t.Run("Delete an unfinished job", func(t *testing.T) {
+		repo.Jobs = repo.NewJobsRepository()
+
+		const givenID1 = "givenID1"
+		const givenID2 = "givenID2"
+		const givenID3 = "givenID3"
+		repo.Jobs.CreateWithID(getTestProgram(t), givenID1)
+		interruptedDlg, _ := repo.Jobs.CreateWithID(getTestProgram(t), givenID2)
+		repo.Jobs.CreateWithID(getTestProgram(t), givenID3)
+		dlg, _ := repo.Jobs.Get(givenID2)
+		dlg.Status = core.DelugeInProgress
+
+		w := httptest.NewRecorder()
+		r := httptest.NewRequest("DELETE", "http://example.com/v1/jobs/"+givenID2, nil)
+		router.ServeHTTP(w, r)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+		assert.Equal(t, core.DelugeInterrupted, interruptedDlg.Status)
+
+		w = httptest.NewRecorder()
+		r = httptest.NewRequest("GET", "http://example.com/v1/jobs", nil)
+		router.ServeHTTP(w, r)
+		assert.Equal(t, http.StatusOK, w.Code)
+		dlgs := deserializeArrayOfDeluges(t, w.Body)
+		assert.Len(t, dlgs, 2)
 	})
 }
 
@@ -184,6 +349,20 @@ func isChanClosed(ch chan struct{}, maxIterations int, iterationTime time.Durati
 		}
 	}
 	return false
+}
+
+func deserializeArrayOfDeluges(t *testing.T, body *bytes.Buffer) []*dto.Deluge {
+	p := make([]byte, body.Len())
+	if _, err := body.Read(p); err != nil {
+		t.Fatalf("Could not read body")
+		return nil
+	}
+	dlgs := make([]*dto.Deluge, 0)
+	if err := json.Unmarshal(p, &dlgs); err != nil {
+		t.Fatalf("Could not deserialize array of Deluges out of %s", string(p))
+		return nil
+	}
+	return dlgs
 }
 
 func deserializeDeluge(t *testing.T, body *bytes.Buffer) *dto.Deluge {
@@ -212,4 +391,26 @@ func deserializeError(t *testing.T, body *bytes.Buffer) *dto.Error {
 		return nil
 	}
 	return errDto
+}
+
+func getTestProgram(t testing.TB) *ast.Program {
+	l := lexer.New(`
+	deluge("Some name", "200ms", {
+		"myScenario": {
+			"concurrent": 100,
+			"delay": "100ms"
+		}
+	});
+
+	scenario("myScenario", "My scenario", function () {
+	});`)
+	p := parser.New(l)
+
+	program, ok := p.ParseProgram()
+	if !ok {
+		core.PrintParserErrors(p.Errors())
+		t.Fatal("Parsing error(s)")
+	}
+
+	return program
 }

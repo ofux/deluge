@@ -206,6 +206,38 @@ func TestJobsRepository_Delete(t *testing.T) {
 		assert.Contains(t, testedRepo.jobs, givenID3)
 	})
 
+	t.Run("Delete a finished job (no interruption)", func(t *testing.T) {
+		prg := getTestProgram(t)
+		testedRepo := NewJobsRepository()
+		const givenID = "givenID"
+
+		dlg, err := testedRepo.CreateWithID(prg, givenID)
+		dlg.Status = core.DelugeDoneError
+		assert.NoError(t, err)
+		assert.Len(t, testedRepo.jobs, 1)
+
+		ok := testedRepo.Delete(givenID)
+		assert.True(t, ok)
+		assert.Len(t, testedRepo.jobs, 0)
+		assert.Equal(t, core.DelugeDoneError, dlg.Status)
+	})
+
+	t.Run("Delete an unfinished job (with interruption)", func(t *testing.T) {
+		prg := getTestProgram(t)
+		testedRepo := NewJobsRepository()
+		const givenID = "givenID"
+
+		dlg, err := testedRepo.CreateWithID(prg, givenID)
+		dlg.Status = core.DelugeVirgin
+		assert.NoError(t, err)
+		assert.Len(t, testedRepo.jobs, 1)
+
+		ok := testedRepo.Delete(givenID)
+		assert.True(t, ok)
+		assert.Len(t, testedRepo.jobs, 0)
+		assert.Equal(t, core.DelugeInterrupted, dlg.Status)
+	})
+
 	t.Run("Delete a job that does not exist", func(t *testing.T) {
 		testedRepo := NewJobsRepository()
 

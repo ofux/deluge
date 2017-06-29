@@ -70,7 +70,8 @@ func (jr *JobsRepository) GetAll() []*core.Deluge {
 func (jr *JobsRepository) Delete(id string) bool {
 	jr.jobsMutex.Lock()
 	defer jr.jobsMutex.Unlock()
-	if _, ok := jr.jobs[id]; ok {
+	if job, ok := jr.jobs[id]; ok {
+		job.Interrupt()
 		delete(jr.jobs, id)
 		return true
 	}

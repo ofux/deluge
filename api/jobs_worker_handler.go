@@ -102,7 +102,7 @@ func (d *JobsWorkerHandler) CreateJob(w http.ResponseWriter, r *http.Request) {
 	if wURLParam == "" {
 		dlg.Run()
 	} else {
-		wURL, err := url.Parse(wURLParam)
+		wURL, err := url.ParseRequestURI(wURLParam)
 		if err != nil {
 			SendJSONError(w, err.Error(), http.StatusBadRequest)
 			return
@@ -119,7 +119,7 @@ func (d *JobsWorkerHandler) CreateJob(w http.ResponseWriter, r *http.Request) {
 			}
 			defer resp.Body.Close()
 			if resp.StatusCode >= 400 {
-				log.Warnf("The call to the webhook (%s) returned an error status: %d (%s)", wURL.String(), resp.StatusCode, resp.Status)
+				log.Warnf("The webhook (%s) responded with status: %d (%s)", wURL.String(), resp.StatusCode, resp.Status)
 			}
 		}()
 	}
