@@ -16,7 +16,7 @@ const (
 	DelugeInProgress  DelugeStatus = "InProgress"
 	DelugeDoneSuccess DelugeStatus = "DoneSuccess"
 	DelugeDoneError   DelugeStatus = "DoneError"
-	DelugeInterrupted DelugeStatus = "DelugeInterrupted"
+	DelugeInterrupted DelugeStatus = "Interrupted"
 )
 
 type ScenarioStatus string
@@ -26,7 +26,7 @@ const (
 	ScenarioInProgress  ScenarioStatus = "InProgress"
 	ScenarioDoneSuccess ScenarioStatus = "DoneSuccess"
 	ScenarioDoneError   ScenarioStatus = "DoneError"
-	ScenarioInterrupted ScenarioStatus = "ScenarioInterrupted"
+	ScenarioInterrupted ScenarioStatus = "Interrupted"
 )
 
 type Deluge struct {
