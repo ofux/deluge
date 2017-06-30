@@ -42,7 +42,29 @@ $ deluge start worker --port=8080 --orchestrator=187.32.87.353:9090
 
 ## REST API
 
-### /v1/jobs GET-POST-DELETE
+### /v1/jobs GET-POST-PUT-DELETE
+
+#### GET /v1/jobs
+
+Returns the list of all jobs without their details. Useful to find out the different jobs, their ID, and their status.
+
+#### GET /v1/jobs/{id}
+
+Returns the job for the given ID with full details, potentially including reports and/or errors.
+
+#### POST /v1/jobs
+
+Creates a new job with the Deluge script given in the request body and launches the execution of the simulation asynchronously. This returns immediatly with HTTP status code 202 (accepted) if the simulation could be started without error.
+
+#### PUT /v1/jobs/interrupt/{id}
+
+Interrupts the execution of the job with the given ID. The job will remain retrievable through GET requests.
+
+#### DELETE /v1/jobs/{id}
+
+Interrupts and deletes the job with the given ID.
+
+#### A few examples
 
 POST request body example *(text/plain)*:
 
