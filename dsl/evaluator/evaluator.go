@@ -6,6 +6,7 @@ import (
 	"github.com/ofux/deluge/dsl/ast"
 	"github.com/ofux/deluge/dsl/object"
 	"github.com/ofux/deluge/dsl/token"
+	"strconv"
 )
 
 var (
@@ -244,7 +245,7 @@ func (e *Evaluator) evalInfixExpression(
 ) object.Object {
 	operator := node.Operator
 
-	// Eval && and || operators first, because right and left must be e.evaluated under certain circumstances only
+	// Eval && and || operators first, because right and left must be evaluated under certain circumstances only
 	if operator == "&&" || operator == "||" {
 		return e.evalBooleanInfixExpression(node, env)
 	}
@@ -264,7 +265,7 @@ func (e *Evaluator) evalInfixExpression(
 		return e.evalIntegerInfixExpression(node, left, right)
 	case object.IsNumeric(left) && object.IsNumeric(right):
 		return e.evalFloatInfixExpression(node, left, right)
-	case left.Type() == object.STRING_OBJ && right.Type() == object.STRING_OBJ:
+	case left.Type() == object.STRING_OBJ || right.Type() == object.STRING_OBJ:
 		return e.evalStringInfixExpression(node, left, right)
 	case operator == "==":
 		return nativeBoolToBooleanObject(left == right)
@@ -495,14 +496,26 @@ func (e *Evaluator) evalStringInfixExpression(
 	left, right object.Object,
 ) object.Object {
 	operator := node.Operator
-	if operator != "+" {
+	leftStr, err := convertToString(node, left)
+	if err != nil {
+		return err
+	}
+	rightStr, err := convertToString(node, right)
+	if err != nil {
+		return err
+	}
+
+	switch operator {
+	case "+":
+		return &object.String{Value: leftStr.Value + rightStr.Value}
+	case "==":
+		return nativeBoolToBooleanObject(leftStr.Value == rightStr.Value)
+	case "!=":
+		return nativeBoolToBooleanObject(leftStr.Value != rightStr.Value)
+	default:
 		return NewError(node, "unknown operator: %s %s %s",
 			left.Type(), operator, right.Type())
 	}
-
-	leftVal := left.(*object.String).Value
-	rightVal := right.(*object.String).Value
-	return &object.String{Value: leftVal + rightVal}
 }
 
 func (e *Evaluator) evalBooleanInfixExpression(
@@ -787,4 +800,23 @@ func unwrapReturnValue(obj object.Object) object.Object {
 	}
 
 	return obj
+}
+
+func convertToString(
+	node *ast.InfixExpression,
+	obj object.Object,
+) (*object.String, *object.Error) {
+	switch obj := obj.(type) {
+	case *object.Integer:
+		return &object.String{Value: strconv.FormatInt(obj.Value, 10)}, nil
+	case *object.Float:
+		return &object.String{Value: strconv.FormatFloat(obj.Value, 'f', -1, 64)}, nil
+	case *object.Boolean:
+		return &object.String{Value: strconv.FormatBool(obj.Value)}, nil
+	case *object.String:
+		return &object.String{Value: obj.Value}, nil
+	default:
+		return nil, NewError(node, "cannot convert value of type %s to %s",
+			obj.Type(), object.STRING_OBJ)
+	}
 }

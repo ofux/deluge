@@ -67,6 +67,29 @@ func TestEvalFloatExpression(t *testing.T) {
 	}
 }
 
+func TestEvalStringExpression(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected string
+	}{
+		{`"aaa" + "bbb"`, "aaabbb"},
+		{`"aaa" + ""`, "aaa"},
+		{`"" + "bbb"`, "bbb"},
+		{`"" + ""`, ""},
+		{`" " + " x "`, "  x "},
+		{`" " + " x " + "yz"`, "  x yz"},
+		{`5 + " x " + 2 + " = " + 10`, "5 x 2 = 10"},
+		{`5 + " === " + 2.5*2`, "5 === 5"},
+		{`5.3 + 0.7 + " foo " + 2.54321`, "6 foo 2.54321"},
+		{`"foo" + 5.3 + 0.7`, "foo5.30.7"},
+	}
+
+	for _, tt := range tests {
+		evaluated := testEval(t, tt.input)
+		testStringObject(t, evaluated, tt.expected)
+	}
+}
+
 func TestEvalBooleanExpression(t *testing.T) {
 	t.Run("simple boolean expressions", func(t *testing.T) {
 
@@ -105,6 +128,30 @@ func TestEvalBooleanExpression(t *testing.T) {
 			{"true == false", false},
 			{"true != false", true},
 			{"false != true", true},
+			{`"aaa" == "aaa"`, true},
+			{`"aaa" != "baa"`, true},
+			{`"aaa" != "aaa"`, false},
+			{`"aaa" == "baa"`, false},
+			{`"true" == true`, true},
+			{`"true" != true`, false},
+			{`false != "false"`, false},
+			{`false == "false"`, true},
+			{`"1" == 1`, true},
+			{`"1.1" == 1.1`, true},
+			{`1.1 == "1.1"`, true},
+			{`1 == "1"`, true},
+			{`1+2 == "3"`, true},
+			{`"3" == 1+2`, true},
+			{`1 == "3"`, false},
+			{`"3" == 2`, false},
+			{`"1" != 1`, false},
+			{`"1.1" != 1.1`, false},
+			{`1.1 != "1.1"`, false},
+			{`1 != "1"`, false},
+			{`1+2 != "3"`, false},
+			{`"3" != 1+2`, false},
+			{`1 != "3"`, true},
+			{`"3" != 2`, true},
 			{"(1 < 2) == true", true},
 			{"(1 < 2) == false", false},
 			{"(1 > 2) == true", false},
@@ -557,20 +604,6 @@ addTwo(2);`
 
 func TestStringLiteral(t *testing.T) {
 	input := `"Hello World!"`
-
-	evaluated := testEval(t, input)
-	str, ok := evaluated.(*object.String)
-	if !ok {
-		t.Fatalf("object is not String. got=%T (%+v)", evaluated, evaluated)
-	}
-
-	if str.Value != "Hello World!" {
-		t.Errorf("String has wrong value. got=%q", str.Value)
-	}
-}
-
-func TestStringConcatenation(t *testing.T) {
-	input := `"Hello" + " " + "World!"`
 
 	evaluated := testEval(t, input)
 	str, ok := evaluated.(*object.String)

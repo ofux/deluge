@@ -440,12 +440,12 @@ if (10 > 1) {
 		{
 			`
 let f = function(x) {
-  return x + 1;
+  return x * 1;
 }
 
 f("str");
 `,
-			"RUNTIME ERROR: type mismatch: STRING + INTEGER\n\tat + (line 3, col 12)\n\tat f (line 6, col 1)",
+			"RUNTIME ERROR: unknown operator: STRING * INTEGER\n\tat * (line 3, col 12)\n\tat f (line 6, col 1)",
 		},
 		{
 			`
@@ -492,6 +492,27 @@ sum(f1, f2);
 			t.Errorf("wrong stacktrace [%d]. expected=%q, got=%q",
 				i, tt.expectedStacktrace, stacktrace)
 		}
+	}
+}
+
+func TestEvalStringInfixExpression(t *testing.T) {
+	tests := []expectedError{
+		{
+			`["array"] == "array"`,
+			"cannot convert value of type ARRAY to STRING",
+		},
+		{
+			`{"foo":"bar"} + "foo:bar"`,
+			"cannot convert value of type HASH to STRING",
+		},
+		{
+			`"function" == function(){}`,
+			"cannot convert value of type FUNCTION to STRING",
+		},
+	}
+
+	for _, tt := range tests {
+		testError(t, tt)
 	}
 }
 
