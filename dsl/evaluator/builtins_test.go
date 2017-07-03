@@ -5,6 +5,7 @@ import (
 	"github.com/ofux/deluge/dsl/lexer"
 	"github.com/ofux/deluge/dsl/object"
 	"github.com/ofux/deluge/dsl/parser"
+	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
 )
@@ -36,21 +37,37 @@ func TestBuiltinFunctions(t *testing.T) {
 		{`len("")`, 0},
 		{`len("four")`, 4},
 		{`len("hello world")`, 11},
-		{`len(1)`, "wrong type of argument. got=INTEGER, want=ARRAY or STRING"},
+		{`len(1)`, "wrong type of argument. got=INTEGER, want ARRAY or STRING"},
 		{`len("one", "two")`, "wrong number of arguments. got=2, want=1"},
 		{`len([1, 2, 3])`, 3},
 		{`len([])`, 0},
-		{`puts("hello", "world!")`, nil},
 		{`first([1, 2, 3])`, 1},
 		{`first([])`, nil},
-		{`first(1)`, "argument to `first` must be ARRAY, got INTEGER"},
+		{`first(1)`, "wrong type of argument n°1. got=INTEGER, want=ARRAY"},
+		{`first()`, "wrong number of arguments. got=0, want=1"},
 		{`last([1, 2, 3])`, 3},
 		{`last([])`, nil},
-		{`last(1)`, "argument to `last` must be ARRAY, got INTEGER"},
+		{`last(1)`, "wrong type of argument n°1. got=INTEGER, want=ARRAY"},
+		{`last()`, "wrong number of arguments. got=0, want=1"},
 		{`rest([1, 2, 3])`, []int{2, 3}},
 		{`rest([])`, nil},
+		{`rest(1)`, "wrong type of argument n°1. got=INTEGER, want=ARRAY"},
+		{`rest()`, "wrong number of arguments. got=0, want=1"},
 		{`push([], 1)`, []int{1}},
-		{`push(1, 1)`, "argument to `push` must be ARRAY, got INTEGER"},
+		{`push(1, 1)`, "wrong type of argument n°1. got=INTEGER, want=ARRAY"},
+		{`push()`, "wrong number of arguments. got=0, want=2"},
+		{`parseInt("12")`, 12},
+		{`parseInt("-12")`, -12},
+		{`parseInt("12.3")`, `strconv.ParseInt: parsing "12.3": invalid syntax`},
+		{`parseInt("a")`, `strconv.ParseInt: parsing "a": invalid syntax`},
+		{`parseInt(12)`, "wrong type of argument n°1. got=INTEGER, want=STRING"},
+		{`parseInt("1", "2")`, "wrong number of arguments. got=2, want=1"},
+		{`parseFloat("12")`, float64(12.0)},
+		{`parseFloat("-12")`, float64(-12.0)},
+		{`parseFloat("12.3")`, float64(12.3)},
+		{`parseFloat("a")`, `strconv.ParseFloat: parsing "a": invalid syntax`},
+		{`parseFloat(12)`, "wrong type of argument n°1. got=INTEGER, want=STRING"},
+		{`parseFloat("1", "2")`, "wrong number of arguments. got=2, want=1"},
 	}
 
 	for _, tt := range tests {
@@ -59,6 +76,8 @@ func TestBuiltinFunctions(t *testing.T) {
 		switch expected := tt.expected.(type) {
 		case int:
 			testIntegerObject(t, evaluated, int64(expected))
+		case float64:
+			testFloatObject(t, evaluated, expected)
 		case nil:
 			testNullObject(t, evaluated)
 		case string:
@@ -279,20 +298,28 @@ func TestBuiltinPause(t *testing.T) {
 		}
 	})
 
-	t.Run("Pause with bad argument", func(t *testing.T) {
+	t.Run("Pause with bad type of argument", func(t *testing.T) {
 		input := `
 		pause(2);
 		`
 
 		evaluated := testEval(t, input)
 		result, ok := evaluated.(*object.Error)
-		if !ok {
-			t.Fatalf("Eval didn't return Error. got=%T (%+v)", evaluated, evaluated)
-		}
 
-		if result.Message != "wrong type of argument n°1. got=INTEGER, want=STRING" {
-			t.Fatalf("Bad error message. Expected '%s', got '%s'", "wrong type of argument n°1. got=INTEGER, want=STRING", result.Message)
-		}
+		assert.True(t, ok)
+		assert.Equal(t, "wrong type of argument n°1. got=INTEGER, want=STRING", result.Message)
+	})
+
+	t.Run("Pause with bad duration", func(t *testing.T) {
+		input := `
+		pause("2");
+		`
+
+		evaluated := testEval(t, input)
+		result, ok := evaluated.(*object.Error)
+
+		assert.True(t, ok)
+		assert.Equal(t, "time: missing unit in duration 2", result.Message)
 	})
 
 	t.Run("Pause with no argument", func(t *testing.T) {
@@ -302,12 +329,8 @@ func TestBuiltinPause(t *testing.T) {
 
 		evaluated := testEval(t, input)
 		result, ok := evaluated.(*object.Error)
-		if !ok {
-			t.Fatalf("Eval didn't return Error. got=%T (%+v)", evaluated, evaluated)
-		}
 
-		if result.Message != "wrong number of arguments. got=0, want=1" {
-			t.Fatalf("Bad error message. Expected '%s', got '%s'", "wrong number of arguments. got=0, want=1", result.Message)
-		}
+		assert.True(t, ok)
+		assert.Equal(t, "wrong number of arguments. got=0, want=1", result.Message)
 	})
 }

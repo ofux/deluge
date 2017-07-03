@@ -6,6 +6,7 @@ import (
 	"github.com/ofux/deluge/dsl/ast"
 	"github.com/ofux/deluge/dsl/object"
 	"github.com/ofux/deluge/dsl/token"
+	"strconv"
 	"time"
 )
 
@@ -31,7 +32,7 @@ func AssertArgsType(node ast.Node, args []object.Object, types ...object.ObjectT
 			len(args), len(types))
 	}
 	for i, t := range types {
-		if args[i].Type() != t {
+		if len(t) > 0 && args[i].Type() != t {
 			return NewError(node, "wrong type of argument n°%d. got=%s, want=%s",
 				i+1, args[i].Type(), t)
 		}
@@ -93,28 +94,43 @@ var globalBuiltins = map[string]*object.Builtin{
 			case *object.String:
 				return &object.Integer{Value: int64(len(arg.Value))}
 			default:
-				return NewError(node, "wrong type of argument. got=%s, want=%s or %s",
+				return NewError(node, "wrong type of argument. got=%s, want %s or %s",
 					args[0].Type(), object.ARRAY_OBJ, object.STRING_OBJ)
 			}
 		},
 	},
-	"puts": {
+	"parseInt": {
 		Fn: func(node ast.Node, args ...object.Object) object.Object {
-			for _, arg := range args {
-				fmt.Println(arg.Inspect())
+			if oErr := AssertArgsType(node, args, object.STRING_OBJ); oErr != nil {
+				return oErr
 			}
 
-			return NULL
+			dArg := args[0].(*object.String)
+			val, err := strconv.ParseInt(dArg.Value, 10, 64)
+			if err != nil {
+				return NewError(node, err.Error())
+			}
+			return &object.Integer{Value: val}
+		},
+	},
+	"parseFloat": {
+		Fn: func(node ast.Node, args ...object.Object) object.Object {
+			if oErr := AssertArgsType(node, args, object.STRING_OBJ); oErr != nil {
+				return oErr
+			}
+
+			dArg := args[0].(*object.String)
+			val, err := strconv.ParseFloat(dArg.Value, 64)
+			if err != nil {
+				return NewError(node, err.Error())
+			}
+			return &object.Float{Value: val}
 		},
 	},
 	"first": {
 		Fn: func(node ast.Node, args ...object.Object) object.Object {
-			if oErr := AssertArgCount(node, args, 1); oErr != nil {
+			if oErr := AssertArgsType(node, args, object.ARRAY_OBJ); oErr != nil {
 				return oErr
-			}
-			if args[0].Type() != object.ARRAY_OBJ {
-				return NewError(node, "argument to `first` must be ARRAY, got %s",
-					args[0].Type())
 			}
 
 			arr := args[0].(*object.Array)
@@ -127,12 +143,8 @@ var globalBuiltins = map[string]*object.Builtin{
 	},
 	"last": {
 		Fn: func(node ast.Node, args ...object.Object) object.Object {
-			if oErr := AssertArgCount(node, args, 1); oErr != nil {
+			if oErr := AssertArgsType(node, args, object.ARRAY_OBJ); oErr != nil {
 				return oErr
-			}
-			if args[0].Type() != object.ARRAY_OBJ {
-				return NewError(node, "argument to `last` must be ARRAY, got %s",
-					args[0].Type())
 			}
 
 			arr := args[0].(*object.Array)
@@ -146,12 +158,8 @@ var globalBuiltins = map[string]*object.Builtin{
 	},
 	"rest": {
 		Fn: func(node ast.Node, args ...object.Object) object.Object {
-			if oErr := AssertArgCount(node, args, 1); oErr != nil {
+			if oErr := AssertArgsType(node, args, object.ARRAY_OBJ); oErr != nil {
 				return oErr
-			}
-			if args[0].Type() != object.ARRAY_OBJ {
-				return NewError(node, "argument to `rest` must be ARRAY, got %s",
-					args[0].Type())
 			}
 
 			arr := args[0].(*object.Array)
@@ -167,12 +175,8 @@ var globalBuiltins = map[string]*object.Builtin{
 	},
 	"push": {
 		Fn: func(node ast.Node, args ...object.Object) object.Object {
-			if oErr := AssertArgCount(node, args, 2); oErr != nil {
+			if oErr := AssertArgsType(node, args, object.ARRAY_OBJ, ""); oErr != nil {
 				return oErr
-			}
-			if args[0].Type() != object.ARRAY_OBJ {
-				return NewError(node, "argument to `push` must be ARRAY, got %s",
-					args[0].Type())
 			}
 
 			arr := args[0].(*object.Array)
