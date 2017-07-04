@@ -189,4 +189,40 @@ var globalBuiltins = map[string]*object.Builtin{
 			return &object.Array{Elements: newElements}
 		},
 	},
+	"merge": {
+		Fn: func(node ast.Node, args ...object.Object) object.Object {
+			if oErr := AssertArgsType(node, args, object.HASH_OBJ, object.HASH_OBJ); oErr != nil {
+				return oErr
+			}
+
+			hash1 := args[0].(*object.Hash)
+			hash2 := args[1].(*object.Hash)
+
+			newElements := make(map[object.HashKey]object.HashPair)
+			for k, v := range hash1.Pairs {
+				newElements[k] = v
+			}
+			for k, v := range hash2.Pairs {
+				newElements[k] = v
+			}
+
+			return &object.Hash{Pairs: newElements}
+		},
+	},
+	"keys": {
+		Fn: func(node ast.Node, args ...object.Object) object.Object {
+			if oErr := AssertArgsType(node, args, object.HASH_OBJ); oErr != nil {
+				return oErr
+			}
+
+			hash := args[0].(*object.Hash)
+
+			keys := make([]object.Object, 0, len(hash.Pairs))
+			for k := range hash.Pairs {
+				keys = append(keys, &object.String{Value: string(k)})
+			}
+
+			return &object.Array{Elements: keys}
+		},
+	},
 }

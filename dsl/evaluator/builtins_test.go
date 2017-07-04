@@ -334,3 +334,215 @@ func TestBuiltinPause(t *testing.T) {
 		assert.Equal(t, "wrong number of arguments. got=0, want=1", result.Message)
 	})
 }
+
+func TestBuiltinMerge(t *testing.T) {
+	t.Run("Merge 2 simple hashes", func(t *testing.T) {
+		input := `
+		merge({
+			"a": 1
+		}, {
+			"b": 2,
+			"c": 3
+		})
+		`
+		evaluated := testEval(t, input)
+
+		result, ok := evaluated.(*object.Hash)
+		assert.True(t, ok)
+
+		assert.Equal(t, map[object.HashKey]object.HashPair{
+			"a": {Key: &object.String{"a"}, Value: &object.Integer{1}},
+			"b": {Key: &object.String{"b"}, Value: &object.Integer{2}},
+			"c": {Key: &object.String{"c"}, Value: &object.Integer{3}},
+		}, result.Pairs)
+	})
+
+	t.Run("Merge 2 hashes with common keys", func(t *testing.T) {
+		input := `
+		merge({
+			"a": 1
+		}, {
+			"a": 2,
+			"b": 3
+		})
+		`
+		evaluated := testEval(t, input)
+
+		result, ok := evaluated.(*object.Hash)
+		assert.True(t, ok)
+
+		assert.Equal(t, map[object.HashKey]object.HashPair{
+			"a": {Key: &object.String{"a"}, Value: &object.Integer{2}},
+			"b": {Key: &object.String{"b"}, Value: &object.Integer{3}},
+		}, result.Pairs)
+	})
+
+	t.Run("Merge simple hash with an empty hash", func(t *testing.T) {
+		input := `
+		merge({
+			"a": 1
+		}, {
+		})
+		`
+		evaluated := testEval(t, input)
+
+		result, ok := evaluated.(*object.Hash)
+		assert.True(t, ok)
+
+		assert.Equal(t, map[object.HashKey]object.HashPair{
+			"a": {Key: &object.String{"a"}, Value: &object.Integer{1}},
+		}, result.Pairs)
+	})
+
+	t.Run("Merge an empty hash with a simple hash", func(t *testing.T) {
+		input := `
+		merge({
+		}, {
+			"a": 1
+		})
+		`
+		evaluated := testEval(t, input)
+
+		result, ok := evaluated.(*object.Hash)
+		assert.True(t, ok)
+
+		assert.Equal(t, map[object.HashKey]object.HashPair{
+			"a": {Key: &object.String{"a"}, Value: &object.Integer{1}},
+		}, result.Pairs)
+	})
+
+	t.Run("Merge 2 empty hashes", func(t *testing.T) {
+		input := `
+		merge({
+		}, {
+		})
+		`
+		evaluated := testEval(t, input)
+
+		result, ok := evaluated.(*object.Hash)
+		assert.True(t, ok)
+
+		assert.Equal(t, map[object.HashKey]object.HashPair{}, result.Pairs)
+	})
+
+	t.Run("Merge with no argument", func(t *testing.T) {
+		input := `
+		merge();
+		`
+
+		evaluated := testEval(t, input)
+		result, ok := evaluated.(*object.Error)
+
+		assert.True(t, ok)
+		assert.Equal(t, "wrong number of arguments. got=0, want=2", result.Message)
+	})
+
+	t.Run("Merge with bad 1st argument", func(t *testing.T) {
+		input := `
+		merge("a", {});
+		`
+
+		evaluated := testEval(t, input)
+		result, ok := evaluated.(*object.Error)
+
+		assert.True(t, ok)
+		assert.Equal(t, "wrong type of argument n°1. got=STRING, want=HASH", result.Message)
+	})
+
+	t.Run("Merge with bad 2nd argument", func(t *testing.T) {
+		input := `
+		merge({}, "a");
+		`
+
+		evaluated := testEval(t, input)
+		result, ok := evaluated.(*object.Error)
+
+		assert.True(t, ok)
+		assert.Equal(t, "wrong type of argument n°2. got=STRING, want=HASH", result.Message)
+	})
+}
+
+func TestBuiltinKeys(t *testing.T) {
+	t.Run("Keys of a simple hash", func(t *testing.T) {
+		input := `
+		keys({
+			"a": 1,
+			"b": 2
+		})
+		`
+		evaluated := testEval(t, input)
+
+		result, ok := evaluated.(*object.Array)
+		assert.True(t, ok)
+
+		assert.Len(t, result.Elements, 2)
+		assert.Contains(t, result.Elements, &object.String{"a"})
+		assert.Contains(t, result.Elements, &object.String{"b"})
+	})
+
+	t.Run("Keys of a hash with integers as keys", func(t *testing.T) {
+		input := `
+		keys({
+			"a": 1,
+			"b": 2,
+			3: 3
+		})
+		`
+		evaluated := testEval(t, input)
+
+		result, ok := evaluated.(*object.Array)
+		assert.True(t, ok)
+
+		assert.Len(t, result.Elements, 3)
+		assert.Contains(t, result.Elements, &object.String{"a"})
+		assert.Contains(t, result.Elements, &object.String{"b"})
+		assert.Contains(t, result.Elements, &object.String{"3"})
+	})
+
+	t.Run("Use the result of Keys", func(t *testing.T) {
+		input := `
+		let h = {
+			"a": 5,
+			"b": 8,
+			42: 1
+		};
+
+		let k = keys(h);
+		let sum = 0;
+		for (let i=0; i < len(k); i++) {
+			sum += h[k[i]];
+		}
+		sum
+		`
+		evaluated := testEval(t, input)
+
+		result, ok := evaluated.(*object.Integer)
+		assert.True(t, ok)
+
+		assert.Equal(t, int64(14), result.Value)
+	})
+
+	t.Run("Keys with no argument", func(t *testing.T) {
+		input := `
+		keys();
+		`
+
+		evaluated := testEval(t, input)
+		result, ok := evaluated.(*object.Error)
+
+		assert.True(t, ok)
+		assert.Equal(t, "wrong number of arguments. got=0, want=1", result.Message)
+	})
+
+	t.Run("Keys with bad argument", func(t *testing.T) {
+		input := `
+		keys("a");
+		`
+
+		evaluated := testEval(t, input)
+		result, ok := evaluated.(*object.Error)
+
+		assert.True(t, ok)
+		assert.Equal(t, "wrong type of argument n°1. got=STRING, want=HASH", result.Message)
+	})
+}

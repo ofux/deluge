@@ -773,6 +773,14 @@ func TestHashIndexExpressions(t *testing.T) {
 			`{5: 5}[5]`,
 			5,
 		},
+		{
+			`{5: 3}["5"]`,
+			3,
+		},
+		{
+			`{"5": 3}[5]`,
+			3,
+		},
 	}
 
 	for _, tt := range tests {
