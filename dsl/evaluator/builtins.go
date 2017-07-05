@@ -7,8 +7,11 @@ import (
 	"github.com/ofux/deluge/dsl/object"
 	"github.com/ofux/deluge/dsl/token"
 	"strconv"
+	"strings"
 	"time"
 )
+
+const ANY_TYPE object.ObjectType = "ANY"
 
 func AddGlobalBuiltin(name string, fn object.BuiltinFunction) error {
 	if _, ok := globalBuiltins[name]; ok {
@@ -32,7 +35,7 @@ func AssertArgsType(node ast.Node, args []object.Object, types ...object.ObjectT
 			len(args), len(types))
 	}
 	for i, t := range types {
-		if len(t) > 0 && args[i].Type() != t {
+		if t != ANY_TYPE && args[i].Type() != t {
 			return NewError(node, "wrong type of argument n°%d. got=%s, want=%s",
 				i+1, args[i].Type(), t)
 		}
@@ -170,6 +173,37 @@ var globalBuiltins = map[string]*object.Builtin{
 			return NULL
 		},
 	},
+	"arrayIndexOf": {
+		Fn: func(node ast.Node, args ...object.Object) object.Object {
+			if oErr := AssertArgsType(node, args, object.ARRAY_OBJ, ANY_TYPE); oErr != nil {
+				return oErr
+			}
+
+			arr := args[0].(*object.Array)
+			obj := args[1]
+			for i, v := range arr.Elements {
+				if v.Equals(obj) {
+					return &object.Integer{Value: int64(i)}
+				}
+			}
+
+			return &object.Integer{Value: int64(-1)}
+		},
+	},
+	"stringIndexOf": {
+		Fn: func(node ast.Node, args ...object.Object) object.Object {
+			if oErr := AssertArgsType(node, args, object.STRING_OBJ, object.STRING_OBJ); oErr != nil {
+				return oErr
+			}
+
+			str := args[0].(*object.String)
+			searched := args[1].(*object.String)
+
+			idx := strings.Index(str.Value, searched.Value)
+
+			return &object.Integer{Value: int64(idx)}
+		},
+	},
 	"rest": {
 		Fn: func(node ast.Node, args ...object.Object) object.Object {
 			if oErr := AssertArgsType(node, args, object.ARRAY_OBJ); oErr != nil {
@@ -189,7 +223,7 @@ var globalBuiltins = map[string]*object.Builtin{
 	},
 	"push": {
 		Fn: func(node ast.Node, args ...object.Object) object.Object {
-			if oErr := AssertArgsType(node, args, object.ARRAY_OBJ, ""); oErr != nil {
+			if oErr := AssertArgsType(node, args, object.ARRAY_OBJ, ANY_TYPE); oErr != nil {
 				return oErr
 			}
 

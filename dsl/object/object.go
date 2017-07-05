@@ -36,6 +36,7 @@ type Hashable interface {
 type Object interface {
 	Type() ObjectType
 	Inspect() string
+	Equals(other Object) bool
 }
 
 type Integer struct {
@@ -44,6 +45,10 @@ type Integer struct {
 
 func (i *Integer) Type() ObjectType { return INTEGER_OBJ }
 func (i *Integer) Inspect() string  { return fmt.Sprintf("%d", i.Value) }
+func (i *Integer) Equals(other Object) bool {
+	typed, ok := other.(*Integer)
+	return ok && typed.Value == i.Value
+}
 func (i *Integer) HashKey() HashKey {
 	return HashKey(strconv.FormatInt(i.Value, 10))
 }
@@ -52,8 +57,12 @@ type Float struct {
 	Value float64
 }
 
-func (i *Float) Type() ObjectType { return FLOAT_OBJ }
-func (i *Float) Inspect() string  { return fmt.Sprintf("%f", i.Value) }
+func (f *Float) Type() ObjectType { return FLOAT_OBJ }
+func (f *Float) Inspect() string  { return fmt.Sprintf("%f", f.Value) }
+func (f *Float) Equals(other Object) bool {
+	typed, ok := other.(*Float)
+	return ok && typed.Value == f.Value
+}
 
 type Boolean struct {
 	Value bool
@@ -61,11 +70,19 @@ type Boolean struct {
 
 func (b *Boolean) Type() ObjectType { return BOOLEAN_OBJ }
 func (b *Boolean) Inspect() string  { return fmt.Sprintf("%t", b.Value) }
+func (b *Boolean) Equals(other Object) bool {
+	typed, ok := other.(*Boolean)
+	return ok && typed.Value == b.Value
+}
 
 type Null struct{}
 
 func (n *Null) Type() ObjectType { return NULL_OBJ }
 func (n *Null) Inspect() string  { return "null" }
+func (n *Null) Equals(other Object) bool {
+	_, ok := other.(*Null)
+	return ok
+}
 
 type ReturnValue struct {
 	Value Object
@@ -73,6 +90,10 @@ type ReturnValue struct {
 
 func (rv *ReturnValue) Type() ObjectType { return RETURN_VALUE_OBJ }
 func (rv *ReturnValue) Inspect() string  { return rv.Value.Inspect() }
+func (rv *ReturnValue) Equals(other Object) bool {
+	otherRV, ok := other.(*ReturnValue)
+	return ok && rv.Value.Equals(otherRV.Value)
+}
 
 type Error struct {
 	Message    string
@@ -88,6 +109,10 @@ func (e *Error) Inspect() string {
 		}
 	}
 	return stacktrace
+}
+func (e *Error) Equals(other Object) bool {
+	typed, ok := other.(*Error)
+	return ok && typed.Message == e.Message
 }
 func (e *Error) AddCallToStack(call *ast.CallExpression) {
 	e.StackToken = append(e.StackToken, call.Function.TokenDetails())
@@ -117,6 +142,9 @@ func (f *Function) Inspect() string {
 
 	return out.String()
 }
+func (f *Function) Equals(other Object) bool {
+	return f == other
+}
 
 type String struct {
 	Value string
@@ -124,6 +152,10 @@ type String struct {
 
 func (s *String) Type() ObjectType { return STRING_OBJ }
 func (s *String) Inspect() string  { return s.Value }
+func (s *String) Equals(other Object) bool {
+	typed, ok := other.(*String)
+	return ok && typed.Value == s.Value
+}
 func (s *String) HashKey() HashKey {
 	return HashKey(s.Value)
 }
@@ -134,6 +166,9 @@ type Builtin struct {
 
 func (b *Builtin) Type() ObjectType { return BUILTIN_OBJ }
 func (b *Builtin) Inspect() string  { return "builtin function" }
+func (b *Builtin) Equals(other Object) bool {
+	return b == other
+}
 
 type Array struct {
 	Elements []Object
@@ -153,6 +188,9 @@ func (ao *Array) Inspect() string {
 	out.WriteString("]")
 
 	return out.String()
+}
+func (ao *Array) Equals(other Object) bool {
+	return ao == other
 }
 
 type HashPair struct {
@@ -179,6 +217,9 @@ func (h *Hash) Inspect() string {
 	out.WriteString("}")
 
 	return out.String()
+}
+func (h *Hash) Equals(other Object) bool {
+	return h == other
 }
 func (h *Hash) Get(key string) (HashPair, bool) {
 	r, ok := h.Pairs[HashKey(key)]
