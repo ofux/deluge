@@ -204,6 +204,24 @@ var globalBuiltins = map[string]*object.Builtin{
 			return &object.Integer{Value: int64(idx)}
 		},
 	},
+	"split": {
+		Fn: func(node ast.Node, args ...object.Object) object.Object {
+			if oErr := AssertArgsType(node, args, object.STRING_OBJ, object.STRING_OBJ); oErr != nil {
+				return oErr
+			}
+
+			str := args[0].(*object.String)
+			separator := args[1].(*object.String)
+
+			split := strings.Split(str.Value, separator.Value)
+			elements := make([]object.Object, 0, len(split))
+			for _, v := range split {
+				elements = append(elements, &object.String{Value: v})
+			}
+
+			return &object.Array{Elements: elements}
+		},
+	},
 	"rest": {
 		Fn: func(node ast.Node, args ...object.Object) object.Object {
 			if oErr := AssertArgsType(node, args, object.ARRAY_OBJ); oErr != nil {

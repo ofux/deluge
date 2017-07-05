@@ -81,6 +81,13 @@ func TestBuiltinFunctions(t *testing.T) {
 		{`stringIndexOf(1, 2)`, "wrong type of argument n°1. got=INTEGER, want=STRING"},
 		{`stringIndexOf("1", 2)`, "wrong type of argument n°2. got=INTEGER, want=STRING"},
 		{`stringIndexOf()`, "wrong number of arguments. got=0, want=2"},
+		{`split("abcd", "b")`, []string{"a", "cd"}},
+		{`split("abcd", "e")`, []string{"abcd"}},
+		{`split("", "")`, []string{}},
+		{`split("abcd", "")`, []string{"a", "b", "c", "d"}},
+		{`split(1, 2)`, "wrong type of argument n°1. got=INTEGER, want=STRING"},
+		{`split("1", 2)`, "wrong type of argument n°2. got=INTEGER, want=STRING"},
+		{`split()`, "wrong number of arguments. got=0, want=2"},
 		{`rest([1, 2, 3])`, []int{2, 3}},
 		{`rest([])`, nil},
 		{`rest(1)`, "wrong type of argument n°1. got=INTEGER, want=ARRAY"},
@@ -143,6 +150,22 @@ func TestBuiltinFunctions(t *testing.T) {
 
 			for i, expectedElem := range expected {
 				testIntegerObject(t, array.Elements[i], int64(expectedElem))
+			}
+		case []string:
+			array, ok := evaluated.(*object.Array)
+			if !ok {
+				t.Errorf("obj not Array. got=%T (%+v)", evaluated, evaluated)
+				continue
+			}
+
+			if len(array.Elements) != len(expected) {
+				t.Errorf("wrong num of elements. want=%d, got=%d",
+					len(expected), len(array.Elements))
+				continue
+			}
+
+			for i, expectedElem := range expected {
+				testStringObject(t, array.Elements[i], expectedElem)
 			}
 		}
 	}
