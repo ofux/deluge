@@ -10,23 +10,46 @@ import (
 	"time"
 )
 
-func TestCustomGlobalBuiltinFunctions(t *testing.T) {
-	l := lexer.New("yo()")
-	p := parser.New(l)
-	program, ok := p.ParseProgram()
-	if !ok {
-		t.Errorf("Parsing errors: %v", p.Errors())
-		t.FailNow()
-	}
-	env := object.NewEnvironment()
-	ev := NewEvaluator()
+func TestAddGlobalBuiltin(t *testing.T) {
+	t.Run("Add a global built-in function", func(t *testing.T) {
+		l := lexer.New("fooTest()")
+		p := parser.New(l)
+		program, ok := p.ParseProgram()
+		if !ok {
+			t.Errorf("Parsing errors: %v", p.Errors())
+			t.FailNow()
+		}
+		env := object.NewEnvironment()
+		ev := NewEvaluator()
 
-	AddGlobalBuiltin("yo", func(node ast.Node, args ...object.Object) object.Object {
-		return &object.Integer{Value: 42}
+		err := AddGlobalBuiltin("fooTest", func(node ast.Node, args ...object.Object) object.Object {
+			return &object.Integer{Value: 42}
+		})
+		assert.NoError(t, err)
+
+		evaluated := ev.Eval(program, env)
+		testIntegerObject(t, evaluated, int64(42))
+
+		// Remove the test function from global built-in to avoid any interaction with other tests
+		delete(globalBuiltins, "fooTest")
 	})
 
-	evaluated := ev.Eval(program, env)
-	testIntegerObject(t, evaluated, int64(42))
+	t.Run("Add a global built-in function that already exists", func(t *testing.T) {
+
+		err := AddGlobalBuiltin("fooTest", func(node ast.Node, args ...object.Object) object.Object {
+			return &object.Integer{Value: 42}
+		})
+		assert.NoError(t, err)
+
+		err = AddGlobalBuiltin("fooTest", func(node ast.Node, args ...object.Object) object.Object {
+			return &object.Integer{Value: 42}
+		})
+		assert.Error(t, err)
+		assert.Equal(t, "Global built-in function 'fooTest' is already defined", err.Error())
+
+		// Remove the test function from global built-in to avoid any interaction with other tests
+		delete(globalBuiltins, "fooTest")
+	})
 }
 
 func TestBuiltinFunctions(t *testing.T) {
@@ -68,6 +91,11 @@ func TestBuiltinFunctions(t *testing.T) {
 		{`parseFloat("a")`, `strconv.ParseFloat: parsing "a": invalid syntax`},
 		{`parseFloat(12)`, "wrong type of argument n°1. got=INTEGER, want=STRING"},
 		{`parseFloat("1", "2")`, "wrong number of arguments. got=2, want=1"},
+		{`parseBool("true")`, true},
+		{`parseBool("false")`, false},
+		{`parseBool("a")`, `strconv.ParseBool: parsing "a": invalid syntax`},
+		{`parseBool(true)`, "wrong type of argument n°1. got=BOOLEAN, want=STRING"},
+		{`parseBool("true", "false")`, "wrong number of arguments. got=2, want=1"},
 	}
 
 	for _, tt := range tests {

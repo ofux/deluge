@@ -127,6 +127,20 @@ var globalBuiltins = map[string]*object.Builtin{
 			return &object.Float{Value: val}
 		},
 	},
+	"parseBool": {
+		Fn: func(node ast.Node, args ...object.Object) object.Object {
+			if oErr := AssertArgsType(node, args, object.STRING_OBJ); oErr != nil {
+				return oErr
+			}
+
+			dArg := args[0].(*object.String)
+			val, err := strconv.ParseBool(dArg.Value)
+			if err != nil {
+				return NewError(node, err.Error())
+			}
+			return &object.Boolean{Value: val}
+		},
+	},
 	"first": {
 		Fn: func(node ast.Node, args ...object.Object) object.Object {
 			if oErr := AssertArgsType(node, args, object.ARRAY_OBJ); oErr != nil {
