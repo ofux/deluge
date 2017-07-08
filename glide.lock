@@ -1,5 +1,5 @@
-hash: 16018ad1d6f1c347e22a124941a8585090791b9b063c56d5648b8f1ef3239726
-updated: 2017-06-27T13:24:04.83556834+02:00
+hash: 93d52de22d94ca7403464eaa6757a9c6b4caf466d7d32ef185c42a648f73a531
+updated: 2017-07-08T11:06:21.822300643+02:00
 imports:
 - name: github.com/codahale/hdrhistogram
   version: 3a0bb77429bd3a61596f5e8a3172445844342120
@@ -11,18 +11,20 @@ imports:
   version: 76626ae9c91c4f2a10f34cad8ce83ea42c93bb75
 - name: github.com/meatballhat/negroni-logrus
   version: 259659cbe5df2a5732a3c677d040058215be1ee7
+- name: github.com/ofux/floa
+  version: 9b9e96298d3ef8b0b7f5bafb6f45a06551412b48
 - name: github.com/satori/go.uuid
   version: 879c5887cd475cd7864858769793b2ceb0d44feb
 - name: github.com/sirupsen/logrus
   version: 202f25545ea4cf9b191ff7f846df5d87c9382c2b
 - name: github.com/spf13/cobra
-  version: 4d647c8944eb42504a714e57e97f244ed6344722
+  version: 8c6fa02d2225de0f9bdcb7ca912556f68d172d8c
 - name: github.com/spf13/pflag
   version: e57e3eeb33f795204c1ca35f56c44f83227c6e66
 - name: github.com/urfave/negroni
   version: fde5e16d32adc7ad637e9cd9ad21d4ebc6192535
 - name: golang.org/x/sys
-  version: f7928cfef4d09d1b080aa2b6fd3ca9ba1567c733
+  version: 739734461d1c916b6c72a63d7efda2b27edb369f
   subpackages:
   - unix
 testImports:
@@ -30,6 +32,8 @@ testImports:
   version: 6d212800a42e8ab5c146b8ace3490ee17e5225f9
   subpackages:
   - spew
+- name: github.com/dustin/gojson
+  version: 2e71ec9dd5adce3b168cd0dbde03b5cc04951c30
 - name: github.com/ofux/docilemonkey
   version: 6b338cf0a246aa9ceea7b07386040bac057586b6
   subpackages:
@@ -42,3 +46,4 @@ testImports:
   version: 69483b4bd14f5845b5a1e55bca19e954e827f1d0
   subpackages:
   - assert
+  - require
