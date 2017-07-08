@@ -1,11 +1,14 @@
 deluge("Some name", {
     "product": {
         "concurrent": 100,
-        "delay": "2s"
+        "delay": "2s",
+        "args": {
+            "baseUrl": "http://127.0.0.1:8080"
+        }
     }
 });
 
-scenario("product", "Test the product entity", function (args) {
+scenario("product", "Test the product entity", function (args, session) {
 
     let baseUrl = "http://127.0.0.1:8080";
     if (args["baseUrl"]) {
@@ -30,7 +33,11 @@ scenario("product", "Test the product entity", function (args) {
 
     pause("10s");
 
-    let access_token = authenticate();
+    let access_token = session["access_token"];
+    if (access_token == null) {
+        access_token = authenticate();
+        session["access_token"] = access_token;
+    }
 
     pause("1s");
 
