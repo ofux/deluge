@@ -6,6 +6,7 @@ import (
 	"github.com/ofux/deluge/dsl/object"
 	"github.com/ofux/deluge/dsl/parser"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"testing"
 	"time"
 )
@@ -366,7 +367,7 @@ func TestBuiltinPause(t *testing.T) {
 		evaluated := testEval(t, input)
 		result, ok := evaluated.(*object.Error)
 
-		assert.True(t, ok)
+		require.True(t, ok)
 		assert.Equal(t, "wrong type of argument n°1. got=INTEGER, want=STRING", result.Message)
 	})
 
@@ -378,7 +379,7 @@ func TestBuiltinPause(t *testing.T) {
 		evaluated := testEval(t, input)
 		result, ok := evaluated.(*object.Error)
 
-		assert.True(t, ok)
+		require.True(t, ok)
 		assert.Equal(t, "time: missing unit in duration 2", result.Message)
 	})
 
@@ -390,7 +391,7 @@ func TestBuiltinPause(t *testing.T) {
 		evaluated := testEval(t, input)
 		result, ok := evaluated.(*object.Error)
 
-		assert.True(t, ok)
+		require.True(t, ok)
 		assert.Equal(t, "wrong number of arguments. got=0, want=1", result.Message)
 	})
 }
@@ -408,7 +409,7 @@ func TestBuiltinMerge(t *testing.T) {
 		evaluated := testEval(t, input)
 
 		result, ok := evaluated.(*object.Hash)
-		assert.True(t, ok)
+		require.True(t, ok)
 
 		assert.Equal(t, map[object.HashKey]object.HashPair{
 			"a": {Key: &object.String{"a"}, Value: &object.Integer{1}},
@@ -429,7 +430,7 @@ func TestBuiltinMerge(t *testing.T) {
 		evaluated := testEval(t, input)
 
 		result, ok := evaluated.(*object.Hash)
-		assert.True(t, ok)
+		require.True(t, ok)
 
 		assert.Equal(t, map[object.HashKey]object.HashPair{
 			"a": {Key: &object.String{"a"}, Value: &object.Integer{2}},
@@ -447,7 +448,7 @@ func TestBuiltinMerge(t *testing.T) {
 		evaluated := testEval(t, input)
 
 		result, ok := evaluated.(*object.Hash)
-		assert.True(t, ok)
+		require.True(t, ok)
 
 		assert.Equal(t, map[object.HashKey]object.HashPair{
 			"a": {Key: &object.String{"a"}, Value: &object.Integer{1}},
@@ -464,7 +465,7 @@ func TestBuiltinMerge(t *testing.T) {
 		evaluated := testEval(t, input)
 
 		result, ok := evaluated.(*object.Hash)
-		assert.True(t, ok)
+		require.True(t, ok)
 
 		assert.Equal(t, map[object.HashKey]object.HashPair{
 			"a": {Key: &object.String{"a"}, Value: &object.Integer{1}},
@@ -480,7 +481,7 @@ func TestBuiltinMerge(t *testing.T) {
 		evaluated := testEval(t, input)
 
 		result, ok := evaluated.(*object.Hash)
-		assert.True(t, ok)
+		require.True(t, ok)
 
 		assert.Equal(t, map[object.HashKey]object.HashPair{}, result.Pairs)
 	})
@@ -493,7 +494,7 @@ func TestBuiltinMerge(t *testing.T) {
 		evaluated := testEval(t, input)
 		result, ok := evaluated.(*object.Error)
 
-		assert.True(t, ok)
+		require.True(t, ok)
 		assert.Equal(t, "wrong number of arguments. got=0, want=2", result.Message)
 	})
 
@@ -505,7 +506,7 @@ func TestBuiltinMerge(t *testing.T) {
 		evaluated := testEval(t, input)
 		result, ok := evaluated.(*object.Error)
 
-		assert.True(t, ok)
+		require.True(t, ok)
 		assert.Equal(t, "wrong type of argument n°1. got=STRING, want=HASH", result.Message)
 	})
 
@@ -517,7 +518,7 @@ func TestBuiltinMerge(t *testing.T) {
 		evaluated := testEval(t, input)
 		result, ok := evaluated.(*object.Error)
 
-		assert.True(t, ok)
+		require.True(t, ok)
 		assert.Equal(t, "wrong type of argument n°2. got=STRING, want=HASH", result.Message)
 	})
 }
@@ -533,7 +534,7 @@ func TestBuiltinKeys(t *testing.T) {
 		evaluated := testEval(t, input)
 
 		result, ok := evaluated.(*object.Array)
-		assert.True(t, ok)
+		require.True(t, ok)
 
 		assert.Len(t, result.Elements, 2)
 		assert.Contains(t, result.Elements, &object.String{"a"})
@@ -551,7 +552,7 @@ func TestBuiltinKeys(t *testing.T) {
 		evaluated := testEval(t, input)
 
 		result, ok := evaluated.(*object.Array)
-		assert.True(t, ok)
+		require.True(t, ok)
 
 		assert.Len(t, result.Elements, 3)
 		assert.Contains(t, result.Elements, &object.String{"a"})
@@ -577,7 +578,7 @@ func TestBuiltinKeys(t *testing.T) {
 		evaluated := testEval(t, input)
 
 		result, ok := evaluated.(*object.Integer)
-		assert.True(t, ok)
+		require.True(t, ok)
 
 		assert.Equal(t, int64(14), result.Value)
 	})
@@ -590,7 +591,7 @@ func TestBuiltinKeys(t *testing.T) {
 		evaluated := testEval(t, input)
 		result, ok := evaluated.(*object.Error)
 
-		assert.True(t, ok)
+		require.True(t, ok)
 		assert.Equal(t, "wrong number of arguments. got=0, want=1", result.Message)
 	})
 
@@ -602,7 +603,119 @@ func TestBuiltinKeys(t *testing.T) {
 		evaluated := testEval(t, input)
 		result, ok := evaluated.(*object.Error)
 
-		assert.True(t, ok)
+		require.True(t, ok)
 		assert.Equal(t, "wrong type of argument n°1. got=STRING, want=HASH", result.Message)
+	})
+}
+
+func TestBuiltinJson(t *testing.T) {
+	t.Run("Parse json", func(t *testing.T) {
+		input := `
+json(` + "`" + `{
+	"a": "foo",
+	"b": 42,
+	"c": {
+		"ca": "cfoo",
+		"cb": 43,
+		"cc": [
+			1,
+			2
+		],
+		"cd": {
+			"cda": "bar"
+		}
+	},
+	"d": [
+		"da",
+		43,
+		[],
+		{},
+		true,
+		12.3
+	],
+	"e": 1.2,
+	"f": false
+}` + "`" + `)
+`
+
+		evaluated := testEval(t, input)
+		if err, ok := evaluated.(*object.Error); ok {
+			t.Fatal(err.Message, err.StackToken)
+		}
+
+		result, ok := evaluated.(*object.Hash)
+		require.True(t, ok)
+
+		deepEqual := object.DeepEquals(&object.Hash{
+			Pairs: map[object.HashKey]object.HashPair{
+				object.HashKey("a"): {Key: &object.String{"a"}, Value: &object.String{"foo"}},
+				object.HashKey("b"): {Key: &object.String{"b"}, Value: &object.Integer{42}},
+				object.HashKey("c"): {Key: &object.String{"c"}, Value: &object.Hash{
+					Pairs: map[object.HashKey]object.HashPair{
+						object.HashKey("ca"): {Key: &object.String{"ca"}, Value: &object.String{"cfoo"}},
+						object.HashKey("cb"): {Key: &object.String{"cb"}, Value: &object.Integer{43}},
+						object.HashKey("cc"): {Key: &object.String{"cc"}, Value: &object.Array{Elements: []object.Object{
+							&object.Integer{1},
+							&object.Integer{2},
+						}}},
+						object.HashKey("cd"): {Key: &object.String{"cd"}, Value: &object.Hash{
+							Pairs: map[object.HashKey]object.HashPair{
+								object.HashKey("cda"): {Key: &object.String{"cda"}, Value: &object.String{"bar"}},
+							},
+						}},
+					},
+				}},
+				object.HashKey("d"): {Key: &object.String{"d"}, Value: &object.Array{Elements: []object.Object{
+					&object.String{"da"},
+					&object.Integer{43},
+					&object.Array{[]object.Object{}},
+					&object.Hash{map[object.HashKey]object.HashPair{}},
+					&object.Boolean{true},
+					&object.Float{12.3},
+				}}},
+				object.HashKey("e"): {Key: &object.String{"e"}, Value: &object.Float{1.2}},
+				object.HashKey("f"): {Key: &object.String{"f"}, Value: &object.Boolean{false}},
+			},
+		}, result)
+
+		assert.True(t, deepEqual)
+	})
+
+	t.Run("Parse json with no argument", func(t *testing.T) {
+		input := `
+		json();
+		`
+
+		evaluated := testEval(t, input)
+		result, ok := evaluated.(*object.Error)
+
+		require.True(t, ok)
+		assert.Equal(t, "wrong number of arguments. got=0, want=1", result.Message)
+	})
+
+	t.Run("Parse json with bad argument", func(t *testing.T) {
+		input := `
+		json({
+			"a":"b"
+		});
+		`
+
+		evaluated := testEval(t, input)
+		result, ok := evaluated.(*object.Error)
+
+		require.True(t, ok)
+		assert.Equal(t, "wrong type of argument n°1. got=HASH, want=STRING", result.Message)
+	})
+
+	t.Run("Parse json with bad json", func(t *testing.T) {
+		input := `
+		json("(!)");
+		`
+
+		evaluated := testEval(t, input)
+		result, ok := evaluated.(*object.Error)
+
+		require.True(t, ok)
+		assert.Equal(t, "invalid character '(' looking for beginning of value", result.Message)
 	})
 }

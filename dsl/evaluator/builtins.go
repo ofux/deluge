@@ -1,6 +1,7 @@
 package evaluator
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/ofux/deluge/dsl/ast"
@@ -142,6 +143,27 @@ var globalBuiltins = map[string]*object.Builtin{
 				return NewError(node, err.Error())
 			}
 			return &object.Boolean{Value: val}
+		},
+	},
+	"json": {
+		Fn: func(node ast.Node, args ...object.Object) object.Object {
+			if oErr := AssertArgsType(node, args, object.STRING_OBJ); oErr != nil {
+				return oErr
+			}
+
+			str := args[0].(*object.String).Value
+			in := make(map[string]interface{})
+			err := json.Unmarshal([]byte(str), &in)
+			if err != nil {
+				return NewError(node, err.Error())
+			}
+
+			obj, err := object.ToObject(in)
+			if err != nil {
+				return NewError(node, err.Error())
+			}
+
+			return obj
 		},
 	},
 	"first": {

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/ofux/deluge/dsl/ast"
 	"github.com/ofux/deluge/dsl/token"
+	"github.com/ofux/floa"
 	"strconv"
 	"strings"
 )
@@ -61,7 +62,7 @@ func (f *Float) Type() ObjectType { return FLOAT_OBJ }
 func (f *Float) Inspect() string  { return fmt.Sprintf("%f", f.Value) }
 func (f *Float) Equals(other Object) bool {
 	typed, ok := other.(*Float)
-	return ok && typed.Value == f.Value
+	return ok && floa.NearlyEqual(typed.Value, f.Value, 0.0000001)
 }
 
 type Boolean struct {
