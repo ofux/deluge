@@ -68,7 +68,7 @@ scenario("product", "Test the product entity", function (args, session) {
             "headers": merge(httpCommonHeaders, {
                 "Authorization": "Bearer " + access_token
             }),
-            "body": str({
+            "body": toJson({
                 "ref": "SJ5",
                 // etc
             })
@@ -95,7 +95,7 @@ let authenticate = function () {
     });
 
     assert(resAuth["status"] == 200);
-    let access_token = json(resAuth["body"])["access_token"];
+    let access_token = parseJson(resAuth["body"])["access_token"];
     assert(len(access_token) > 0);
 
     return access_token;

@@ -145,7 +145,7 @@ var globalBuiltins = map[string]*object.Builtin{
 			return &object.Boolean{Value: val}
 		},
 	},
-	"json": {
+	"parseJson": {
 		Fn: func(node ast.Node, args ...object.Object) object.Object {
 			if oErr := AssertArgsType(node, args, object.STRING_OBJ); oErr != nil {
 				return oErr
@@ -164,6 +164,26 @@ var globalBuiltins = map[string]*object.Builtin{
 			}
 
 			return obj
+		},
+	},
+	"toJson": {
+		Fn: func(node ast.Node, args ...object.Object) object.Object {
+			if oErr := AssertArgsType(node, args, object.HASH_OBJ); oErr != nil {
+				return oErr
+			}
+
+			hash := args[0].(*object.Hash)
+			native, err := object.FromObject(hash)
+			if err != nil {
+				return NewError(node, err.Error())
+			}
+
+			jsonStr, err := json.Marshal(native)
+			if err != nil {
+				return NewError(node, err.Error())
+			}
+
+			return &object.String{Value: string(jsonStr)}
 		},
 	},
 	"first": {

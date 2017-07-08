@@ -218,7 +218,7 @@ func TestToObject(t *testing.T) {
 		}
 	})
 
-	t.Run("Test ToObject", func(t *testing.T) {
+	t.Run("Test ToObject errors", func(t *testing.T) {
 		tests := []struct {
 			input    interface{}
 			expected string
@@ -306,5 +306,119 @@ func TestToObject(t *testing.T) {
 		}, obj)
 
 		assert.True(t, deepEqual)
+	})
+}
+
+func TestFromObject(t *testing.T) {
+	t.Run("From object to native", func(t *testing.T) {
+		tests := []struct {
+			input    Object
+			expected interface{}
+		}{
+			{&String{"string"}, "string"},
+			{&Integer{3}, int64(3)},
+			{&Float{3.2}, float64(3.2)},
+			{&Boolean{true}, true},
+			{&Null{}, nil},
+			{&ReturnValue{&Integer{3}}, int64(3)},
+		}
+
+		for _, tt := range tests {
+			native, err := FromObject(tt.input)
+			require.NoError(t, err)
+			assert.Equal(t, tt.expected, native)
+		}
+	})
+
+	t.Run("Test FromObject errors", func(t *testing.T) {
+		tests := []struct {
+			input    Object
+			expected string
+		}{
+			{&Function{}, "Cannot convert Object of type *object.Function to a native type"},
+			{&Hash{
+				Pairs: map[HashKey]HashPair{
+					"a": HashPair{Value: &Function{}},
+				},
+			}, "Cannot convert Object of type *object.Function to a native type"},
+			{&Array{
+				Elements: []Object{
+					&Function{},
+				},
+			}, "Cannot convert Object of type *object.Function to a native type"},
+		}
+
+		for _, tt := range tests {
+			_, err := FromObject(tt.input)
+			require.Error(t, err)
+			assert.Equal(t, tt.expected, err.Error())
+		}
+	})
+
+	t.Run("Test FromObject to JSON output", func(t *testing.T) {
+
+		input := &Hash{
+			Pairs: map[HashKey]HashPair{
+				HashKey("a"): {Key: &String{"a"}, Value: &String{"foo"}},
+				HashKey("b"): {Key: &String{"b"}, Value: &Integer{42}},
+				HashKey("c"): {Key: &String{"c"}, Value: &Hash{
+					Pairs: map[HashKey]HashPair{
+						HashKey("ca"): {Key: &String{"ca"}, Value: &String{"cfoo"}},
+						HashKey("cb"): {Key: &String{"cb"}, Value: &Integer{43}},
+						HashKey("cc"): {Key: &String{"cc"}, Value: &Array{[]Object{
+							&Integer{1},
+							&Integer{2},
+						}}},
+						HashKey("cd"): {Key: &String{"cd"}, Value: &Hash{
+							Pairs: map[HashKey]HashPair{
+								HashKey("cda"): {Key: &String{"cda"}, Value: &String{"bar"}},
+							},
+						}},
+					},
+				}},
+				HashKey("d"): {Key: &String{"d"}, Value: &Array{[]Object{
+					&String{"da"},
+					&Integer{43},
+					&Array{[]Object{}},
+					&Hash{map[HashKey]HashPair{}},
+					&Boolean{true},
+					&Float{12.3},
+				}}},
+				HashKey("e"): {Key: &String{"e"}, Value: &Float{1.2}},
+				HashKey("f"): {Key: &String{"f"}, Value: &Boolean{false}},
+			},
+		}
+
+		native, err := FromObject(input)
+		require.NoError(t, err)
+
+		json, err := json.MarshalIndent(native, "", "\t")
+		require.NoError(t, err)
+
+		assert.Equal(t, string(json), `{
+	"a": "foo",
+	"b": 42,
+	"c": {
+		"ca": "cfoo",
+		"cb": 43,
+		"cc": [
+			1,
+			2
+		],
+		"cd": {
+			"cda": "bar"
+		}
+	},
+	"d": [
+		"da",
+		43,
+		[],
+		{},
+		true,
+		12.3
+	],
+	"e": 1.2,
+	"f": false
+}`)
 	})
 }

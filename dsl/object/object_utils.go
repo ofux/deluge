@@ -113,3 +113,42 @@ func ToObject(in interface{}) (Object, error) {
 		return nil, errors.New(fmt.Sprintf("Cannot convert value of type %s to Object", reflect.TypeOf(in)))
 	}
 }
+
+func FromObject(in Object) (interface{}, error) {
+	switch in := in.(type) {
+	case *String:
+		return in.Value, nil
+	case *Integer:
+		return in.Value, nil
+	case *Float:
+		return in.Value, nil
+	case *Boolean:
+		return in.Value, nil
+	case *Null:
+		return nil, nil
+	case *ReturnValue:
+		return FromObject(in.Value)
+	case *Hash:
+		pairs := make(map[string]interface{})
+		for k, v := range in.Pairs {
+			val, err := FromObject(v.Value)
+			if err != nil {
+				return nil, err
+			}
+			pairs[string(k)] = val
+		}
+		return pairs, nil
+	case *Array:
+		elements := make([]interface{}, 0, len(in.Elements))
+		for _, v := range in.Elements {
+			val, err := FromObject(v)
+			if err != nil {
+				return nil, err
+			}
+			elements = append(elements, val)
+		}
+		return elements, nil
+	default:
+		return nil, errors.New(fmt.Sprintf("Cannot convert Object of type %s to a native type", reflect.TypeOf(in)))
+	}
+}

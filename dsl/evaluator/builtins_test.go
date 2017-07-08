@@ -608,10 +608,10 @@ func TestBuiltinKeys(t *testing.T) {
 	})
 }
 
-func TestBuiltinJson(t *testing.T) {
+func TestBuiltinParseJson(t *testing.T) {
 	t.Run("Parse json", func(t *testing.T) {
 		input := `
-json(` + "`" + `{
+parseJson(` + "`" + `{
 	"a": "foo",
 	"b": 42,
 	"c": {
@@ -683,7 +683,7 @@ json(` + "`" + `{
 
 	t.Run("Parse json with no argument", func(t *testing.T) {
 		input := `
-		json();
+		parseJson();
 		`
 
 		evaluated := testEval(t, input)
@@ -695,7 +695,7 @@ json(` + "`" + `{
 
 	t.Run("Parse json with bad argument", func(t *testing.T) {
 		input := `
-		json({
+		parseJson({
 			"a":"b"
 		});
 		`
@@ -709,7 +709,7 @@ json(` + "`" + `{
 
 	t.Run("Parse json with bad json", func(t *testing.T) {
 		input := `
-		json("(!)");
+		parseJson("(!)");
 		`
 
 		evaluated := testEval(t, input)
@@ -717,5 +717,99 @@ json(` + "`" + `{
 
 		require.True(t, ok)
 		assert.Equal(t, "invalid character '(' looking for beginning of value", result.Message)
+	})
+}
+
+func TestBuiltinToJson(t *testing.T) {
+	t.Run("To json", func(t *testing.T) {
+		input := `
+toJson({
+	"a": "foo",
+	"b": 42,
+	"c": {
+		"ca": "cfoo",
+		"cb": 43,
+		"cc": [
+			1,
+			2
+		],
+		"cd": {
+			"cda": "bar"
+		}
+	},
+	"d": [
+		"da",
+		43,
+		[],
+		{},
+		true,
+		12.3
+	],
+	"e": 1.2,
+	"f": false
+})
+`
+
+		evaluated := testEval(t, input)
+		if err, ok := evaluated.(*object.Error); ok {
+			t.Fatal(err.Message, err.StackToken)
+		}
+
+		result, ok := evaluated.(*object.String)
+		require.True(t, ok)
+		assert.Equal(t, `{"a":"foo","b":42,"c":{"ca":"cfoo","cb":43,"cc":[1,2],"cd":{"cda":"bar"}},"d":["da",43,[],{},true,12.3],"e":1.2,"f":false}`, result.Value)
+	})
+
+	t.Run("To json with no argument", func(t *testing.T) {
+		input := `
+		toJson();
+		`
+
+		evaluated := testEval(t, input)
+		result, ok := evaluated.(*object.Error)
+
+		require.True(t, ok)
+		assert.Equal(t, "wrong number of arguments. got=0, want=1", result.Message)
+	})
+
+	t.Run("To json with bad argument", func(t *testing.T) {
+		input := `
+		toJson("{}");
+		`
+
+		evaluated := testEval(t, input)
+		result, ok := evaluated.(*object.Error)
+
+		require.True(t, ok)
+		assert.Equal(t, "wrong type of argument n°1. got=STRING, want=HASH", result.Message)
+	})
+
+	t.Run("To json with un-serializable data", func(t *testing.T) {
+		input := `
+		toJson({
+			"a": function(){}
+		});
+		`
+
+		evaluated := testEval(t, input)
+		result, ok := evaluated.(*object.Error)
+
+		require.True(t, ok)
+		assert.Equal(t, "Cannot convert Object of type *object.Function to a native type", result.Message)
+	})
+}
+
+func TestBuiltinFromJsonToJson(t *testing.T) {
+	t.Run("To json", func(t *testing.T) {
+		input := `toJson(parseJson(toJson(parseJson(toJson({"a":"foo","b":42,"c":{"ca":"cfoo","cb":43,"cc":[1,2],"cd":{"cda":"bar"}},"d":["da",43,[],{},true,12.3],"e":1.2,"f":false})))))`
+
+		evaluated := testEval(t, input)
+		if err, ok := evaluated.(*object.Error); ok {
+			t.Fatal(err.Message, err.StackToken)
+		}
+
+		result, ok := evaluated.(*object.String)
+		require.True(t, ok)
+		assert.Equal(t, `{"a":"foo","b":42,"c":{"ca":"cfoo","cb":43,"cc":[1,2],"cd":{"cda":"bar"}},"d":["da",43,[],{},true,12.3],"e":1.2,"f":false}`, result.Value)
 	})
 }
