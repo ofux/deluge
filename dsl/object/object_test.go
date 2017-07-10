@@ -107,3 +107,82 @@ func TestEquals(t *testing.T) {
 		assert.Equal(t, tt.expected, tt.input2.Equals(tt.input1))
 	}
 }
+
+func TestHash_GetAs(t *testing.T) {
+	hash := &Hash{
+		Pairs: map[HashKey]HashPair{
+			HashKey("a"): {Key: &String{"a"}, Value: &String{"foo"}},
+			HashKey("b"): {Key: &String{"b"}, Value: &Integer{42}},
+			HashKey("c"): {Key: &String{"c"}, Value: &Hash{Pairs: map[HashKey]HashPair{}}},
+			HashKey("d"): {Key: &String{"d"}, Value: &Array{[]Object{}}},
+			HashKey("e"): {Key: &String{"e"}, Value: &Float{1.2}},
+			HashKey("f"): {Key: &String{"f"}, Value: &Boolean{true}},
+		},
+	}
+
+	va, err := hash.GetAsString("a")
+	assert.NoError(t, err)
+	assert.Equal(t, "foo", va.Value)
+
+	vb, err := hash.GetAsInt("b")
+	assert.NoError(t, err)
+	assert.Equal(t, int64(42), vb.Value)
+
+	vc, err := hash.GetAsHash("c")
+	assert.NoError(t, err)
+	assert.NotNil(t, vc.Pairs)
+
+	vd, err := hash.GetAsArray("d")
+	assert.NoError(t, err)
+	assert.NotNil(t, vd.Elements)
+
+	ve, err := hash.GetAsFloat("e")
+	assert.NoError(t, err)
+	assert.Equal(t, float64(1.2), ve.Value)
+
+	vf, err := hash.GetAsBool("f")
+	assert.NoError(t, err)
+	assert.Equal(t, true, vf.Value)
+
+	// Wrong type
+	_, err = hash.GetAsString("b")
+	assert.Error(t, err)
+	// Key does not exist
+	_, err = hash.GetAsString("bar")
+	assert.Error(t, err)
+
+	// Wrong type
+	_, err = hash.GetAsInt("a")
+	assert.Error(t, err)
+	// Key does not exist
+	_, err = hash.GetAsInt("bar")
+	assert.Error(t, err)
+
+	// Wrong type
+	_, err = hash.GetAsFloat("a")
+	assert.Error(t, err)
+	// Key does not exist
+	_, err = hash.GetAsFloat("bar")
+	assert.Error(t, err)
+
+	// Wrong type
+	_, err = hash.GetAsBool("a")
+	assert.Error(t, err)
+	// Key does not exist
+	_, err = hash.GetAsBool("bar")
+	assert.Error(t, err)
+
+	// Wrong type
+	_, err = hash.GetAsArray("a")
+	assert.Error(t, err)
+	// Key does not exist
+	_, err = hash.GetAsArray("bar")
+	assert.Error(t, err)
+
+	// Wrong type
+	_, err = hash.GetAsHash("a")
+	assert.Error(t, err)
+	// Key does not exist
+	_, err = hash.GetAsHash("bar")
+	assert.Error(t, err)
+}

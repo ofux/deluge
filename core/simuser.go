@@ -84,13 +84,9 @@ func (su *simUser) execHTTPRequest(node ast.Node, args ...object.Object) object.
 	reqName := args[0].(*object.String).Value
 	reqObj := args[1].(*object.Hash)
 
-	jsUrl, ok := reqObj.Get("url")
-	if !ok {
-		return evaluator.NewError(node, "invalid HTTP request: missing 'url' field")
-	}
-	url, ok := jsUrl.Value.(*object.String)
-	if !ok {
-		return evaluator.NewError(node, "invalid HTTP request: 'url' should be a STRING")
+	url, err := reqObj.GetAsString("url")
+	if err != nil {
+		return evaluator.NewError(node, "invalid HTTP request: %s", err.Error())
 	}
 
 	var method = "GET"

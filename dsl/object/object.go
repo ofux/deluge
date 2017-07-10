@@ -2,6 +2,7 @@ package object
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"github.com/ofux/deluge/dsl/ast"
 	"github.com/ofux/deluge/dsl/token"
@@ -225,4 +226,57 @@ func (h *Hash) Equals(other Object) bool {
 func (h *Hash) Get(key string) (HashPair, bool) {
 	r, ok := h.Pairs[HashKey(key)]
 	return r, ok
+}
+
+func (h *Hash) GetAs(key string, expectedType ObjectType) (Object, error) {
+	r, ok := h.Pairs[HashKey(key)]
+	if !ok {
+		return nil, errors.New(fmt.Sprintf("missing '%s' field", key))
+	}
+	if r.Value.Type() != expectedType {
+		return nil, errors.New(fmt.Sprintf("'%s' should be of type %s but was %s", key, expectedType, r.Value.Type()))
+	}
+	return r.Value, nil
+}
+func (h *Hash) GetAsString(key string) (*String, error) {
+	v, err := h.GetAs(key, STRING_OBJ)
+	if err != nil {
+		return nil, err
+	}
+	return v.(*String), nil
+}
+func (h *Hash) GetAsInt(key string) (*Integer, error) {
+	v, err := h.GetAs(key, INTEGER_OBJ)
+	if err != nil {
+		return nil, err
+	}
+	return v.(*Integer), nil
+}
+func (h *Hash) GetAsFloat(key string) (*Float, error) {
+	v, err := h.GetAs(key, FLOAT_OBJ)
+	if err != nil {
+		return nil, err
+	}
+	return v.(*Float), nil
+}
+func (h *Hash) GetAsBool(key string) (*Boolean, error) {
+	v, err := h.GetAs(key, BOOLEAN_OBJ)
+	if err != nil {
+		return nil, err
+	}
+	return v.(*Boolean), nil
+}
+func (h *Hash) GetAsArray(key string) (*Array, error) {
+	v, err := h.GetAs(key, ARRAY_OBJ)
+	if err != nil {
+		return nil, err
+	}
+	return v.(*Array), nil
+}
+func (h *Hash) GetAsHash(key string) (*Hash, error) {
+	v, err := h.GetAs(key, HASH_OBJ)
+	if err != nil {
+		return nil, err
+	}
+	return v.(*Hash), nil
 }
