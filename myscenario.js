@@ -69,7 +69,7 @@ scenario("product", "Test the product entity", function (args, session) {
                 "Authorization": "Bearer " + access_token
             }),
             "body": toJson({
-                "ref": "SJ5",
+                "ref": "SJ5"
                 // etc
             })
         });
@@ -90,7 +90,7 @@ let authenticate = function () {
             "username": "admin",
             "password": "admin",
             "grant_type": "password"
-            // etc...
+            // etc
         }
     });
 

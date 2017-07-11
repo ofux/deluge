@@ -1,7 +1,7 @@
 package core
 
 import (
-	"fmt"
+	"github.com/stretchr/testify/assert"
 	"github.com/ofux/deluge/core/recording"
 	"github.com/ofux/deluge/core/recording/recordingtest"
 	"github.com/ofux/deluge/dsl/lexer"
@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"github.com/stretchr/testify/require"
 )
 
 func NewSimUserTest(t *testing.T, js string) *simUser {
@@ -45,6 +46,11 @@ func checkSimUserStatus(t *testing.T, su *simUser, status simUserStatus) {
 	}
 }
 
+func checkSimUserError(t *testing.T, su *simUser, expectedError string) {
+	require.NotNil(t, su.execError)
+	assert.Equal(t, su.execError.Message, expectedError)
+}
+
 func TestSimUser_Assert(t *testing.T) {
 	t.Run("Assert true", func(t *testing.T) {
 		su := NewSimUserTest(t, `
@@ -64,15 +70,14 @@ func TestSimUser_Assert(t *testing.T) {
 }
 
 func TestSimUser_ExecHTTPRequest(t *testing.T) {
-	t.Run("Simple HTTP GET request", func(t *testing.T) {
+	t.Run("HTTP GET request", func(t *testing.T) {
 		callCount := 0
 		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			callCount++
-			if r.Method != "GET" {
-				t.Errorf("Expected HTTP method to be %s, got %s", "GET", r.Method)
-			}
-			w.Header().Set("Content-Type", "application/json")
-			fmt.Fprintln(w, `{"foo":"bar"}`)
+			assert.Equal(t, "GET", r.Method)
+			body, err := ioutil.ReadAll(r.Body)
+			assert.NoError(t, err)
+			assert.Len(t, body, 0)
 		}))
 		defer ts.Close()
 
@@ -87,21 +92,17 @@ func TestSimUser_ExecHTTPRequest(t *testing.T) {
 		su.run(0)
 		checkSimUserStatus(t, su, UserDoneSuccess)
 		checkRecords(t, su.httpRecorder, reqName, 1)
-
-		if callCount != 1 {
-			t.Errorf("Expected %d call(s), got %d", 1, callCount)
-		}
+		assert.Equal(t, 1, callCount)
 	})
 
-	t.Run("Simple HTTP POST request", func(t *testing.T) {
+	t.Run("HTTP DELETE request", func(t *testing.T) {
 		callCount := 0
 		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			callCount++
-			if r.Method != "POST" {
-				t.Errorf("Expected HTTP method to be %s, got %s", "POST", r.Method)
-			}
-			w.Header().Set("Content-Type", "application/json")
-			fmt.Fprintln(w, `{"foo":"bar"}`)
+			assert.Equal(t, "DELETE", r.Method)
+			body, err := ioutil.ReadAll(r.Body)
+			assert.NoError(t, err)
+			assert.Len(t, body, 0)
 		}))
 		defer ts.Close()
 
@@ -111,16 +112,72 @@ func TestSimUser_ExecHTTPRequest(t *testing.T) {
 		su := NewSimUserTest(t, `
 				http("`+reqName+`", {
 					"url": "`+url+`",
-					"method": "POST"
+					"method": "DELETE"
 				});
 				`)
 		su.run(0)
 		checkSimUserStatus(t, su, UserDoneSuccess)
 		checkRecords(t, su.httpRecorder, reqName, 1)
+		assert.Equal(t, 1, callCount)
+	})
 
-		if callCount != 1 {
-			t.Errorf("Expected %d call(s), got %d", 1, callCount)
-		}
+	t.Run("HTTP POST request with a body", func(t *testing.T) {
+		callCount := 0
+		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			callCount++
+			assert.Equal(t, "POST", r.Method)
+			body, err := ioutil.ReadAll(r.Body)
+			assert.NoError(t, err)
+			assert.Equal(t, "test", string(body))
+		}))
+		defer ts.Close()
+
+		url := ts.URL
+		const reqName = "Some request"
+
+		su := NewSimUserTest(t, `
+				http("`+reqName+`", {
+					"url": "`+url+`",
+					"method": "POST",
+					"body": "test"
+				});
+				`)
+		su.run(0)
+		checkSimUserStatus(t, su, UserDoneSuccess)
+		checkRecords(t, su.httpRecorder, reqName, 1)
+		assert.Equal(t, 1, callCount)
+	})
+
+	t.Run("HTTP GET request with headers", func(t *testing.T) {
+		callCount := 0
+		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			callCount++
+			assert.Equal(t, "GET", r.Method)
+			body, err := ioutil.ReadAll(r.Body)
+			assert.NoError(t, err)
+			assert.Len(t, body, 0)
+			assert.Equal(t, "application/json", r.Header.Get("Accept"))
+			assert.Equal(t, "Bearer foobar-bar-foo", r.Header.Get("Authorization"))
+			assert.Equal(t, "", r.Header.Get("Foo"))
+		}))
+		defer ts.Close()
+
+		url := ts.URL
+		const reqName = "Some request"
+
+		su := NewSimUserTest(t, `
+		http("`+reqName+`", {
+			"url": "`+url+`",
+			"headers": {
+				"Accept": "application/json",
+				"Authorization": "Bearer foobar-bar-foo"
+			}
+		});
+		`)
+		su.run(0)
+		checkSimUserStatus(t, su, UserDoneSuccess)
+		checkRecords(t, su.httpRecorder, reqName, 1)
+		assert.Equal(t, 1, callCount)
 	})
 
 	t.Run("Bad HTTP arguments", func(t *testing.T) {
@@ -129,6 +186,7 @@ func TestSimUser_ExecHTTPRequest(t *testing.T) {
 				`)
 		su.run(0)
 		checkSimUserStatus(t, su, UserDoneError)
+		checkSimUserError(t, su, "wrong number of arguments. got=1, want=2")
 	})
 
 	t.Run("Bad HTTP name", func(t *testing.T) {
@@ -140,6 +198,7 @@ func TestSimUser_ExecHTTPRequest(t *testing.T) {
 				`)
 		su.run(0)
 		checkSimUserStatus(t, su, UserDoneError)
+		checkSimUserError(t, su, "wrong type of argument n°1. got=INTEGER, want=STRING")
 	})
 
 	t.Run("No HTTP url", func(t *testing.T) {
@@ -150,6 +209,7 @@ func TestSimUser_ExecHTTPRequest(t *testing.T) {
 				`)
 		su.run(0)
 		checkSimUserStatus(t, su, UserDoneError)
+		checkSimUserError(t, su, "invalid HTTP request: missing 'url' field")
 	})
 
 	t.Run("Bad HTTP url", func(t *testing.T) {
@@ -160,6 +220,7 @@ func TestSimUser_ExecHTTPRequest(t *testing.T) {
 				`)
 		su.run(0)
 		checkSimUserStatus(t, su, UserDoneError)
+		checkSimUserError(t, su, "invalid HTTP request: 'url' should be of type STRING but was INTEGER")
 	})
 
 	t.Run("Bad HTTP url 2", func(t *testing.T) {
@@ -170,6 +231,7 @@ func TestSimUser_ExecHTTPRequest(t *testing.T) {
 				`)
 		su.run(0)
 		checkSimUserStatus(t, su, UserDoneError)
+		checkSimUserError(t, su, "Get foobar: unsupported protocol scheme \"\"")
 	})
 
 	t.Run("Bad HTTP method", func(t *testing.T) {
@@ -181,6 +243,57 @@ func TestSimUser_ExecHTTPRequest(t *testing.T) {
 				`)
 		su.run(0)
 		checkSimUserStatus(t, su, UserDoneError)
+		checkSimUserError(t, su, "net/http: invalid method \"BAD BAD BAD\"")
+	})
+
+	t.Run("Bad HTTP method type", func(t *testing.T) {
+		su := NewSimUserTest(t, `
+				http("foo", {
+					"url": "http://plop.org",
+					"method": 0
+				});
+				`)
+		su.run(0)
+		checkSimUserStatus(t, su, UserDoneError)
+		checkSimUserError(t, su, "invalid HTTP request: 'method' should be of type STRING but was INTEGER")
+	})
+
+	t.Run("Bad HTTP body type", func(t *testing.T) {
+		su := NewSimUserTest(t, `
+				http("foo", {
+					"url": "http://plop.org",
+					"body": 1
+				});
+				`)
+		su.run(0)
+		checkSimUserStatus(t, su, UserDoneError)
+		checkSimUserError(t, su, "invalid HTTP request: 'body' should be of type STRING but was INTEGER")
+	})
+
+	t.Run("Bad HTTP headers type", func(t *testing.T) {
+		su := NewSimUserTest(t, `
+				http("foo", {
+					"url": "http://plop.org",
+					"headers": 1
+				});
+				`)
+		su.run(0)
+		checkSimUserStatus(t, su, UserDoneError)
+		checkSimUserError(t, su, "invalid HTTP request: 'headers' should be of type HASH but was INTEGER")
+	})
+
+	t.Run("Bad HTTP headers", func(t *testing.T) {
+		su := NewSimUserTest(t, `
+				http("foo", {
+					"url": "http://plop.org",
+					"headers": {
+						"foo": 1
+					}
+				});
+				`)
+		su.run(0)
+		checkSimUserStatus(t, su, UserDoneError)
+		checkSimUserError(t, su, "invalid HTTP header 'foo': should be of type STRING but was INTEGER")
 	})
 }
 

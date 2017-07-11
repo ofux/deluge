@@ -9,6 +9,8 @@ import (
 	log "github.com/sirupsen/logrus"
 	"net/http"
 	"time"
+	"strings"
+	"io"
 )
 
 type simUserStatus int
@@ -80,25 +82,47 @@ func (su *simUser) execHTTPRequest(node ast.Node, args ...object.Object) object.
 	if oErr := evaluator.AssertArgsType(node, args, object.STRING_OBJ, object.HASH_OBJ); oErr != nil {
 		return oErr
 	}
-
 	reqName := args[0].(*object.String).Value
 	reqObj := args[1].(*object.Hash)
 
-	url, err := reqObj.GetAsString("url")
+	url, _, err := reqObj.GetAsString("url")
 	if err != nil {
 		return evaluator.NewError(node, "invalid HTTP request: %s", err.Error())
 	}
 
 	var method = "GET"
-	if methodField, ok := reqObj.Get("method"); ok {
-		if methodFieldVal, ok := methodField.Value.(*object.String); ok {
-			method = methodFieldVal.Value
+	if m, ok, err := reqObj.GetAsString("method"); ok {
+		if err != nil {
+			return evaluator.NewError(node, "invalid HTTP request: %s", err.Error())
 		}
+		method = m.Value
 	}
 
-	req, err := http.NewRequest(method, url.Value, nil)
+	var body io.Reader
+	if b, ok, err := reqObj.GetAsString("body"); ok {
+		if err != nil {
+			return evaluator.NewError(node, "invalid HTTP request: %s", err.Error())
+		}
+		body = strings.NewReader(b.Value)
+	}
+
+	// Create request
+	req, err := http.NewRequest(method, url.Value, body)
 	if err != nil {
 		return evaluator.NewError(node, err.Error())
+	}
+
+	if headers, ok, err := reqObj.GetAsHash("headers"); ok {
+		if err != nil {
+			return evaluator.NewError(node, "invalid HTTP request: %s", err.Error())
+		}
+		for headerKey, headerVal := range headers.Pairs {
+			headerValStr, ok := headerVal.Value.(*object.String)
+			if !ok {
+				return evaluator.NewError(node, "invalid HTTP header '%s': should be of type %s but was %s", headerKey, object.STRING_OBJ, headerVal.Value.Type())
+			}
+			req.Header.Add(string(headerKey), headerValStr.Value)
+		}
 	}
 
 	su.log.Debugf("Performing HTTP request: %s %s", req.Method, req.URL.String())

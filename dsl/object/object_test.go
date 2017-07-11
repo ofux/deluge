@@ -120,69 +120,87 @@ func TestHash_GetAs(t *testing.T) {
 		},
 	}
 
-	va, err := hash.GetAsString("a")
+	va, ok, err := hash.GetAsString("a")
 	assert.NoError(t, err)
+	assert.True(t, ok)
 	assert.Equal(t, "foo", va.Value)
 
-	vb, err := hash.GetAsInt("b")
+	vb, ok, err := hash.GetAsInt("b")
 	assert.NoError(t, err)
+	assert.True(t, ok)
 	assert.Equal(t, int64(42), vb.Value)
 
-	vc, err := hash.GetAsHash("c")
+	vc, ok, err := hash.GetAsHash("c")
 	assert.NoError(t, err)
+	assert.True(t, ok)
 	assert.NotNil(t, vc.Pairs)
 
-	vd, err := hash.GetAsArray("d")
+	vd, ok, err := hash.GetAsArray("d")
 	assert.NoError(t, err)
+	assert.True(t, ok)
 	assert.NotNil(t, vd.Elements)
 
-	ve, err := hash.GetAsFloat("e")
+	ve, ok, err := hash.GetAsFloat("e")
 	assert.NoError(t, err)
+	assert.True(t, ok)
 	assert.Equal(t, float64(1.2), ve.Value)
 
-	vf, err := hash.GetAsBool("f")
+	vf, ok, err := hash.GetAsBool("f")
 	assert.NoError(t, err)
+	assert.True(t, ok)
 	assert.Equal(t, true, vf.Value)
 
 	// Wrong type
-	_, err = hash.GetAsString("b")
+	_, ok, err = hash.GetAsString("b")
 	assert.Error(t, err)
+	assert.True(t, ok)
 	// Key does not exist
-	_, err = hash.GetAsString("bar")
+	_, ok, err = hash.GetAsString("bar")
 	assert.Error(t, err)
+	assert.False(t, ok)
 
 	// Wrong type
-	_, err = hash.GetAsInt("a")
+	_, ok, err = hash.GetAsInt("a")
 	assert.Error(t, err)
+	assert.True(t, ok)
 	// Key does not exist
-	_, err = hash.GetAsInt("bar")
+	_, ok, err = hash.GetAsInt("bar")
 	assert.Error(t, err)
+	assert.False(t, ok)
 
 	// Wrong type
-	_, err = hash.GetAsFloat("a")
+	_, ok, err = hash.GetAsFloat("a")
 	assert.Error(t, err)
+	assert.True(t, ok)
 	// Key does not exist
-	_, err = hash.GetAsFloat("bar")
+	_, ok, err = hash.GetAsFloat("bar")
 	assert.Error(t, err)
+	assert.False(t, ok)
 
 	// Wrong type
-	_, err = hash.GetAsBool("a")
+	_, ok, err = hash.GetAsBool("a")
 	assert.Error(t, err)
+	assert.True(t, ok)
 	// Key does not exist
-	_, err = hash.GetAsBool("bar")
+	_, ok, err = hash.GetAsBool("bar")
 	assert.Error(t, err)
+	assert.False(t, ok)
 
 	// Wrong type
-	_, err = hash.GetAsArray("a")
+	_, ok, err = hash.GetAsArray("a")
 	assert.Error(t, err)
+	assert.True(t, ok)
 	// Key does not exist
-	_, err = hash.GetAsArray("bar")
+	_, ok, err = hash.GetAsArray("bar")
 	assert.Error(t, err)
+	assert.False(t, ok)
 
 	// Wrong type
-	_, err = hash.GetAsHash("a")
+	_, ok, err = hash.GetAsHash("a")
 	assert.Error(t, err)
+	assert.True(t, ok)
 	// Key does not exist
-	_, err = hash.GetAsHash("bar")
+	_, ok, err = hash.GetAsHash("bar")
 	assert.Error(t, err)
+	assert.False(t, ok)
 }
