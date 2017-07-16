@@ -40,8 +40,9 @@ type delugeBuilder struct {
 }
 
 type scenarioCore struct {
-	name   string
-	script ast.Node
+	name         string
+	script       ast.Node
+	scriptParams []*ast.Identifier
 }
 
 type scenarioConfig struct {
@@ -78,7 +79,15 @@ func NewDeluge(ID string, script *ast.Program) (*Deluge, error) {
 	}
 	for id, sConf := range builder.scenarioConfigs {
 		if sCore, ok := builder.scenarioCores[id]; ok {
-			dlg.Scenarios[id] = newScenario(sCore.name, sConf.concurrent, sConf.iterationDuration, sCore.script, log.New().WithField("deluge", dlg.Name))
+			dlg.Scenarios[id] = newScenario(
+				sCore.name,
+				sConf.concurrent,
+				sConf.iterationDuration,
+				sCore.script,
+				sCore.scriptParams,
+				nil,
+				log.New().WithField("deluge", dlg.Name),
+			)
 		} else {
 			return nil, errors.New(fmt.Sprintf("Scenario '%s' is configured but not defined.", id))
 		}
@@ -242,8 +251,9 @@ func (d *delugeBuilder) dslCreateScenario(node ast.Node, args ...object.Object) 
 	}
 
 	d.scenarioCores[scenarioId.Value] = &scenarioCore{
-		name:   name.Value,
-		script: coreFunc.Body,
+		name:         name.Value,
+		script:       coreFunc.Body,
+		scriptParams: coreFunc.Parameters,
 	}
 
 	return evaluator.NULL

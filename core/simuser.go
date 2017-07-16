@@ -7,10 +7,10 @@ import (
 	"github.com/ofux/deluge/dsl/evaluator"
 	"github.com/ofux/deluge/dsl/object"
 	log "github.com/sirupsen/logrus"
-	"net/http"
-	"time"
-	"strings"
 	"io"
+	"net/http"
+	"strings"
+	"time"
 )
 
 type simUserStatus int
@@ -32,6 +32,7 @@ type simUser struct {
 	httpRecorder  *recording.HTTPRecorder
 	log           *log.Entry
 	iteration     int
+	session       *object.Hash
 
 	status    simUserStatus
 	execError *object.Error
@@ -44,6 +45,9 @@ func newSimUser(name string, scenario *Scenario) *simUser {
 		scenario:  scenario,
 		evaluator: evaluator.NewEvaluator(),
 		client:    cleanhttp.DefaultClient(),
+		session: &object.Hash{
+			Pairs: make(map[object.HashKey]object.HashPair),
+		},
 
 		httpRecorder: scenario.httpRecorder,
 		log: scenario.log.WithFields(log.Fields{
@@ -61,7 +65,7 @@ func newSimUser(name string, scenario *Scenario) *simUser {
 func (su *simUser) run(iteration int) {
 	su.iteration = iteration
 	su.status = UserInProgress
-	env := object.NewEnvironment()
+	env := su.createEnvironment()
 	evaluated := su.evaluator.Eval(su.scenario.script, env)
 
 	su.client.Transport.(*http.Transport).CloseIdleConnections()
@@ -76,6 +80,20 @@ func (su *simUser) run(iteration int) {
 	if su.status == UserInProgress {
 		su.status = UserDoneSuccess
 	}
+}
+
+func (su *simUser) createEnvironment() *object.Environment {
+	env := object.NewEnvironment()
+	params := su.scenario.scriptParams
+	// Add ARGS
+	if len(params) >= 1 {
+		env.Add(params[0].Value, su.scenario.scriptArgs)
+	}
+	// Add SESSION
+	if len(params) >= 2 {
+		env.Add(params[1].Value, su.session)
+	}
+	return env
 }
 
 func (su *simUser) execHTTPRequest(node ast.Node, args ...object.Object) object.Object {

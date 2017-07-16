@@ -3,8 +3,10 @@ package core
 import (
 	"github.com/ofux/deluge/core/recording"
 	"github.com/ofux/deluge/core/recording/recordingtest"
+	"github.com/ofux/deluge/dsl/object"
 	"github.com/ofux/docilemonkey/docilemonkey"
 	log "github.com/sirupsen/logrus"
+	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -25,14 +27,14 @@ func TestScenario_Run(t *testing.T) {
 		defer srv.Close()
 
 		const reqName = "My request"
-		program := compileTest(t, `
+		program, params := compileTest(t, `
 		http("`+reqName+`", {
 			"url": "`+srv.URL+`/hello/toto?s=201",
 			"method": "POST"
 		});
 		`)
 
-		scenario := newScenario("foo", 50, 50*time.Millisecond, program, logTest)
+		scenario := newScenario("foo", 50, 50*time.Millisecond, program, params, nil, logTest)
 		scenario.run(200*time.Millisecond, nil)
 
 		records, err := scenario.httpRecorder.GetRecords()
@@ -58,16 +60,39 @@ func TestScenario_Run(t *testing.T) {
 		}
 	})
 
+	t.Run("Run scenario with session", func(t *testing.T) {
+
+		srv := httptest.NewServer(http.HandlerFunc(docilemonkey.Handler))
+		defer srv.Close()
+
+		program, params := compileTest(t, `
+		let c = session["count"];
+		if (c == null) {
+			c = 1;
+		} else {
+			c++;
+		}
+		session["count"] = c;
+		assert(c < 3);
+		`)
+
+		scenario := newScenario("foo", 5, 10*time.Millisecond, program, params, nil, logTest)
+		scenario.run(20000*time.Millisecond, nil)
+
+		assert.Equal(t, uint64(5), scenario.EffectiveUserCount)
+		assert.Equal(t, uint64(15), scenario.EffectiveUserCount)
+	})
+
 	t.Run("Run scenario without error, with too short iterations", func(t *testing.T) {
 
 		srv := httptest.NewServer(http.HandlerFunc(docilemonkey.Handler))
 		defer srv.Close()
 
-		program := compileTest(t, `
+		program, params := compileTest(t, `
 		pause("50ms");
 		`)
 
-		scenario := newScenario("foo", 50, 1*time.Millisecond, program, logTest)
+		scenario := newScenario("foo", 50, 1*time.Millisecond, program, params, nil, logTest)
 		scenario.run(200*time.Millisecond, nil)
 
 		if scenario.EffectiveUserCount != 50 {
@@ -78,16 +103,61 @@ func TestScenario_Run(t *testing.T) {
 		}
 	})
 
+	t.Run("Run scenario with args", func(t *testing.T) {
+
+		srv := httptest.NewServer(http.HandlerFunc(docilemonkey.Handler))
+		defer srv.Close()
+
+		const reqName = "My request"
+		program, params := compileTest(t, `
+		http("`+reqName+`", {
+			"url": args["baseUrl"] + "/hello/toto?s=500",
+			"method": args["method"]
+		});
+		`)
+		scriptArgs := &object.Hash{
+			Pairs: map[object.HashKey]object.HashPair{
+				"baseUrl": {Value: &object.String{srv.URL}},
+				"method":  {Value: &object.String{"PUT"}},
+			},
+		}
+
+		scenario := newScenario("foo", 50, 50*time.Millisecond, program, params, scriptArgs, logTest)
+		scenario.run(200*time.Millisecond, nil)
+
+		records, err := scenario.httpRecorder.GetRecords()
+		if err != nil {
+			t.Fatalf(err.Error())
+		}
+
+		iterCount := len(records.PerIteration)
+		if iterCount < 1 {
+			t.Fatalf("Expected to have at least %d iterations, got %d", 1, iterCount)
+		}
+		if scenario.EffectiveUserCount != 50 {
+			t.Fatalf("Expected to have %d simulated users, got %d", 50, scenario.EffectiveUserCount)
+		}
+		if scenario.EffectiveExecCount < 1 {
+			t.Fatalf("Expected to have at least %d executions, got %d", 1, scenario.EffectiveExecCount)
+		}
+		recordingtest.CheckHTTPRecord(t, records.Global, reqName, int64(scenario.EffectiveExecCount), 500, recording.Ko)
+		for i, record := range records.PerIteration {
+			if i < iterCount-1 {
+				recordingtest.CheckHTTPRecord(t, record, reqName, 1, 500, recording.Ko)
+			}
+		}
+	})
+
 	t.Run("Run scenario with error", func(t *testing.T) {
 
 		srv := httptest.NewServer(http.HandlerFunc(docilemonkey.Handler))
 		defer srv.Close()
 
-		program := compileTest(t, `
+		program, params := compileTest(t, `
 		doesntexists();
 		`)
 
-		scenario := newScenario("foo", 50, 1*time.Millisecond, program, logTest)
+		scenario := newScenario("foo", 50, 1*time.Millisecond, program, params, nil, logTest)
 		scenario.run(200*time.Millisecond, nil)
 
 		if len(scenario.Errors) != 50 {

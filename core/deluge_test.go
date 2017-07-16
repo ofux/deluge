@@ -21,7 +21,7 @@ func TestDeluge_Run(t *testing.T) {
 		defer srv.Close()
 
 		const reqName = "My request"
-		program := compileTest(t, `
+		program, _ := compileTest(t, `
 		deluge("Some name", "200ms", {
 			"myScenario": {
 				"concurrent": 100,
@@ -58,7 +58,7 @@ func TestDeluge_Run(t *testing.T) {
 		defer srv.Close()
 
 		const reqName = "My request"
-		program := compileTest(t, `
+		program, _ := compileTest(t, `
 		deluge("Some name", "20s", {
 			"myScenario": {
 				"concurrent": 100,
@@ -100,7 +100,7 @@ func TestDeluge_Run(t *testing.T) {
 	})
 }
 
-func TestDeluge_Run_With_Deluge_Errors(t *testing.T) {
+func TestDeluge_New_With_Deluge_Errors(t *testing.T) {
 	tests := []struct {
 		input    string
 		expected string
@@ -207,14 +207,14 @@ func TestDeluge_Run_With_Deluge_Errors(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		program := compileTest(t, tt.input)
+		program, _ := compileTest(t, tt.input)
 		_, err := NewDeluge("foo", program)
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), tt.expected)
 	}
 }
 
-func TestDeluge_Run_With_Scenario_Errors(t *testing.T) {
+func TestDeluge_New_With_Scenario_Errors(t *testing.T) {
 	tests := []struct {
 		input    string
 		expected string
@@ -248,7 +248,7 @@ func TestDeluge_Run_With_Scenario_Errors(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		program := compileTest(t, tt.input)
+		program, _ := compileTest(t, tt.input)
 		_, err := NewDeluge("foo", program)
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), tt.expected)
@@ -257,7 +257,7 @@ func TestDeluge_Run_With_Scenario_Errors(t *testing.T) {
 
 func BenchmarkNewDeluge(b *testing.B) {
 
-	program := compileTest(b, `
+	program, _ := compileTest(b, `
 deluge("Some name", "200ms", {
     "myScenario": {
         "concurrent": 100,
@@ -278,7 +278,7 @@ scenario("myScenario", "My scenario", function () {
 	}
 }
 
-func compileTest(t testing.TB, script string) *ast.Program {
+func compileTest(t testing.TB, script string) (*ast.Program, []*ast.Identifier) {
 	l := lexer.New(script)
 	p := parser.New(l)
 
@@ -288,5 +288,8 @@ func compileTest(t testing.TB, script string) *ast.Program {
 		t.Fatal("Parsing error(s)")
 	}
 
-	return program
+	return program, []*ast.Identifier{
+		{Value: "args"},
+		{Value: "session"},
+	}
 }

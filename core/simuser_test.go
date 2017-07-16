@@ -1,17 +1,17 @@
 package core
 
 import (
-	"github.com/stretchr/testify/assert"
 	"github.com/ofux/deluge/core/recording"
 	"github.com/ofux/deluge/core/recording/recordingtest"
 	"github.com/ofux/deluge/dsl/lexer"
 	"github.com/ofux/deluge/dsl/parser"
 	log "github.com/sirupsen/logrus"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"testing"
-	"github.com/stretchr/testify/require"
 )
 
 func NewSimUserTest(t *testing.T, js string) *simUser {
