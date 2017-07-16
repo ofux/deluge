@@ -30,17 +30,16 @@ TODO:
 	- while loop
 	- async / async "group" / wait / wait "group"
 	- add built-in functions:
-		- exit
-		- assert
+		+ exit
+		+ assert
 		- http
 		- mqtt
 		- tcp
 		- grpc
-		- push (arrays)
-		- split (arrays)
+		+ push (arrays)
 		- indexOf (arrays)
-		- split (strings)
 		- indexOf (strings)
+		+ split (strings)
 		-
 	- check variable declaration / assignment at compile time
 

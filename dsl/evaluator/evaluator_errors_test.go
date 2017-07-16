@@ -143,11 +143,11 @@ b = 2;
 		},
 		{
 			`let a = "x"; a--`,
-			"unknown operator STRING -- INTEGER",
+			"unknown operator STRING --",
 		},
 		{
 			`let a = "x"; a++`,
-			"unknown operator STRING ++ INTEGER",
+			"unknown operator STRING ++",
 		},
 		{
 			`let a = "x"; a -= 2`,
@@ -227,11 +227,11 @@ b = 2;
 		},
 		{
 			`let a = [1, 2]; a += 1`,
-			"unknown operator ARRAY +=",
+			"unknown operator ARRAY += INTEGER",
 		},
 		{
 			`let a = null; a += 1`,
-			"unknown operator NULL +=",
+			"unknown operator NULL += INTEGER",
 		},
 		{
 			`f() && true`,
@@ -252,6 +252,14 @@ b = 2;
 		{
 			`3.0 % 2`,
 			"unknown operator: FLOAT % INTEGER",
+		},
+		{
+			`[1,2,3][-1]`,
+			"index -1 out of bounds [0, 2]",
+		},
+		{
+			`[1,2,3][3]`,
+			"index 3 out of bounds [0, 2]",
 		},
 	}
 

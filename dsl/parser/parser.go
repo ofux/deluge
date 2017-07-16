@@ -11,6 +11,7 @@ import (
 const (
 	_ int = iota
 	LOWEST
+	ASSIGNMENT  // = or +=
 	EQUALS      // ==
 	LESSGREATER // > or <
 	SUM         // +
@@ -19,25 +20,33 @@ const (
 	BOOL_AND    // &&
 	PREFIX      // -X or !X
 	CALL        // myFunction(X)
+	POSTFIX     // ++ or --
 	INDEX       // array[index]
 )
 
 var precedences = map[token.TokenType]int{
-	token.EQ:       EQUALS,
-	token.NOT_EQ:   EQUALS,
-	token.LT:       LESSGREATER,
-	token.GT:       LESSGREATER,
-	token.LTE:      LESSGREATER,
-	token.GTE:      LESSGREATER,
-	token.PLUS:     SUM,
-	token.MINUS:    SUM,
-	token.SLASH:    PRODUCT,
-	token.ASTERISK: PRODUCT,
-	token.MODULO:   PRODUCT,
-	token.OR:       BOOL_OR,
-	token.AND:      BOOL_AND,
-	token.LPAREN:   CALL,
-	token.LBRACKET: INDEX,
+	token.ASSIGN_INC1: POSTFIX,
+	token.ASSIGN_DEC1: POSTFIX,
+	token.ASSIGN:      ASSIGNMENT,
+	token.ASSIGN_INC:  ASSIGNMENT,
+	token.ASSIGN_DEC:  ASSIGNMENT,
+	token.ASSIGN_MULT: ASSIGNMENT,
+	token.ASSIGN_DIV:  ASSIGNMENT,
+	token.EQ:          EQUALS,
+	token.NOT_EQ:      EQUALS,
+	token.LT:          LESSGREATER,
+	token.GT:          LESSGREATER,
+	token.LTE:         LESSGREATER,
+	token.GTE:         LESSGREATER,
+	token.PLUS:        SUM,
+	token.MINUS:       SUM,
+	token.SLASH:       PRODUCT,
+	token.ASTERISK:    PRODUCT,
+	token.MODULO:      PRODUCT,
+	token.OR:          BOOL_OR,
+	token.AND:         BOOL_AND,
+	token.LPAREN:      CALL,
+	token.LBRACKET:    INDEX,
 }
 
 type (
@@ -97,6 +106,14 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerInfix(token.GTE, p.parseInfixExpression)
 	p.registerInfix(token.AND, p.parseInfixExpression)
 	p.registerInfix(token.OR, p.parseInfixExpression)
+
+	p.registerInfix(token.ASSIGN, p.parseAssignmentExpression)
+	p.registerInfix(token.ASSIGN_INC, p.parseAssignmentExpression)
+	p.registerInfix(token.ASSIGN_DEC, p.parseAssignmentExpression)
+	p.registerInfix(token.ASSIGN_MULT, p.parseAssignmentExpression)
+	p.registerInfix(token.ASSIGN_DIV, p.parseAssignmentExpression)
+	p.registerInfix(token.ASSIGN_INC1, p.parsePostfixAssignmentExpression)
+	p.registerInfix(token.ASSIGN_DEC1, p.parsePostfixAssignmentExpression)
 
 	p.registerInfix(token.LPAREN, p.parseCallExpression)
 	p.registerInfix(token.LBRACKET, p.parseIndexExpression)
@@ -190,9 +207,6 @@ func (p *Parser) parseStatement() ast.Statement {
 	case token.FOR:
 		return p.parseForStatement()
 	default:
-		if p.curToken.Type == token.IDENT && token.IsAssign(p.peekToken.Type) {
-			return p.parseAssignStatement()
-		}
 		return p.parseExpressionStatement()
 	}
 }
@@ -227,54 +241,6 @@ func (p *Parser) parseReturnStatement() *ast.ReturnStatement {
 	p.nextToken()
 
 	stmt.ReturnValue = p.parseExpression(LOWEST)
-
-	if p.peekTokenIs(token.SEMICOLON) {
-		p.nextToken()
-	}
-
-	return stmt
-}
-
-func (p *Parser) parseAssignStatement() *ast.AssignStatement {
-
-	if !p.expectCur(token.IDENT) {
-		return nil
-	}
-
-	stmt := &ast.AssignStatement{Token: p.peekToken}
-	stmt.Name = &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
-
-	p.nextToken()
-
-	switch p.curToken.Type {
-	case token.ASSIGN:
-		fallthrough
-	case token.ASSIGN_DEC:
-		fallthrough
-	case token.ASSIGN_INC:
-		fallthrough
-	case token.ASSIGN_DIV:
-		fallthrough
-	case token.ASSIGN_MULT:
-		stmt.Operator = p.curToken.Literal
-		p.nextToken()
-		stmt.Value = p.parseExpression(LOWEST)
-	case token.ASSIGN_DEC1:
-		fallthrough
-	case token.ASSIGN_INC1:
-		stmt.Operator = p.curToken.Literal
-		stmt.Value = &ast.IntegerLiteral{
-			Token: token.Token{
-				Type:    token.INT,
-				Literal: "1",
-				Line:    p.curToken.Line,
-				Column:  p.curToken.Column,
-			},
-			Value: 1,
-		}
-	default:
-		return nil
-	}
 
 	if p.peekTokenIs(token.SEMICOLON) {
 		p.nextToken()
@@ -390,6 +356,30 @@ func (p *Parser) parsePrefixExpression() ast.Expression {
 
 func (p *Parser) parseInfixExpression(left ast.Expression) ast.Expression {
 	expression := &ast.InfixExpression{
+		Token:    p.curToken,
+		Operator: p.curToken.Literal,
+		Left:     left,
+	}
+
+	precedence := p.curPrecedence()
+	p.nextToken()
+	expression.Right = p.parseExpression(precedence)
+
+	return expression
+}
+
+func (p *Parser) parsePostfixAssignmentExpression(left ast.Expression) ast.Expression {
+	expression := &ast.PostAssignmentExpression{
+		Token:    p.curToken,
+		Operator: p.curToken.Literal,
+		Left:     left,
+	}
+
+	return expression
+}
+
+func (p *Parser) parseAssignmentExpression(left ast.Expression) ast.Expression {
+	expression := &ast.AssignmentExpression{
 		Token:    p.curToken,
 		Operator: p.curToken.Literal,
 		Left:     left,

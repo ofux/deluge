@@ -438,7 +438,7 @@ func TestLetStatements(t *testing.T) {
 	}
 }
 
-func TestAssignStatements(t *testing.T) {
+func TestAssignmentExpressions(t *testing.T) {
 	t.Run("assign integers", func(t *testing.T) {
 		tests := []struct {
 			input    string
@@ -657,7 +657,7 @@ func TestArrayLiterals(t *testing.T) {
 func TestArrayIndexExpressions(t *testing.T) {
 	tests := []struct {
 		input    string
-		expected interface{}
+		expected int
 	}{
 		{
 			"[1, 2, 3][0]",
@@ -691,24 +691,28 @@ func TestArrayIndexExpressions(t *testing.T) {
 			"let myArray = [1, 2, 3]; let i = myArray[0]; myArray[i]",
 			2,
 		},
+	}
+
+	for _, tt := range tests {
+		evaluated := testEval(t, tt.input)
+		testIntegerObject(t, evaluated, int64(tt.expected))
+	}
+}
+
+func TestArrayAssignmentExpressions(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected int
+	}{
 		{
-			"[1, 2, 3][3]",
-			nil,
-		},
-		{
-			"[1, 2, 3][-1]",
-			nil,
+			`let h=[1,2]; h[0]=42; h[0]`,
+			42,
 		},
 	}
 
 	for _, tt := range tests {
 		evaluated := testEval(t, tt.input)
-		integer, ok := tt.expected.(int)
-		if ok {
-			testIntegerObject(t, evaluated, int64(integer))
-		} else {
-			testNullObject(t, evaluated)
-		}
+		testIntegerObject(t, evaluated, int64(tt.expected))
 	}
 }
 
@@ -780,6 +784,32 @@ func TestHashIndexExpressions(t *testing.T) {
 		{
 			`{"5": 3}[5]`,
 			3,
+		},
+	}
+
+	for _, tt := range tests {
+		evaluated := testEval(t, tt.input)
+		integer, ok := tt.expected.(int)
+		if ok {
+			testIntegerObject(t, evaluated, int64(integer))
+		} else {
+			testNullObject(t, evaluated)
+		}
+	}
+}
+
+func TestHashAssignmentExpressions(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected interface{}
+	}{
+		{
+			`let h={}; h["a"]=42; h["a"]`,
+			42,
+		},
+		{
+			`let h={"a": 1}; h["a"]=42; h["a"]`,
+			42,
 		},
 	}
 
