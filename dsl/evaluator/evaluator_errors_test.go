@@ -85,23 +85,6 @@ if (10 > 1) {
 			"index operator not supported: INTEGER",
 		},
 		{
-			`a = 3`,
-			"identifier not found: a",
-		},
-		{
-			`let a = 3; let a = 4;`,
-			"variable a redeclared in this block",
-		},
-		{
-			`
-function() {
-	let b = 1;
-}();
-b = 2;
-`,
-			"identifier not found: b",
-		},
-		{
 			`"a" < "b"`,
 			"unknown operator: STRING < STRING",
 		},
@@ -140,6 +123,105 @@ b = 2;
 		{
 			`"foo" && "bar"`,
 			"unknown operator: STRING && BOOLEAN",
+		},
+		{
+			`-"foo";`,
+			"unknown operator: -STRING",
+		},
+		{
+			`-x;`,
+			"identifier not found: x",
+		},
+		{
+			`x();`,
+			"identifier not found: x",
+		},
+		{
+			`let f=function(){}; f(x);`,
+			"identifier not found: x",
+		},
+		{
+			`[1, 2, x]`,
+			"identifier not found: x",
+		},
+		{
+			`x[1]`,
+			"identifier not found: x",
+		},
+		{
+			`[1, 2][x]`,
+			"identifier not found: x",
+		},
+		{
+			`f() && true`,
+			"identifier not found: f",
+		},
+		{
+			`true && f()`,
+			"identifier not found: f",
+		},
+		{
+			`f() || true`,
+			"identifier not found: f",
+		},
+		{
+			`false || f()`,
+			"identifier not found: f",
+		},
+		{
+			`3.0 % 2`,
+			"unknown operator: FLOAT % INTEGER",
+		},
+		{
+			`[1,2,3][-1]`,
+			"index -1 out of bounds [0, 2]",
+		},
+		{
+			`[1,2,3][3]`,
+			"index 3 out of bounds [0, 2]",
+		},
+	}
+
+	for _, tt := range tests {
+		testError(t, tt)
+	}
+}
+
+func TestStringAssignmentErrorHandling(t *testing.T) {
+	tests := []expectedError{
+		{
+			`a = "a"+null`,
+			"cannot convert value of type NULL to STRING",
+		},
+		{
+			`let a = "a"; a += null; a`,
+			"unknown operator STRING += NULL",
+		},
+	}
+
+	for _, tt := range tests {
+		testError(t, tt)
+	}
+}
+
+func TestAssignmentIdentifierErrorHandling(t *testing.T) {
+	tests := []expectedError{
+		{
+			`a = 3`,
+			"identifier not found: a",
+		},
+		{
+			`let a = 3; let a = 4;`,
+			"variable a redeclared in this block",
+		},
+		{
+			`
+			function() {
+				let b = 1;
+			}();
+			b = 2;
+			`,
+			"identifier not found: b",
 		},
 		{
 			`let a = "x"; a--`,
@@ -198,34 +280,6 @@ b = 2;
 			"identifier not found: x",
 		},
 		{
-			`-"foo";`,
-			"unknown operator: -STRING",
-		},
-		{
-			`-x;`,
-			"identifier not found: x",
-		},
-		{
-			`x();`,
-			"identifier not found: x",
-		},
-		{
-			`let f=function(){}; f(x);`,
-			"identifier not found: x",
-		},
-		{
-			`[1, 2, x]`,
-			"identifier not found: x",
-		},
-		{
-			`x[1]`,
-			"identifier not found: x",
-		},
-		{
-			`[1, 2][x]`,
-			"identifier not found: x",
-		},
-		{
 			`let a = [1, 2]; a += 1`,
 			"unknown operator ARRAY += INTEGER",
 		},
@@ -234,32 +288,218 @@ b = 2;
 			"unknown operator NULL += INTEGER",
 		},
 		{
-			`f() && true`,
-			"identifier not found: f",
+			`x++`,
+			"identifier not found: x",
 		},
 		{
-			`true && f()`,
-			"identifier not found: f",
+			`1.3++`,
+			"unknown operator: FLOAT ++",
 		},
 		{
-			`f() || true`,
-			"identifier not found: f",
+			`2.5--`,
+			"unknown operator: FLOAT --",
+		},
+	}
+
+	for _, tt := range tests {
+		testError(t, tt)
+	}
+}
+
+func TestAssignmentArrayIndexErrorHandling(t *testing.T) {
+	tests := []expectedError{
+		{
+			`let a = ["x"]; a[0]--`,
+			"unknown operator STRING --",
 		},
 		{
-			`false || f()`,
-			"identifier not found: f",
+			`let a = ["x"]; a[0]++`,
+			"unknown operator STRING ++",
 		},
 		{
-			`3.0 % 2`,
-			"unknown operator: FLOAT % INTEGER",
+			`let a = ["x"]; a[0] -= 2`,
+			"unknown operator STRING -= INTEGER",
 		},
 		{
-			`[1,2,3][-1]`,
-			"index -1 out of bounds [0, 2]",
+			`let a = ["x"]; a[0] *= 2`,
+			"unknown operator STRING *= INTEGER",
 		},
 		{
-			`[1,2,3][3]`,
-			"index 3 out of bounds [0, 2]",
+			`let a = ["x"]; a[0] /= 2`,
+			"unknown operator STRING /= INTEGER",
+		},
+		{
+			`let a = [4]; a[0] += "1"`,
+			"unknown operator INTEGER += STRING",
+		},
+		{
+			`let a = [4]; a[0] -= "1"`,
+			"unknown operator INTEGER -= STRING",
+		},
+		{
+			`let a = [4]; a[0] *= "1"`,
+			"unknown operator INTEGER *= STRING",
+		},
+		{
+			`let a = [4]; a[0] /= "1"`,
+			"unknown operator INTEGER /= STRING",
+		},
+		{
+			`let a = [4]; a[0] = b;`,
+			"identifier not found: b",
+		},
+		{
+			`let a = [4]; a[0] += x`,
+			"identifier not found: x",
+		},
+		{
+			`let a = [[1, 2]]; a[0] += 1`,
+			"unknown operator ARRAY += INTEGER",
+		},
+		{
+			`let a = [null]; a[0] += 1`,
+			"unknown operator NULL += INTEGER",
+		},
+		{
+			`let a = [4]; a[x] = 1`,
+			"identifier not found: x",
+		},
+		{
+			`let a = [4]; a[x]--`,
+			"identifier not found: x",
+		},
+		{
+			`let a = [4]; a[1] = 1`,
+			"index 1 out of bounds [0, 0]",
+		},
+		{
+			`let a = [4]; a[-1] = 1`,
+			"index -1 out of bounds [0, 0]",
+		},
+		{
+			`let a = [4]; a[-1]++`,
+			"index -1 out of bounds [0, 0]",
+		},
+		{
+			`a[0] = 1`,
+			"identifier not found: a",
+		},
+		{
+			`a[0]++`,
+			"identifier not found: a",
+		},
+		{
+			`[1,2] = 4`,
+			"unknown operator: [ = INTEGER",
+		},
+		{
+			`[1,2]++`,
+			"unknown operator: [ ++",
+		},
+	}
+
+	for _, tt := range tests {
+		testError(t, tt)
+	}
+}
+
+func TestAssignmentHashIndexErrorHandling(t *testing.T) {
+	tests := []expectedError{
+		{
+			`let a = {"x":"y"}; a["x"]--`,
+			"unknown operator STRING --",
+		},
+		{
+			`let a = {"x":"y"}; a["x"]++`,
+			"unknown operator STRING ++",
+		},
+		{
+			`let a = {"x":"y"}; a["x"] -= 2`,
+			"unknown operator STRING -= INTEGER",
+		},
+		{
+			`let a = {"x":"y"}; a["x"] *= 2`,
+			"unknown operator STRING *= INTEGER",
+		},
+		{
+			`let a = {"x":"y"}; a["x"] /= 2`,
+			"unknown operator STRING /= INTEGER",
+		},
+		{
+			`let a = {"x":4}; a["x"] += "1"`,
+			"unknown operator INTEGER += STRING",
+		},
+		{
+			`let a = {"x":4}; a["x"] -= "1"`,
+			"unknown operator INTEGER -= STRING",
+		},
+		{
+			`let a = {"x":4}; a["x"] *= "1"`,
+			"unknown operator INTEGER *= STRING",
+		},
+		{
+			`let a = {"x":4}; a["x"] /= "1"`,
+			"unknown operator INTEGER /= STRING",
+		},
+		{
+			`let a = {"x":4}; a["x"] = b;`,
+			"identifier not found: b",
+		},
+		{
+			`let a = {"x":4}; a["x"] += x`,
+			"identifier not found: x",
+		},
+		{
+			`let a = {"x":{}}; a["x"] += 1`,
+			"unknown operator HASH += INTEGER",
+		},
+		{
+			`let a = {"x":null}; a["x"] += 1`,
+			"unknown operator NULL += INTEGER",
+		},
+		{
+			`let a = {"x":4}; a[x] = 1`,
+			"identifier not found: x",
+		},
+		{
+			`let a = {"x":4}; a[x]++`,
+			"identifier not found: x",
+		},
+		{
+			`a["x"] = 1`,
+			"identifier not found: a",
+		},
+		{
+			`a["x"]--`,
+			"identifier not found: a",
+		},
+		{
+			`{"x":4} = 4`,
+			"unknown operator: { = INTEGER",
+		},
+		{
+			`let a = {"x":4}; a[function(){}] = 1`,
+			"unusable as hash key: FUNCTION",
+		},
+		{
+			`let a = {}; a["x"] += 1`,
+			"undefined hash key: x",
+		},
+		{
+			`let a = {"x":4}; a[function(){}]--`,
+			"unusable as hash key: FUNCTION",
+		},
+		{
+			`let a = {}; a["x"]++`,
+			"undefined hash key: x",
+		},
+		{
+			`{} = 4`,
+			"unknown operator: { = INTEGER",
+		},
+		{
+			`{}++`,
+			"unknown operator: { ++",
 		},
 	}
 
