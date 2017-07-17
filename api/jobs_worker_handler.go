@@ -2,7 +2,6 @@ package api
 
 import (
 	"github.com/gorilla/mux"
-	"github.com/ofux/deluge/api/dto"
 	"github.com/ofux/deluge/core"
 	"github.com/ofux/deluge/dsl/lexer"
 	"github.com/ofux/deluge/dsl/parser"
@@ -131,7 +130,7 @@ func (d *JobsWorkerHandler) CreateJob(w http.ResponseWriter, r *http.Request) {
 		}()
 	}
 
-	SendJSONWithHTTPCode(w, dto.MapDeluge(dlg), http.StatusAccepted)
+	SendJSONWithHTTPCode(w, mapDeluge(dlg), http.StatusAccepted)
 }
 
 func (d *JobsWorkerHandler) GetJob(w http.ResponseWriter, r *http.Request) {
@@ -143,14 +142,14 @@ func (d *JobsWorkerHandler) GetJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	SendJSONWithHTTPCode(w, dto.MapDeluge(dlg), http.StatusOK)
+	SendJSONWithHTTPCode(w, mapDeluge(dlg), http.StatusOK)
 }
 
 func (d *JobsWorkerHandler) GetAllJobs(w http.ResponseWriter, r *http.Request) {
 	dlgs := repo.Jobs.GetAll()
-	dlgsDTO := make([]*dto.DelugeLite, 0, len(dlgs))
+	dlgsDTO := make([]*DelugeLite, 0, len(dlgs))
 	for _, dlg := range dlgs {
-		dlgsDTO = append(dlgsDTO, dto.MapDelugeLite(dlg))
+		dlgsDTO = append(dlgsDTO, mapDelugeLite(dlg))
 	}
 
 	SendJSONWithHTTPCode(w, dlgsDTO, http.StatusOK)

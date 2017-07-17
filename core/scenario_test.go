@@ -80,7 +80,7 @@ func TestScenario_Run(t *testing.T) {
 		scenario.run(20000*time.Millisecond, nil)
 
 		assert.Equal(t, uint64(5), scenario.EffectiveUserCount)
-		assert.Equal(t, uint64(15), scenario.EffectiveUserCount)
+		assert.Equal(t, uint64(15), scenario.EffectiveExecCount)
 	})
 
 	t.Run("Run scenario without error, with too short iterations", func(t *testing.T) {

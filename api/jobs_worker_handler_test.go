@@ -3,7 +3,6 @@ package api
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/ofux/deluge/api/dto"
 	"github.com/ofux/deluge/core"
 	"github.com/ofux/deluge/dsl/ast"
 	"github.com/ofux/deluge/dsl/lexer"
@@ -45,12 +44,12 @@ func TestJobsWorkerHandler_CreateJob(t *testing.T) {
 		assert.Equal(t, w.Code, http.StatusAccepted)
 		dlg := deserializeDeluge(t, w.Body)
 		assert.Equal(t, dlg.Name, dlgName)
-		assert.True(t, dlg.Status == dto.DelugeVirgin || dlg.Status == dto.DelugeInProgress)
+		assert.True(t, dlg.Status == DelugeVirgin || dlg.Status == DelugeInProgress)
 		assert.Len(t, dlg.Scenarios, 1)
 		assert.Contains(t, dlg.Scenarios, scenarioKey)
 		assert.Equal(t, dlg.Scenarios[scenarioKey].Name, scenarioName)
 		assert.Len(t, dlg.Scenarios[scenarioKey].Errors, 0)
-		assert.True(t, dlg.Scenarios[scenarioKey].Status == dto.ScenarioVirgin || dlg.Scenarios[scenarioKey].Status == dto.ScenarioInProgress)
+		assert.True(t, dlg.Scenarios[scenarioKey].Status == ScenarioVirgin || dlg.Scenarios[scenarioKey].Status == ScenarioInProgress)
 	})
 
 	t.Run("Create a job with syntax error in script", func(t *testing.T) {
@@ -103,12 +102,12 @@ func TestJobsWorkerHandler_CreateJob(t *testing.T) {
 		dlg := deserializeDeluge(t, w.Body)
 		assert.Equal(t, dlg.ID, dlgID)
 		assert.Equal(t, dlg.Name, dlgName)
-		assert.True(t, dlg.Status == dto.DelugeVirgin || dlg.Status == dto.DelugeInProgress)
+		assert.True(t, dlg.Status == DelugeVirgin || dlg.Status == DelugeInProgress)
 		assert.Len(t, dlg.Scenarios, 1)
 		assert.Contains(t, dlg.Scenarios, scenarioKey)
 		assert.Equal(t, dlg.Scenarios[scenarioKey].Name, scenarioName)
 		assert.Len(t, dlg.Scenarios[scenarioKey].Errors, 0)
-		assert.True(t, dlg.Scenarios[scenarioKey].Status == dto.ScenarioVirgin || dlg.Scenarios[scenarioKey].Status == dto.ScenarioInProgress)
+		assert.True(t, dlg.Scenarios[scenarioKey].Status == ScenarioVirgin || dlg.Scenarios[scenarioKey].Status == ScenarioInProgress)
 	})
 
 	t.Run("Create a job with an existing ID", func(t *testing.T) {
@@ -171,7 +170,7 @@ func TestJobsWorkerHandler_CreateJob(t *testing.T) {
 		assert.Equal(t, w.Code, http.StatusAccepted)
 		dlg := deserializeDeluge(t, w.Body)
 		assert.Equal(t, dlg.Name, dlgName)
-		assert.True(t, dlg.Status == dto.DelugeVirgin || dlg.Status == dto.DelugeInProgress)
+		assert.True(t, dlg.Status == DelugeVirgin || dlg.Status == DelugeInProgress)
 		assert.Len(t, dlg.Scenarios, 1)
 
 		assert.True(t, isChanClosed(webhook, 50, 100*time.Millisecond))
@@ -364,7 +363,7 @@ func TestJobsOrchestratorHandler_InterruptJob(t *testing.T) {
 		assert.Equal(t, http.StatusOK, w.Code)
 		dlgGet := deserializeDeluge(t, w.Body)
 		assert.Equal(t, givenID, dlgGet.ID)
-		assert.Equal(t, dto.DelugeDoneSuccess, dlgGet.Status)
+		assert.Equal(t, DelugeDoneSuccess, dlgGet.Status)
 	})
 
 	t.Run("Interrupt a job done with errors", func(t *testing.T) {
@@ -390,7 +389,7 @@ func TestJobsOrchestratorHandler_InterruptJob(t *testing.T) {
 		assert.Equal(t, http.StatusOK, w.Code)
 		dlgGet := deserializeDeluge(t, w.Body)
 		assert.Equal(t, givenID, dlgGet.ID)
-		assert.Equal(t, dto.DelugeDoneError, dlgGet.Status)
+		assert.Equal(t, DelugeDoneError, dlgGet.Status)
 	})
 
 	t.Run("Interrupt a job in progress", func(t *testing.T) {
@@ -416,7 +415,7 @@ func TestJobsOrchestratorHandler_InterruptJob(t *testing.T) {
 		assert.Equal(t, http.StatusOK, w.Code)
 		dlgGet := deserializeDeluge(t, w.Body)
 		assert.Equal(t, givenID, dlgGet.ID)
-		assert.Equal(t, dto.DelugeInterrupted, dlgGet.Status)
+		assert.Equal(t, DelugeInterrupted, dlgGet.Status)
 	})
 
 	t.Run("Interrupt a non-existing job", func(t *testing.T) {
@@ -444,13 +443,13 @@ func isChanClosed(ch chan struct{}, maxIterations int, iterationTime time.Durati
 	return false
 }
 
-func deserializeArrayOfDeluges(t *testing.T, body *bytes.Buffer) []*dto.Deluge {
+func deserializeArrayOfDeluges(t *testing.T, body *bytes.Buffer) []*Deluge {
 	p := make([]byte, body.Len())
 	if _, err := body.Read(p); err != nil {
 		t.Fatalf("Could not read body")
 		return nil
 	}
-	dlgs := make([]*dto.Deluge, 0)
+	dlgs := make([]*Deluge, 0)
 	if err := json.Unmarshal(p, &dlgs); err != nil {
 		t.Fatalf("Could not deserialize array of Deluges out of %s", string(p))
 		return nil
@@ -458,13 +457,13 @@ func deserializeArrayOfDeluges(t *testing.T, body *bytes.Buffer) []*dto.Deluge {
 	return dlgs
 }
 
-func deserializeDeluge(t *testing.T, body *bytes.Buffer) *dto.Deluge {
+func deserializeDeluge(t *testing.T, body *bytes.Buffer) *Deluge {
 	p := make([]byte, body.Len())
 	if _, err := body.Read(p); err != nil {
 		t.Fatalf("Could not read body")
 		return nil
 	}
-	dlg := &dto.Deluge{}
+	dlg := &Deluge{}
 	if err := json.Unmarshal(p, dlg); err != nil {
 		t.Fatalf("Could not deserialize Deluge out of %s", string(p))
 		return nil
@@ -472,13 +471,13 @@ func deserializeDeluge(t *testing.T, body *bytes.Buffer) *dto.Deluge {
 	return dlg
 }
 
-func deserializeError(t *testing.T, body *bytes.Buffer) *dto.Error {
+func deserializeError(t *testing.T, body *bytes.Buffer) *Error {
 	p := make([]byte, body.Len())
 	if _, err := body.Read(p); err != nil {
 		t.Fatalf("Could not read body")
 		return nil
 	}
-	errDto := &dto.Error{}
+	errDto := &Error{}
 	if err := json.Unmarshal(p, errDto); err != nil {
 		t.Fatalf("Could not deserialize Error out of %s", string(p))
 		return nil

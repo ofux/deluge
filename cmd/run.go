@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/ofux/deluge/api"
-	"github.com/ofux/deluge/api/dto"
 	"github.com/spf13/cobra"
 	"io/ioutil"
 	"net"
@@ -63,7 +62,7 @@ Otherwise, a local worker will be silently started on a random port to run the s
 		dlg := postDeluge(fileContent)
 
 		// polling
-		for dlg.Status == dto.DelugeVirgin || dlg.Status == dto.DelugeInProgress {
+		for dlg.Status == api.DelugeVirgin || dlg.Status == api.DelugeInProgress {
 			dlg = getDeluge(dlg.ID)
 			time.Sleep(500 * time.Millisecond)
 		}
@@ -90,7 +89,7 @@ func die(err error, code int) {
 	os.Exit(code)
 }
 
-func postDeluge(fileContent []byte) *dto.Deluge {
+func postDeluge(fileContent []byte) *api.Deluge {
 	resp, err := http.Post(runRemoteAddr+"/v1/jobs", "text/plain", bytes.NewReader(fileContent))
 	if err != nil {
 		die(err, 2)
@@ -101,21 +100,21 @@ func postDeluge(fileContent []byte) *dto.Deluge {
 		die(err, 1)
 	}
 	if resp.StatusCode >= 300 {
-		dtoErr := &dto.Error{}
+		dtoErr := &api.Error{}
 		if err = json.Unmarshal(body, dtoErr); err != nil {
 			die(fmt.Errorf("Something went wrong. Received code %d from worker.", resp.StatusCode), 3)
 		}
 		die(fmt.Errorf("Something went wrong. Received code %d from worker with error: %s", resp.StatusCode, dtoErr.Error), 3)
 	}
 
-	dlg := &dto.Deluge{}
+	dlg := &api.Deluge{}
 	if err = json.Unmarshal(body, dlg); err != nil {
 		die(err, 1)
 	}
 	return dlg
 }
 
-func getDeluge(id string) *dto.Deluge {
+func getDeluge(id string) *api.Deluge {
 	resp, err := http.Get(runRemoteAddr + "/v1/jobs/" + id)
 	if err != nil {
 		die(err, 2)
@@ -126,14 +125,14 @@ func getDeluge(id string) *dto.Deluge {
 		die(err, 1)
 	}
 	if resp.StatusCode != http.StatusOK {
-		dtoErr := &dto.Error{}
+		dtoErr := &api.Error{}
 		if err = json.Unmarshal(body, dtoErr); err != nil {
 			die(fmt.Errorf("Something went wrong. Received code %d from worker.", resp.StatusCode), 3)
 		}
 		die(fmt.Errorf("Something went wrong. Received code %d from worker with error: %s", resp.StatusCode, dtoErr.Error), 3)
 	}
 
-	dlg := &dto.Deluge{}
+	dlg := &api.Deluge{}
 	if err = json.Unmarshal(body, dlg); err != nil {
 		die(err, 1)
 	}
