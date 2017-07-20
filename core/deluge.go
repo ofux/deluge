@@ -48,6 +48,7 @@ type scenarioCore struct {
 type scenarioConfig struct {
 	concurrent        int
 	iterationDuration time.Duration
+	args              *object.Hash
 }
 
 func NewDeluge(ID string, script *ast.Program) (*Deluge, error) {
@@ -85,7 +86,7 @@ func NewDeluge(ID string, script *ast.Program) (*Deluge, error) {
 				sConf.iterationDuration,
 				sCore.script,
 				sCore.scriptParams,
-				nil,
+				sConf.args,
 				log.New().WithField("deluge", dlg.Name),
 			)
 		} else {
@@ -211,6 +212,20 @@ func (d *delugeBuilder) dslCreateDeluge(node ast.Node, args ...object.Object) ob
 			return evaluator.NewError(node, "Expected 'delay' value to be a valid duration in configuration at %s\n", ast.PrintLocation(node))
 		}
 
+		var argsHash *object.Hash
+		if argsHashPair, ok := scenarioConf.Get("args"); ok {
+			argsHash, ok = argsHashPair.Value.(*object.Hash)
+			if !ok {
+				return evaluator.NewError(node, "Expected 'args' to be an object at %s\n", ast.PrintLocation(node))
+			}
+			argsHash.IsImmutable = true
+		} else {
+			argsHash = &object.Hash{
+				Pairs:       map[object.HashKey]object.HashPair{},
+				IsImmutable: true,
+			}
+		}
+
 		_, ok = d.scenarioConfigs[string(scenarioId)]
 		if ok {
 			return evaluator.NewError(node, "Scenario '%v' is already configured", scenarioId)
@@ -219,6 +234,7 @@ func (d *delugeBuilder) dslCreateDeluge(node ast.Node, args ...object.Object) ob
 		d.scenarioConfigs[string(scenarioId)] = &scenarioConfig{
 			concurrent:        int(concurrentClients.Value),
 			iterationDuration: delayHash,
+			args:              argsHash,
 		}
 	}
 

@@ -33,7 +33,7 @@ func TestDeepEquals(t *testing.T) {
 					&String{"da"},
 					&Integer{43},
 					&Array{[]Object{}},
-					&Hash{map[HashKey]HashPair{}},
+					&Hash{Pairs: map[HashKey]HashPair{}},
 					&Boolean{true},
 					&Float{12.3},
 				}}},
@@ -65,7 +65,7 @@ func TestDeepEquals(t *testing.T) {
 					&String{"da"},
 					&Integer{43},
 					&Array{[]Object{}},
-					&Hash{map[HashKey]HashPair{}},
+					&Hash{Pairs: map[HashKey]HashPair{}},
 					&Boolean{true},
 					&Float{12.3},
 				}}},
@@ -296,7 +296,7 @@ func TestToObject(t *testing.T) {
 					&String{"da"},
 					&Integer{43},
 					&Array{[]Object{}},
-					&Hash{map[HashKey]HashPair{}},
+					&Hash{Pairs: map[HashKey]HashPair{}},
 					&Boolean{true},
 					&Float{12.3},
 				}}},
@@ -338,7 +338,7 @@ func TestFromObject(t *testing.T) {
 			{&Function{}, "Cannot convert Object of type *object.Function to a native type"},
 			{&Hash{
 				Pairs: map[HashKey]HashPair{
-					"a": HashPair{Value: &Function{}},
+					"a": {Value: &Function{}},
 				},
 			}, "Cannot convert Object of type *object.Function to a native type"},
 			{&Array{
@@ -380,7 +380,7 @@ func TestFromObject(t *testing.T) {
 					&String{"da"},
 					&Integer{43},
 					&Array{[]Object{}},
-					&Hash{map[HashKey]HashPair{}},
+					&Hash{Pairs: map[HashKey]HashPair{}},
 					&Boolean{true},
 					&Float{12.3},
 				}}},
@@ -392,10 +392,10 @@ func TestFromObject(t *testing.T) {
 		native, err := FromObject(input)
 		require.NoError(t, err)
 
-		json, err := json.MarshalIndent(native, "", "\t")
+		jsonStr, err := json.MarshalIndent(native, "", "\t")
 		require.NoError(t, err)
 
-		assert.Equal(t, string(json), `{
+		assert.Equal(t, string(jsonStr), `{
 	"a": "foo",
 	"b": 42,
 	"c": {

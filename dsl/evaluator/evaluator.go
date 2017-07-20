@@ -558,6 +558,9 @@ func evalAssignmentArrayIndexExpression(node *ast.AssignmentExpression, array, i
 
 func evalAssignmentHashIndexExpression(node *ast.AssignmentExpression, hash, index, value object.Object) object.Object {
 	hashObject := hash.(*object.Hash)
+	if hashObject.IsImmutable {
+		return NewError(node, "hash is immutable, you cannot modify it")
+	}
 
 	keyObj, ok := index.(object.Hashable)
 	if !ok {
@@ -737,6 +740,9 @@ func evalPostAssignmentArrayIndexExpression(node *ast.PostAssignmentExpression, 
 
 func evalPostAssignmentHashIndexExpression(node *ast.PostAssignmentExpression, hash, index object.Object) object.Object {
 	hashObject := hash.(*object.Hash)
+	if hashObject.IsImmutable {
+		return NewError(node, "hash is immutable, you cannot modify it")
+	}
 
 	keyObj, ok := index.(object.Hashable)
 	if !ok {

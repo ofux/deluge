@@ -21,7 +21,7 @@ func TestScenario_Run(t *testing.T) {
 	logger.Out = ioutil.Discard
 	logTest := logger.WithField("test", true)
 
-	t.Run("Run scenario without error", func(t *testing.T) {
+	t.Run("Run simple scenario with HTTP request", func(t *testing.T) {
 
 		srv := httptest.NewServer(http.HandlerFunc(docilemonkey.Handler))
 		defer srv.Close()
@@ -46,9 +46,7 @@ func TestScenario_Run(t *testing.T) {
 		if iterCount < 1 {
 			t.Fatalf("Expected to have at least %d iterations, got %d", 1, iterCount)
 		}
-		if scenario.EffectiveUserCount != 50 {
-			t.Fatalf("Expected to have %d simulated users, got %d", 50, scenario.EffectiveUserCount)
-		}
+		assert.Equal(t, uint64(50), scenario.EffectiveUserCount)
 		if scenario.EffectiveExecCount < 1 {
 			t.Fatalf("Expected to have at least %d executions, got %d", 1, scenario.EffectiveExecCount)
 		}
@@ -95,9 +93,7 @@ func TestScenario_Run(t *testing.T) {
 		scenario := newScenario("foo", 50, 1*time.Millisecond, program, params, nil, logTest)
 		scenario.run(200*time.Millisecond, nil)
 
-		if scenario.EffectiveUserCount != 50 {
-			t.Fatalf("Expected to have %d simulated users, got %d", 50, scenario.EffectiveUserCount)
-		}
+		assert.Equal(t, uint64(50), scenario.EffectiveUserCount)
 		if scenario.EffectiveExecCount < 50 {
 			t.Fatalf("Expected to have at least %d executions, got %d", 50, scenario.EffectiveExecCount)
 		}
@@ -120,6 +116,7 @@ func TestScenario_Run(t *testing.T) {
 				"baseUrl": {Value: &object.String{srv.URL}},
 				"method":  {Value: &object.String{"PUT"}},
 			},
+			IsImmutable: true,
 		}
 
 		scenario := newScenario("foo", 50, 50*time.Millisecond, program, params, scriptArgs, logTest)
@@ -134,9 +131,7 @@ func TestScenario_Run(t *testing.T) {
 		if iterCount < 1 {
 			t.Fatalf("Expected to have at least %d iterations, got %d", 1, iterCount)
 		}
-		if scenario.EffectiveUserCount != 50 {
-			t.Fatalf("Expected to have %d simulated users, got %d", 50, scenario.EffectiveUserCount)
-		}
+		assert.Equal(t, uint64(50), scenario.EffectiveUserCount)
 		if scenario.EffectiveExecCount < 1 {
 			t.Fatalf("Expected to have at least %d executions, got %d", 1, scenario.EffectiveExecCount)
 		}
@@ -146,6 +141,25 @@ func TestScenario_Run(t *testing.T) {
 				recordingtest.CheckHTTPRecord(t, record, reqName, 1, 500, recording.Ko)
 			}
 		}
+	})
+
+	t.Run("Run scenario with args and try to modify it", func(t *testing.T) {
+		program, params := compileTest(t, `
+		args["method"] = "foobar"
+		`)
+		scriptArgs := &object.Hash{
+			Pairs: map[object.HashKey]object.HashPair{
+				"method": {Value: &object.String{"PUT"}},
+			},
+			IsImmutable: true,
+		}
+
+		scenario := newScenario("foo", 50, 50*time.Millisecond, program, params, scriptArgs, logTest)
+		scenario.run(200*time.Millisecond, nil)
+
+		assert.Equal(t, ScenarioDoneError, scenario.Status)
+		assert.Len(t, scenario.Errors, 50)
+		assert.Equal(t, "hash is immutable, you cannot modify it", scenario.Errors[0].Message)
 	})
 
 	t.Run("Run scenario with error", func(t *testing.T) {
@@ -169,11 +183,7 @@ func TestScenario_Run(t *testing.T) {
 			}
 		}
 
-		if scenario.EffectiveUserCount != 50 {
-			t.Fatalf("Expected to have %d simulated users, got %d", 50, scenario.EffectiveUserCount)
-		}
-		if scenario.EffectiveExecCount != 50 {
-			t.Fatalf("Expected to have %d executions, got %d", 50, scenario.EffectiveExecCount)
-		}
+		assert.Equal(t, uint64(50), scenario.EffectiveUserCount)
+		assert.Equal(t, uint64(50), scenario.EffectiveExecCount)
 	})
 }

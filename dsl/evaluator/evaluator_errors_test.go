@@ -1,7 +1,9 @@
 package evaluator
 
 import (
+	"github.com/ofux/deluge/dsl/ast"
 	"github.com/ofux/deluge/dsl/object"
+	"github.com/ofux/deluge/dsl/token"
 	"testing"
 )
 
@@ -505,6 +507,119 @@ func TestAssignmentHashIndexErrorHandling(t *testing.T) {
 
 	for _, tt := range tests {
 		testError(t, tt)
+	}
+}
+
+func TestAssignmentOfImmutableErrorHandling(t *testing.T) {
+	tests := []expectedError{
+		{
+			token.ASSIGN,
+			"hash is immutable, you cannot modify it",
+		},
+		{
+			token.ASSIGN_DEC,
+			"hash is immutable, you cannot modify it",
+		},
+		{
+			token.ASSIGN_INC,
+			"hash is immutable, you cannot modify it",
+		},
+		{
+			token.ASSIGN_DIV,
+			"hash is immutable, you cannot modify it",
+		},
+		{
+			token.ASSIGN_MULT,
+			"hash is immutable, you cannot modify it",
+		},
+	}
+
+	for _, tt := range tests {
+		immutableHash := &object.Hash{
+			Pairs: map[object.HashKey]object.HashPair{
+				object.HashKey("x"): {Value: &object.Integer{1}},
+			},
+			IsImmutable: true,
+		}
+		index := &object.String{"x"}
+		value := &object.Integer{42}
+		node := &ast.AssignmentExpression{
+			Operator: tt.input,
+			Token: token.Token{
+				Type:    token.TokenType(tt.input),
+				Column:  1,
+				Line:    3,
+				Literal: tt.input,
+			},
+		}
+
+		evaluated := evalAssignmentHashIndexExpression(node, immutableHash, index, value)
+
+		errObj, ok := evaluated.(*object.Error)
+		if !ok {
+			t.Errorf("no error object returned. got=%T(%+v)",
+				evaluated, evaluated)
+			return
+		}
+
+		if errObj.Message != tt.expectedMessage {
+			t.Errorf("wrong error message. expected=%q, got=%q",
+				tt.expectedMessage, errObj.Message)
+		}
+		if errObj.StackToken[0].Line != 3 || errObj.StackToken[0].Column != 1 {
+			t.Errorf("wrong stack of tokens %v",
+				errObj.StackToken)
+		}
+	}
+}
+
+func TestReassignmentOfImmutableErrorHandling(t *testing.T) {
+	tests := []expectedError{
+		{
+			token.ASSIGN_INC1,
+			"hash is immutable, you cannot modify it",
+		},
+		{
+			token.ASSIGN_DEC1,
+			"hash is immutable, you cannot modify it",
+		},
+	}
+
+	for _, tt := range tests {
+		immutableHash := &object.Hash{
+			Pairs: map[object.HashKey]object.HashPair{
+				object.HashKey("x"): {Value: &object.Integer{1}},
+			},
+			IsImmutable: true,
+		}
+		index := &object.String{"x"}
+		node := &ast.PostAssignmentExpression{
+			Operator: tt.input,
+			Token: token.Token{
+				Type:    token.TokenType(tt.input),
+				Column:  1,
+				Line:    3,
+				Literal: tt.input,
+			},
+		}
+
+		evaluated := evalPostAssignmentHashIndexExpression(node, immutableHash, index)
+
+		errObj, ok := evaluated.(*object.Error)
+		if !ok {
+			t.Errorf("no error object returned. got=%T(%+v)",
+				evaluated, evaluated)
+			return
+		}
+
+		if errObj.Message != tt.expectedMessage {
+			t.Errorf("wrong error message. expected=%q, got=%q",
+				tt.expectedMessage, errObj.Message)
+		}
+		if errObj.StackToken[0].Line != 3 || errObj.StackToken[0].Column != 1 {
+			t.Errorf("wrong stack of tokens %v",
+				errObj.StackToken)
+		}
 	}
 }
 

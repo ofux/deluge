@@ -668,8 +668,8 @@ parseJson(` + "`" + `{
 				object.HashKey("d"): {Key: &object.String{"d"}, Value: &object.Array{Elements: []object.Object{
 					&object.String{"da"},
 					&object.Integer{43},
-					&object.Array{[]object.Object{}},
-					&object.Hash{map[object.HashKey]object.HashPair{}},
+					&object.Array{Elements: []object.Object{}},
+					&object.Hash{Pairs: map[object.HashKey]object.HashPair{}},
 					&object.Boolean{true},
 					&object.Float{12.3},
 				}}},

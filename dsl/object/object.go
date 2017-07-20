@@ -201,7 +201,8 @@ type HashPair struct {
 }
 
 type Hash struct {
-	Pairs map[HashKey]HashPair
+	Pairs       map[HashKey]HashPair
+	IsImmutable bool
 }
 
 func (h *Hash) Type() ObjectType { return HASH_OBJ }
@@ -214,6 +215,9 @@ func (h *Hash) Inspect() string {
 			pair.Key.Inspect(), pair.Value.Inspect()))
 	}
 
+	if h.IsImmutable {
+		out.WriteString("#")
+	}
 	out.WriteString("{")
 	out.WriteString(strings.Join(pairs, ", "))
 	out.WriteString("}")

@@ -85,11 +85,11 @@ func (su *simUser) run(iteration int) {
 func (su *simUser) createEnvironment() *object.Environment {
 	env := object.NewEnvironment()
 	params := su.scenario.scriptParams
-	// Add ARGS
+	// Inject ARGS into first param
 	if len(params) >= 1 {
 		env.Add(params[0].Value, su.scenario.scriptArgs)
 	}
-	// Add SESSION
+	// Inject SESSION into second param
 	if len(params) >= 2 {
 		env.Add(params[1].Value, su.session)
 	}
