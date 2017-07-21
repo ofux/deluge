@@ -570,14 +570,14 @@ func evalAssignmentHashIndexExpression(node *ast.AssignmentExpression, hash, ind
 
 	return doAssignment(node, value,
 		func() object.Object {
-			entry, ok := hashObject.Pairs[key]
+			v, ok := hashObject.Pairs[key]
 			if !ok {
 				return NewError(node, "undefined hash key: %s", key)
 			}
-			return entry.Value
+			return v
 		},
 		func(v object.Object) object.Object {
-			hashObject.Pairs[key] = object.HashPair{Key: &object.String{Value: string(key)}, Value: v}
+			hashObject.Pairs[key] = v
 			return v
 		},
 	)
@@ -750,12 +750,12 @@ func evalPostAssignmentHashIndexExpression(node *ast.PostAssignmentExpression, h
 	}
 	key := keyObj.HashKey()
 
-	entry, ok := hashObject.Pairs[key]
+	v, ok := hashObject.Pairs[key]
 	if !ok {
 		return NewError(node, "undefined hash key: %s", key)
 	}
 
-	return doPostAssignment(node, entry.Value)
+	return doPostAssignment(node, v)
 }
 
 func doPostAssignment(
@@ -918,19 +918,19 @@ func evalHashIndexExpression(node ast.Node, hash, index object.Object) object.Ob
 		return NewError(node, "unusable as hash key: %s", index.Type())
 	}
 
-	pair, ok := hashObject.Pairs[key.HashKey()]
+	v, ok := hashObject.Pairs[key.HashKey()]
 	if !ok {
 		return NULL
 	}
 
-	return pair.Value
+	return v
 }
 
 func (e *Evaluator) evalHashLiteral(
 	node *ast.HashLiteral,
 	env *object.Environment,
 ) object.Object {
-	pairs := make(map[object.HashKey]object.HashPair)
+	pairs := make(map[object.HashKey]object.Object)
 
 	for keyNode, valueNode := range node.Pairs {
 		key := e.eval(keyNode, env)
@@ -949,7 +949,7 @@ func (e *Evaluator) evalHashLiteral(
 		}
 
 		hashed := hashKey.HashKey()
-		pairs[hashed] = object.HashPair{Key: key, Value: value}
+		pairs[hashed] = value
 	}
 
 	return &object.Hash{Pairs: pairs}

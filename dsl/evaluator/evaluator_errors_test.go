@@ -536,8 +536,8 @@ func TestAssignmentOfImmutableErrorHandling(t *testing.T) {
 
 	for _, tt := range tests {
 		immutableHash := &object.Hash{
-			Pairs: map[object.HashKey]object.HashPair{
-				object.HashKey("x"): {Value: &object.Integer{1}},
+			Pairs: map[object.HashKey]object.Object{
+				object.HashKey("x"): &object.Integer{1},
 			},
 			IsImmutable: true,
 		}
@@ -587,8 +587,8 @@ func TestReassignmentOfImmutableErrorHandling(t *testing.T) {
 
 	for _, tt := range tests {
 		immutableHash := &object.Hash{
-			Pairs: map[object.HashKey]object.HashPair{
-				object.HashKey("x"): {Value: &object.Integer{1}},
+			Pairs: map[object.HashKey]object.Object{
+				object.HashKey("x"): &object.Integer{1},
 			},
 			IsImmutable: true,
 		}

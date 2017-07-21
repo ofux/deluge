@@ -11,66 +11,66 @@ func TestDeepEquals(t *testing.T) {
 	t.Run("Deep equality", func(t *testing.T) {
 
 		o1 := &Hash{
-			Pairs: map[HashKey]HashPair{
-				HashKey("a"): {Key: &String{"a"}, Value: &String{"foo"}},
-				HashKey("b"): {Key: &String{"b"}, Value: &Integer{42}},
-				HashKey("c"): {Key: &String{"c"}, Value: &Hash{
-					Pairs: map[HashKey]HashPair{
-						HashKey("ca"): {Key: &String{"ca"}, Value: &String{"cfoo"}},
-						HashKey("cb"): {Key: &String{"cb"}, Value: &Integer{43}},
-						HashKey("cc"): {Key: &String{"cc"}, Value: &Array{[]Object{
+			Pairs: map[HashKey]Object{
+				HashKey("a"): &String{"foo"},
+				HashKey("b"): &Integer{42},
+				HashKey("c"): &Hash{
+					Pairs: map[HashKey]Object{
+						HashKey("ca"): &String{"cfoo"},
+						HashKey("cb"): &Integer{43},
+						HashKey("cc"): &Array{[]Object{
 							&Integer{1},
 							&Integer{2},
-						}}},
-						HashKey("cd"): {Key: &String{"cd"}, Value: &Hash{
-							Pairs: map[HashKey]HashPair{
-								HashKey("cda"): {Key: &String{"cda"}, Value: &String{"bar"}},
-							},
 						}},
+						HashKey("cd"): &Hash{
+							Pairs: map[HashKey]Object{
+								HashKey("cda"): &String{"bar"},
+							},
+						},
 					},
-				}},
-				HashKey("d"): {Key: &String{"d"}, Value: &Array{[]Object{
+				},
+				HashKey("d"): &Array{[]Object{
 					&String{"da"},
 					&Integer{43},
 					&Array{[]Object{}},
-					&Hash{Pairs: map[HashKey]HashPair{}},
+					&Hash{Pairs: map[HashKey]Object{}},
 					&Boolean{true},
 					&Float{12.3},
-				}}},
-				HashKey("e"): {Key: &String{"e"}, Value: &Float{1.2}},
-				HashKey("f"): {Key: &String{"f"}, Value: &Boolean{false}},
+				}},
+				HashKey("e"): &Float{1.2},
+				HashKey("f"): &Boolean{false},
 			},
 		}
 
 		o2 := &Hash{
-			Pairs: map[HashKey]HashPair{
-				HashKey("a"): {Key: &String{"a"}, Value: &String{"foo"}},
-				HashKey("b"): {Key: &String{"b"}, Value: &Integer{42}},
-				HashKey("c"): {Key: &String{"c"}, Value: &Hash{
-					Pairs: map[HashKey]HashPair{
-						HashKey("ca"): {Key: &String{"ca"}, Value: &String{"cfoo"}},
-						HashKey("cb"): {Key: &String{"cb"}, Value: &Integer{43}},
-						HashKey("cc"): {Key: &String{"cc"}, Value: &Array{[]Object{
+			Pairs: map[HashKey]Object{
+				HashKey("a"): &String{"foo"},
+				HashKey("b"): &Integer{42},
+				HashKey("c"): &Hash{
+					Pairs: map[HashKey]Object{
+						HashKey("ca"): &String{"cfoo"},
+						HashKey("cb"): &Integer{43},
+						HashKey("cc"): &Array{[]Object{
 							&Integer{1},
 							&Integer{2},
-						}}},
-						HashKey("cd"): {Key: &String{"cd"}, Value: &Hash{
-							Pairs: map[HashKey]HashPair{
-								HashKey("cda"): {Key: &String{"cda"}, Value: &String{"bar"}},
-							},
 						}},
+						HashKey("cd"): &Hash{
+							Pairs: map[HashKey]Object{
+								HashKey("cda"): &String{"bar"},
+							},
+						},
 					},
-				}},
-				HashKey("d"): {Key: &String{"d"}, Value: &Array{[]Object{
+				},
+				HashKey("d"): &Array{[]Object{
 					&String{"da"},
 					&Integer{43},
 					&Array{[]Object{}},
-					&Hash{Pairs: map[HashKey]HashPair{}},
+					&Hash{Pairs: map[HashKey]Object{}},
 					&Boolean{true},
 					&Float{12.3},
-				}}},
-				HashKey("e"): {Key: &String{"e"}, Value: &Float{1.2}},
-				HashKey("f"): {Key: &String{"f"}, Value: &Boolean{false}},
+				}},
+				HashKey("e"): &Float{1.2},
+				HashKey("f"): &Boolean{false},
 			},
 		}
 
@@ -132,17 +132,17 @@ func TestDeepEquals(t *testing.T) {
 
 	t.Run("Not equal because of hash length", func(t *testing.T) {
 		o1 := &Hash{
-			Pairs: map[HashKey]HashPair{
-				HashKey("a"): {Key: &String{"a"}, Value: &String{"foo"}},
-				HashKey("b"): {Key: &String{"b"}, Value: &Integer{42}},
+			Pairs: map[HashKey]Object{
+				HashKey("a"): &String{"foo"},
+				HashKey("b"): &Integer{42},
 			},
 		}
 
 		o2 := &Hash{
-			Pairs: map[HashKey]HashPair{
-				HashKey("a"): {Key: &String{"a"}, Value: &String{"foo"}},
-				HashKey("b"): {Key: &String{"b"}, Value: &Integer{42}},
-				HashKey("c"): {Key: &String{"c"}, Value: &Integer{43}},
+			Pairs: map[HashKey]Object{
+				HashKey("a"): &String{"foo"},
+				HashKey("b"): &Integer{42},
+				HashKey("c"): &Integer{43},
 			},
 		}
 
@@ -151,16 +151,16 @@ func TestDeepEquals(t *testing.T) {
 
 	t.Run("Not equal because of hash's value", func(t *testing.T) {
 		o1 := &Hash{
-			Pairs: map[HashKey]HashPair{
-				HashKey("a"): {Key: &String{"a"}, Value: &String{"foo"}},
-				HashKey("b"): {Key: &String{"b"}, Value: &Integer{42}},
+			Pairs: map[HashKey]Object{
+				HashKey("a"): &String{"foo"},
+				HashKey("b"): &Integer{42},
 			},
 		}
 
 		o2 := &Hash{
-			Pairs: map[HashKey]HashPair{
-				HashKey("a"): {Key: &String{"a"}, Value: &String{"foo"}},
-				HashKey("b"): {Key: &String{"b"}, Value: &Integer{43}},
+			Pairs: map[HashKey]Object{
+				HashKey("a"): &String{"foo"},
+				HashKey("b"): &Integer{43},
 			},
 		}
 
@@ -169,16 +169,16 @@ func TestDeepEquals(t *testing.T) {
 
 	t.Run("Not equal because of hash's key", func(t *testing.T) {
 		o1 := &Hash{
-			Pairs: map[HashKey]HashPair{
-				HashKey("a"): {Key: &String{"a"}, Value: &String{"foo"}},
-				HashKey("b"): {Key: &String{"b"}, Value: &Integer{42}},
+			Pairs: map[HashKey]Object{
+				HashKey("a"): &String{"foo"},
+				HashKey("b"): &Integer{42},
 			},
 		}
 
 		o2 := &Hash{
-			Pairs: map[HashKey]HashPair{
-				HashKey("a"): {Key: &String{"a"}, Value: &String{"foo"}},
-				HashKey("c"): {Key: &String{"c"}, Value: &Integer{42}},
+			Pairs: map[HashKey]Object{
+				HashKey("a"): &String{"foo"},
+				HashKey("c"): &Integer{42},
 			},
 		}
 
@@ -274,34 +274,34 @@ func TestToObject(t *testing.T) {
 			t.Fatal(err)
 		}
 		deepEqual := DeepEquals(&Hash{
-			Pairs: map[HashKey]HashPair{
-				HashKey("a"): {Key: &String{"a"}, Value: &String{"foo"}},
-				HashKey("b"): {Key: &String{"b"}, Value: &Integer{42}},
-				HashKey("c"): {Key: &String{"c"}, Value: &Hash{
-					Pairs: map[HashKey]HashPair{
-						HashKey("ca"): {Key: &String{"ca"}, Value: &String{"cfoo"}},
-						HashKey("cb"): {Key: &String{"cb"}, Value: &Integer{43}},
-						HashKey("cc"): {Key: &String{"cc"}, Value: &Array{[]Object{
+			Pairs: map[HashKey]Object{
+				HashKey("a"): &String{"foo"},
+				HashKey("b"): &Integer{42},
+				HashKey("c"): &Hash{
+					Pairs: map[HashKey]Object{
+						HashKey("ca"): &String{"cfoo"},
+						HashKey("cb"): &Integer{43},
+						HashKey("cc"): &Array{[]Object{
 							&Integer{1},
 							&Integer{2},
-						}}},
-						HashKey("cd"): {Key: &String{"cd"}, Value: &Hash{
-							Pairs: map[HashKey]HashPair{
-								HashKey("cda"): {Key: &String{"cda"}, Value: &String{"bar"}},
-							},
 						}},
+						HashKey("cd"): &Hash{
+							Pairs: map[HashKey]Object{
+								HashKey("cda"): &String{"bar"},
+							},
+						},
 					},
-				}},
-				HashKey("d"): {Key: &String{"d"}, Value: &Array{[]Object{
+				},
+				HashKey("d"): &Array{[]Object{
 					&String{"da"},
 					&Integer{43},
 					&Array{[]Object{}},
-					&Hash{Pairs: map[HashKey]HashPair{}},
+					&Hash{Pairs: map[HashKey]Object{}},
 					&Boolean{true},
 					&Float{12.3},
-				}}},
-				HashKey("e"): {Key: &String{"e"}, Value: &Float{1.2}},
-				HashKey("f"): {Key: &String{"f"}, Value: &Boolean{false}},
+				}},
+				HashKey("e"): &Float{1.2},
+				HashKey("f"): &Boolean{false},
 			},
 		}, obj)
 
@@ -337,8 +337,8 @@ func TestFromObject(t *testing.T) {
 		}{
 			{&Function{}, "Cannot convert Object of type *object.Function to a native type"},
 			{&Hash{
-				Pairs: map[HashKey]HashPair{
-					"a": {Value: &Function{}},
+				Pairs: map[HashKey]Object{
+					"a": &Function{},
 				},
 			}, "Cannot convert Object of type *object.Function to a native type"},
 			{&Array{
@@ -358,34 +358,34 @@ func TestFromObject(t *testing.T) {
 	t.Run("Test FromObject to JSON output", func(t *testing.T) {
 
 		input := &Hash{
-			Pairs: map[HashKey]HashPair{
-				HashKey("a"): {Key: &String{"a"}, Value: &String{"foo"}},
-				HashKey("b"): {Key: &String{"b"}, Value: &Integer{42}},
-				HashKey("c"): {Key: &String{"c"}, Value: &Hash{
-					Pairs: map[HashKey]HashPair{
-						HashKey("ca"): {Key: &String{"ca"}, Value: &String{"cfoo"}},
-						HashKey("cb"): {Key: &String{"cb"}, Value: &Integer{43}},
-						HashKey("cc"): {Key: &String{"cc"}, Value: &Array{[]Object{
+			Pairs: map[HashKey]Object{
+				HashKey("a"): &String{"foo"},
+				HashKey("b"): &Integer{42},
+				HashKey("c"): &Hash{
+					Pairs: map[HashKey]Object{
+						HashKey("ca"): &String{"cfoo"},
+						HashKey("cb"): &Integer{43},
+						HashKey("cc"): &Array{[]Object{
 							&Integer{1},
 							&Integer{2},
-						}}},
-						HashKey("cd"): {Key: &String{"cd"}, Value: &Hash{
-							Pairs: map[HashKey]HashPair{
-								HashKey("cda"): {Key: &String{"cda"}, Value: &String{"bar"}},
-							},
 						}},
+						HashKey("cd"): &Hash{
+							Pairs: map[HashKey]Object{
+								HashKey("cda"): &String{"bar"},
+							},
+						},
 					},
-				}},
-				HashKey("d"): {Key: &String{"d"}, Value: &Array{[]Object{
+				},
+				HashKey("d"): &Array{[]Object{
 					&String{"da"},
 					&Integer{43},
 					&Array{[]Object{}},
-					&Hash{Pairs: map[HashKey]HashPair{}},
+					&Hash{Pairs: map[HashKey]Object{}},
 					&Boolean{true},
 					&Float{12.3},
-				}}},
-				HashKey("e"): {Key: &String{"e"}, Value: &Float{1.2}},
-				HashKey("f"): {Key: &String{"f"}, Value: &Boolean{false}},
+				}},
+				HashKey("e"): &Float{1.2},
+				HashKey("f"): &Boolean{false},
 			},
 		}
 

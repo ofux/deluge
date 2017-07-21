@@ -112,9 +112,9 @@ func TestScenario_Run(t *testing.T) {
 		});
 		`)
 		scriptArgs := &object.Hash{
-			Pairs: map[object.HashKey]object.HashPair{
-				"baseUrl": {Value: &object.String{srv.URL}},
-				"method":  {Value: &object.String{"PUT"}},
+			Pairs: map[object.HashKey]object.Object{
+				"baseUrl": &object.String{srv.URL},
+				"method":  &object.String{"PUT"},
 			},
 			IsImmutable: true,
 		}
@@ -148,8 +148,8 @@ func TestScenario_Run(t *testing.T) {
 		args["method"] = "foobar"
 		`)
 		scriptArgs := &object.Hash{
-			Pairs: map[object.HashKey]object.HashPair{
-				"method": {Value: &object.String{"PUT"}},
+			Pairs: map[object.HashKey]object.Object{
+				"method": &object.String{"PUT"},
 			},
 			IsImmutable: true,
 		}

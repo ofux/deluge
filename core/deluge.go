@@ -185,7 +185,7 @@ func (d *delugeBuilder) dslCreateDeluge(node ast.Node, args ...object.Object) ob
 	}
 
 	for scenarioId, v := range conf.Pairs {
-		scenarioConf, ok := v.Value.(*object.Hash)
+		scenarioConf, ok := v.(*object.Hash)
 		if !ok {
 			return evaluator.NewError(node, "Expected scenario configuration to be an object at %s\n", ast.PrintLocation(node))
 		}
@@ -194,7 +194,7 @@ func (d *delugeBuilder) dslCreateDeluge(node ast.Node, args ...object.Object) ob
 		if !ok {
 			return evaluator.NewError(node, "Expected 'concurrent' value in configuration at %s\n", ast.PrintLocation(node))
 		}
-		concurrentClients, ok := concurrentClientsHashPair.Value.(*object.Integer)
+		concurrentClients, ok := concurrentClientsHashPair.(*object.Integer)
 		if !ok {
 			return evaluator.NewError(node, "Expected 'concurrent' value to be an integer in configuration at %s\n", ast.PrintLocation(node))
 		}
@@ -203,7 +203,7 @@ func (d *delugeBuilder) dslCreateDeluge(node ast.Node, args ...object.Object) ob
 		if !ok {
 			return evaluator.NewError(node, "Expected 'delay' value in configuration at %s\n", ast.PrintLocation(node))
 		}
-		delayHashStr, ok := delayHashPair.Value.(*object.String)
+		delayHashStr, ok := delayHashPair.(*object.String)
 		if !ok {
 			return evaluator.NewError(node, "Expected 'delay' value to be a valid duration in configuration at %s\n", ast.PrintLocation(node))
 		}
@@ -214,14 +214,14 @@ func (d *delugeBuilder) dslCreateDeluge(node ast.Node, args ...object.Object) ob
 
 		var argsHash *object.Hash
 		if argsHashPair, ok := scenarioConf.Get("args"); ok {
-			argsHash, ok = argsHashPair.Value.(*object.Hash)
+			argsHash, ok = argsHashPair.(*object.Hash)
 			if !ok {
 				return evaluator.NewError(node, "Expected 'args' to be an object at %s\n", ast.PrintLocation(node))
 			}
 			argsHash.IsImmutable = true
 		} else {
 			argsHash = &object.Hash{
-				Pairs:       map[object.HashKey]object.HashPair{},
+				Pairs:       map[object.HashKey]object.Object{},
 				IsImmutable: true,
 			}
 		}

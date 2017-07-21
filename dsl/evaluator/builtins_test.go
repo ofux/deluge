@@ -411,10 +411,10 @@ func TestBuiltinMerge(t *testing.T) {
 		result, ok := evaluated.(*object.Hash)
 		require.True(t, ok)
 
-		assert.Equal(t, map[object.HashKey]object.HashPair{
-			"a": {Key: &object.String{"a"}, Value: &object.Integer{1}},
-			"b": {Key: &object.String{"b"}, Value: &object.Integer{2}},
-			"c": {Key: &object.String{"c"}, Value: &object.Integer{3}},
+		assert.Equal(t, map[object.HashKey]object.Object{
+			"a": &object.Integer{1},
+			"b": &object.Integer{2},
+			"c": &object.Integer{3},
 		}, result.Pairs)
 	})
 
@@ -432,9 +432,9 @@ func TestBuiltinMerge(t *testing.T) {
 		result, ok := evaluated.(*object.Hash)
 		require.True(t, ok)
 
-		assert.Equal(t, map[object.HashKey]object.HashPair{
-			"a": {Key: &object.String{"a"}, Value: &object.Integer{2}},
-			"b": {Key: &object.String{"b"}, Value: &object.Integer{3}},
+		assert.Equal(t, map[object.HashKey]object.Object{
+			"a": &object.Integer{2},
+			"b": &object.Integer{3},
 		}, result.Pairs)
 	})
 
@@ -450,8 +450,8 @@ func TestBuiltinMerge(t *testing.T) {
 		result, ok := evaluated.(*object.Hash)
 		require.True(t, ok)
 
-		assert.Equal(t, map[object.HashKey]object.HashPair{
-			"a": {Key: &object.String{"a"}, Value: &object.Integer{1}},
+		assert.Equal(t, map[object.HashKey]object.Object{
+			"a": &object.Integer{1},
 		}, result.Pairs)
 	})
 
@@ -467,8 +467,8 @@ func TestBuiltinMerge(t *testing.T) {
 		result, ok := evaluated.(*object.Hash)
 		require.True(t, ok)
 
-		assert.Equal(t, map[object.HashKey]object.HashPair{
-			"a": {Key: &object.String{"a"}, Value: &object.Integer{1}},
+		assert.Equal(t, map[object.HashKey]object.Object{
+			"a": &object.Integer{1},
 		}, result.Pairs)
 	})
 
@@ -483,7 +483,7 @@ func TestBuiltinMerge(t *testing.T) {
 		result, ok := evaluated.(*object.Hash)
 		require.True(t, ok)
 
-		assert.Equal(t, map[object.HashKey]object.HashPair{}, result.Pairs)
+		assert.Equal(t, map[object.HashKey]object.Object{}, result.Pairs)
 	})
 
 	t.Run("Merge with no argument", func(t *testing.T) {
@@ -647,34 +647,34 @@ parseJson(` + "`" + `{
 		require.True(t, ok)
 
 		deepEqual := object.DeepEquals(&object.Hash{
-			Pairs: map[object.HashKey]object.HashPair{
-				object.HashKey("a"): {Key: &object.String{"a"}, Value: &object.String{"foo"}},
-				object.HashKey("b"): {Key: &object.String{"b"}, Value: &object.Integer{42}},
-				object.HashKey("c"): {Key: &object.String{"c"}, Value: &object.Hash{
-					Pairs: map[object.HashKey]object.HashPair{
-						object.HashKey("ca"): {Key: &object.String{"ca"}, Value: &object.String{"cfoo"}},
-						object.HashKey("cb"): {Key: &object.String{"cb"}, Value: &object.Integer{43}},
-						object.HashKey("cc"): {Key: &object.String{"cc"}, Value: &object.Array{Elements: []object.Object{
+			Pairs: map[object.HashKey]object.Object{
+				object.HashKey("a"): &object.String{"foo"},
+				object.HashKey("b"): &object.Integer{42},
+				object.HashKey("c"): &object.Hash{
+					Pairs: map[object.HashKey]object.Object{
+						object.HashKey("ca"): &object.String{"cfoo"},
+						object.HashKey("cb"): &object.Integer{43},
+						object.HashKey("cc"): &object.Array{Elements: []object.Object{
 							&object.Integer{1},
 							&object.Integer{2},
-						}}},
-						object.HashKey("cd"): {Key: &object.String{"cd"}, Value: &object.Hash{
-							Pairs: map[object.HashKey]object.HashPair{
-								object.HashKey("cda"): {Key: &object.String{"cda"}, Value: &object.String{"bar"}},
-							},
 						}},
+						object.HashKey("cd"): &object.Hash{
+							Pairs: map[object.HashKey]object.Object{
+								object.HashKey("cda"): &object.String{"bar"},
+							},
+						},
 					},
-				}},
-				object.HashKey("d"): {Key: &object.String{"d"}, Value: &object.Array{Elements: []object.Object{
+				},
+				object.HashKey("d"): &object.Array{Elements: []object.Object{
 					&object.String{"da"},
 					&object.Integer{43},
 					&object.Array{Elements: []object.Object{}},
-					&object.Hash{Pairs: map[object.HashKey]object.HashPair{}},
+					&object.Hash{Pairs: map[object.HashKey]object.Object{}},
 					&object.Boolean{true},
 					&object.Float{12.3},
-				}}},
-				object.HashKey("e"): {Key: &object.String{"e"}, Value: &object.Float{1.2}},
-				object.HashKey("f"): {Key: &object.String{"f"}, Value: &object.Boolean{false}},
+				}},
+				object.HashKey("e"): &object.Float{1.2},
+				object.HashKey("f"): &object.Boolean{false},
 			},
 		}, result)
 

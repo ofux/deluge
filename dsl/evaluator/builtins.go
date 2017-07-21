@@ -306,7 +306,7 @@ var globalBuiltins = map[string]*object.Builtin{
 			hash1 := args[0].(*object.Hash)
 			hash2 := args[1].(*object.Hash)
 
-			newElements := make(map[object.HashKey]object.HashPair)
+			newElements := make(map[object.HashKey]object.Object)
 			for k, v := range hash1.Pairs {
 				newElements[k] = v
 			}

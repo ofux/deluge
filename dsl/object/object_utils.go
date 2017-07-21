@@ -31,7 +31,7 @@ func DeepEquals(o1, o2 Object) bool {
 			if !ok {
 				return false
 			}
-			if !DeepEquals(v1.Key, v2.Key) || !DeepEquals(v1.Value, v2.Value) {
+			if !DeepEquals(v1, v2) {
 				return false
 			}
 		}
@@ -99,14 +99,14 @@ func ToObject(in interface{}) (Object, error) {
 		}
 		return &Array{Elements: elements}, nil
 	case map[string]interface{}:
-		pairs := make(map[HashKey]HashPair)
+		pairs := make(map[HashKey]Object)
 		for k, v := range in {
 			obj, err := ToObject(v)
 			if err != nil {
 				return nil, err
 			}
 			key := &String{Value: k}
-			pairs[key.HashKey()] = HashPair{Key: key, Value: obj}
+			pairs[key.HashKey()] = obj
 		}
 		return &Hash{Pairs: pairs}, nil
 	default:
@@ -131,7 +131,7 @@ func FromObject(in Object) (interface{}, error) {
 	case *Hash:
 		pairs := make(map[string]interface{})
 		for k, v := range in.Pairs {
-			val, err := FromObject(v.Value)
+			val, err := FromObject(v)
 			if err != nil {
 				return nil, err
 			}

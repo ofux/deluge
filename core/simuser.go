@@ -46,7 +46,7 @@ func newSimUser(name string, scenario *Scenario) *simUser {
 		evaluator: evaluator.NewEvaluator(),
 		client:    cleanhttp.DefaultClient(),
 		session: &object.Hash{
-			Pairs: make(map[object.HashKey]object.HashPair),
+			Pairs: make(map[object.HashKey]object.Object),
 		},
 
 		httpRecorder: scenario.httpRecorder,
@@ -135,9 +135,9 @@ func (su *simUser) execHTTPRequest(node ast.Node, args ...object.Object) object.
 			return evaluator.NewError(node, "invalid HTTP request: %s", err.Error())
 		}
 		for headerKey, headerVal := range headers.Pairs {
-			headerValStr, ok := headerVal.Value.(*object.String)
+			headerValStr, ok := headerVal.(*object.String)
 			if !ok {
-				return evaluator.NewError(node, "invalid HTTP header '%s': should be of type %s but was %s", headerKey, object.STRING_OBJ, headerVal.Value.Type())
+				return evaluator.NewError(node, "invalid HTTP header '%s': should be of type %s but was %s", headerKey, object.STRING_OBJ, headerVal.Type())
 			}
 			req.Header.Add(string(headerKey), headerValStr.Value)
 		}
@@ -147,21 +147,21 @@ func (su *simUser) execHTTPRequest(node ast.Node, args ...object.Object) object.
 	start := time.Now()
 	res, err := su.client.Do(req)
 	end := time.Now()
-	duration := end.Sub(start)
 
 	if err != nil {
 		su.log.Debugf("Request error: %s", err.Error())
 		return evaluator.NewError(node, err.Error())
-	} else {
-		defer res.Body.Close()
-		su.log.Debugf("Response status: %s in %s", "res.Status", duration.String())
-		su.httpRecorder.Record(&recording.HTTPRecordEntry{
-			Iteration:  su.iteration,
-			Name:       reqName,
-			Value:      duration.Nanoseconds() / 100000,
-			StatusCode: res.StatusCode,
-		})
 	}
+	defer res.Body.Close()
+
+	duration := end.Sub(start)
+	su.log.Debugf("Response status: %s in %s", "res.Status", duration.String())
+	su.httpRecorder.Record(&recording.HTTPRecordEntry{
+		Iteration:  su.iteration,
+		Name:       reqName,
+		Value:      duration.Nanoseconds() / 100000,
+		StatusCode: res.StatusCode,
+	})
 
 	return evaluator.NULL
 }
