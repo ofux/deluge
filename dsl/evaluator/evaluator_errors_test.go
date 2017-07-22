@@ -192,7 +192,7 @@ if (10 > 1) {
 func TestStringAssignmentErrorHandling(t *testing.T) {
 	tests := []expectedError{
 		{
-			`a = "a"+null`,
+			`let a = "a"+null; a`,
 			"cannot convert value of type NULL to STRING",
 		},
 		{
@@ -861,16 +861,16 @@ sum(f1, f2);
 func TestEvalStringInfixExpression(t *testing.T) {
 	tests := []expectedError{
 		{
-			`["array"] == "array"`,
-			"cannot convert value of type ARRAY to STRING",
+			`["array"] += "array"`,
+			"unknown operator: [ += STRING",
 		},
 		{
 			`{"foo":"bar"} + "foo:bar"`,
 			"cannot convert value of type HASH to STRING",
 		},
 		{
-			`"function" == function(){}`,
-			"cannot convert value of type FUNCTION to STRING",
+			`"function" += function(){}`,
+			"unknown operator: STRING += FUNCTION",
 		},
 	}
 

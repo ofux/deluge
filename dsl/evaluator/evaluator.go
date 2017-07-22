@@ -395,21 +395,27 @@ func (e *Evaluator) evalStringInfixExpression(
 	left, right object.Object,
 ) object.Object {
 	operator := node.Operator
-	leftStr, err := convertToString(node, left)
-	if err != nil {
-		return err
-	}
-	rightStr, err := convertToString(node, right)
-	if err != nil {
-		return err
-	}
+	leftStr, err1 := convertToString(node, left)
+	rightStr, err2 := convertToString(node, right)
 
 	switch operator {
 	case "+":
+		if err1 != nil {
+			return err1
+		}
+		if err2 != nil {
+			return err2
+		}
 		return &object.String{Value: leftStr.Value + rightStr.Value}
 	case "==":
+		if err1 != nil || err2 != nil {
+			return nativeBoolToBooleanObject(false)
+		}
 		return nativeBoolToBooleanObject(leftStr.Value == rightStr.Value)
 	case "!=":
+		if err1 != nil || err2 != nil {
+			return nativeBoolToBooleanObject(false)
+		}
 		return nativeBoolToBooleanObject(leftStr.Value != rightStr.Value)
 	default:
 		return NewError(node, "unknown operator: %s %s %s",
