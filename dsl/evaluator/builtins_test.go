@@ -813,3 +813,127 @@ func TestBuiltinFromJsonToJson(t *testing.T) {
 		assert.Equal(t, `{"a":"foo","b":42,"c":{"ca":"cfoo","cb":43,"cc":[1,2],"cd":{"cda":"bar"}},"d":["da",43,[],{},true,12.3],"e":1.2,"f":false}`, result.Value)
 	})
 }
+
+func TestBuiltinUrlEncode(t *testing.T) {
+	t.Run("URL encode", func(t *testing.T) {
+		input := `
+urlParamsEncode({
+	"a": "foo",
+	"b&c": "42",
+})
+`
+
+		evaluated := testEval(t, input)
+		if err, ok := evaluated.(*object.Error); ok {
+			t.Fatal(err.Message, err.StackToken)
+		}
+
+		result, ok := evaluated.(*object.String)
+		require.True(t, ok)
+		assert.Equal(t, `a=foo&b%26c=42`, result.Value)
+	})
+
+	t.Run("URL encode with no argument", func(t *testing.T) {
+		input := `
+		urlParamsEncode();
+		`
+
+		evaluated := testEval(t, input)
+		result, ok := evaluated.(*object.Error)
+
+		require.True(t, ok)
+		assert.Equal(t, "wrong number of arguments. got=0, want=1", result.Message)
+	})
+
+	t.Run("URL encode with bad argument", func(t *testing.T) {
+		input := `
+		urlParamsEncode("{}");
+		`
+
+		evaluated := testEval(t, input)
+		result, ok := evaluated.(*object.Error)
+
+		require.True(t, ok)
+		assert.Equal(t, "wrong type of argument n°1. got=STRING, want=HASH", result.Message)
+	})
+
+	t.Run("URL encode with data that cannot be encoded", func(t *testing.T) {
+		input := `
+		urlParamsEncode({
+			"a": {}
+		});
+		`
+
+		evaluated := testEval(t, input)
+		result, ok := evaluated.(*object.Error)
+
+		require.True(t, ok)
+		assert.Equal(t, "cannot url-encode value of type HASH", result.Message)
+	})
+}
+
+func TestBuiltinUrlDecode(t *testing.T) {
+	t.Run("URL decode", func(t *testing.T) {
+		input := `
+urlParamsDecode("a=foo&b%26c=42")
+`
+
+		evaluated := testEval(t, input)
+		if err, ok := evaluated.(*object.Error); ok {
+			t.Fatal(err.Message, err.StackToken)
+		}
+
+		result, ok := evaluated.(*object.Hash)
+		require.True(t, ok)
+
+		deepEqual := object.DeepEquals(&object.Hash{
+			Pairs: map[object.HashKey]object.Object{
+				object.HashKey("a"):   &object.String{"foo"},
+				object.HashKey("b&c"): &object.String{"42"},
+			},
+		}, result)
+
+		assert.True(t, deepEqual)
+	})
+
+	t.Run("URL decode with no argument", func(t *testing.T) {
+		input := `
+		urlParamsDecode();
+		`
+
+		evaluated := testEval(t, input)
+		result, ok := evaluated.(*object.Error)
+
+		require.True(t, ok)
+		assert.Equal(t, "wrong number of arguments. got=0, want=1", result.Message)
+	})
+
+	t.Run("URL decode with bad argument", func(t *testing.T) {
+		input := `
+		urlParamsDecode({});
+		`
+
+		evaluated := testEval(t, input)
+		result, ok := evaluated.(*object.Error)
+
+		require.True(t, ok)
+		assert.Equal(t, "wrong type of argument n°1. got=HASH, want=STRING", result.Message)
+	})
+
+	t.Run("URL decode with data that cannot be decoded", func(t *testing.T) {
+		input := `
+		urlParamsDecode("");
+		`
+
+		evaluated := testEval(t, input)
+
+		result, ok := evaluated.(*object.Hash)
+		require.True(t, ok)
+
+		deepEqual := object.DeepEquals(&object.Hash{
+			Pairs: map[object.HashKey]object.Object{},
+		}, result)
+
+		assert.True(t, deepEqual)
+	})
+}

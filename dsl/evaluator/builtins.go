@@ -7,6 +7,7 @@ import (
 	"github.com/ofux/deluge/dsl/ast"
 	"github.com/ofux/deluge/dsl/object"
 	"github.com/ofux/deluge/dsl/token"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -184,6 +185,47 @@ var globalBuiltins = map[string]*object.Builtin{
 			}
 
 			return &object.String{Value: string(jsonStr)}
+		},
+	},
+	"urlParamsEncode": {
+		Fn: func(node ast.Node, args ...object.Object) object.Object {
+			if oErr := AssertArgsType(node, args, object.HASH_OBJ); oErr != nil {
+				return oErr
+			}
+
+			data := url.Values{}
+			hash := args[0].(*object.Hash)
+			for k, v := range hash.Pairs {
+				vStr, ok := v.(*object.String)
+				if !ok {
+					return NewError(node, "cannot url-encode value of type %s", v.Type())
+				}
+				data.Add(string(k), vStr.Value)
+			}
+
+			return &object.String{Value: data.Encode()}
+		},
+	},
+	"urlParamsDecode": {
+		Fn: func(node ast.Node, args ...object.Object) object.Object {
+			if oErr := AssertArgsType(node, args, object.STRING_OBJ); oErr != nil {
+				return oErr
+			}
+
+			encoded := args[0].(*object.String)
+			parsed, err := url.ParseQuery(encoded.Value)
+			if err != nil {
+				return NewError(node, err.Error())
+			}
+
+			resHeaders := make(map[object.HashKey]object.Object)
+			for k := range parsed {
+				resHeaders[object.HashKey(k)] = &object.String{Value: parsed.Get(k)}
+			}
+
+			return &object.Hash{
+				Pairs: resHeaders,
+			}
 		},
 	},
 	"first": {
