@@ -28,6 +28,8 @@ type Scenario struct {
 	Name              string
 	simUsers          []*simUser
 	script            ast.Node
+	scriptParams      []*ast.Identifier
+	scriptArgs        *object.Hash
 	IterationDuration time.Duration
 	httpRecorder      *recording.HTTPRecorder
 	log               *log.Entry
@@ -40,10 +42,20 @@ type Scenario struct {
 	Mutex              *sync.Mutex
 }
 
-func newScenario(name string, concurrent int, iterationDuration time.Duration, script ast.Node, logEntry *log.Entry) *Scenario {
+func newScenario(
+	name string,
+	concurrent int,
+	iterationDuration time.Duration,
+	script ast.Node,
+	scriptParams []*ast.Identifier,
+	scriptArgs *object.Hash,
+	logEntry *log.Entry,
+) *Scenario {
 	s := &Scenario{
 		Name:              name,
 		script:            script,
+		scriptParams:      scriptParams,
+		scriptArgs:        scriptArgs,
 		IterationDuration: iterationDuration,
 		simUsers:          make([]*simUser, concurrent),
 

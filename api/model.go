@@ -1,4 +1,4 @@
-package dto
+package api
 
 import (
 	"errors"
@@ -51,46 +51,46 @@ type Scenario struct {
 	Report            reporting.Report
 }
 
-func MapDeluge(d *core.Deluge) *Deluge {
+func mapDeluge(d *core.Deluge) *Deluge {
 	d.Mutex.Lock()
 	dDTO := &Deluge{
 		ID:             d.ID,
 		Name:           d.Name,
 		GlobalDuration: d.GlobalDuration,
-		Status:         MapDelugeStatus(d.Status),
+		Status:         mapDelugeStatus(d.Status),
 		Scenarios:      make(map[string]*Scenario),
 	}
 	d.Mutex.Unlock()
 	for scID, sc := range d.Scenarios {
 		sc.Mutex.Lock()
-		dDTO.Scenarios[scID] = MapScenario(sc)
+		dDTO.Scenarios[scID] = mapScenario(sc)
 		sc.Mutex.Unlock()
 	}
 	return dDTO
 }
 
-func MapDelugeLite(d *core.Deluge) *DelugeLite {
+func mapDelugeLite(d *core.Deluge) *DelugeLite {
 	d.Mutex.Lock()
 	dDTO := &DelugeLite{
 		ID:     d.ID,
 		Name:   d.Name,
-		Status: MapDelugeStatus(d.Status),
+		Status: mapDelugeStatus(d.Status),
 	}
 	d.Mutex.Unlock()
 	return dDTO
 }
 
-func MapScenario(sc *core.Scenario) *Scenario {
+func mapScenario(sc *core.Scenario) *Scenario {
 	return &Scenario{
 		Name:              sc.Name,
 		IterationDuration: sc.IterationDuration,
 		Errors:            sc.Errors,
 		Report:            sc.Report,
-		Status:            MapScenarioStatus(sc.Status),
+		Status:            mapScenarioStatus(sc.Status),
 	}
 }
 
-func MapScenarioStatus(st core.ScenarioStatus) ScenarioStatus {
+func mapScenarioStatus(st core.ScenarioStatus) ScenarioStatus {
 	switch st {
 	case core.ScenarioVirgin:
 		return ScenarioVirgin
@@ -106,7 +106,7 @@ func MapScenarioStatus(st core.ScenarioStatus) ScenarioStatus {
 	panic(errors.New(fmt.Sprintf("Invalid scenario status %d", st)))
 }
 
-func MapDelugeStatus(st core.DelugeStatus) DelugeStatus {
+func mapDelugeStatus(st core.DelugeStatus) DelugeStatus {
 	switch st {
 	case core.DelugeVirgin:
 		return DelugeVirgin

@@ -195,13 +195,9 @@ func (ao *Array) Equals(other Object) bool {
 	return ao == other
 }
 
-type HashPair struct {
-	Key   Object
-	Value Object
-}
-
 type Hash struct {
-	Pairs map[HashKey]HashPair
+	Pairs       map[HashKey]Object
+	IsImmutable bool
 }
 
 func (h *Hash) Type() ObjectType { return HASH_OBJ }
@@ -209,11 +205,13 @@ func (h *Hash) Inspect() string {
 	var out bytes.Buffer
 
 	pairs := []string{}
-	for _, pair := range h.Pairs {
-		pairs = append(pairs, fmt.Sprintf("%s: %s",
-			pair.Key.Inspect(), pair.Value.Inspect()))
+	for k, v := range h.Pairs {
+		pairs = append(pairs, fmt.Sprintf("%s: %s", k, v.Inspect()))
 	}
 
+	if h.IsImmutable {
+		out.WriteString("#")
+	}
 	out.WriteString("{")
 	out.WriteString(strings.Join(pairs, ", "))
 	out.WriteString("}")
@@ -223,7 +221,7 @@ func (h *Hash) Inspect() string {
 func (h *Hash) Equals(other Object) bool {
 	return h == other
 }
-func (h *Hash) Get(key string) (HashPair, bool) {
+func (h *Hash) Get(key string) (Object, bool) {
 	r, ok := h.Pairs[HashKey(key)]
 	return r, ok
 }
@@ -232,14 +230,14 @@ func (h *Hash) Get(key string) (HashPair, bool) {
 // It returns the Object (if any), true if the key was found,
 // and an error if the key was not found or the object was not of expected type.
 func (h *Hash) GetAs(key string, expectedType ObjectType) (Object, bool, error) {
-	r, ok := h.Pairs[HashKey(key)]
+	v, ok := h.Pairs[HashKey(key)]
 	if !ok {
 		return nil, false, errors.New(fmt.Sprintf("missing '%s' field", key))
 	}
-	if r.Value.Type() != expectedType {
-		return nil, true, errors.New(fmt.Sprintf("'%s' should be of type %s but was %s", key, expectedType, r.Value.Type()))
+	if v.Type() != expectedType {
+		return nil, true, errors.New(fmt.Sprintf("'%s' should be of type %s but was %s", key, expectedType, v.Type()))
 	}
-	return r.Value, true, nil
+	return v, true, nil
 }
 func (h *Hash) GetAsString(key string) (*String, bool, error) {
 	v, ok, err := h.GetAs(key, STRING_OBJ)

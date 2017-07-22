@@ -152,6 +152,10 @@ func TestEvalBooleanExpression(t *testing.T) {
 			{`"3" != 1+2`, false},
 			{`1 != "3"`, true},
 			{`"3" != 2`, true},
+			{`"3" == null`, false},
+			{`"1" != null`, false},
+			{`null == "3"`, false},
+			{`null == "1"`, false},
 			{"(1 < 2) == true", true},
 			{"(1 < 2) == false", false},
 			{"(1 > 2) == true", false},
@@ -438,8 +442,8 @@ func TestLetStatements(t *testing.T) {
 	}
 }
 
-func TestAssignStatements(t *testing.T) {
-	t.Run("assign integers", func(t *testing.T) {
+func TestAssignmentExpressions(t *testing.T) {
+	t.Run("assign integers to integers", func(t *testing.T) {
 		tests := []struct {
 			input    string
 			expected int64
@@ -448,6 +452,7 @@ func TestAssignStatements(t *testing.T) {
 			{"let a = 1; a = 5 * 5; a;", 25},
 			{"let a = 1; a = 5; let b = a; b;", 5},
 			{"let a = 1; a = 5; let b = a; let c = a; c = c + b + 5; c;", 15},
+
 			{"let a = 1+5; a;", 6},
 			{"let a = 1; a += 5; a;", 6},
 			{"let a = 1; a -= 5; a;", -4},
@@ -455,10 +460,112 @@ func TestAssignStatements(t *testing.T) {
 			{"let a = 4; a /= 2; a;", 2},
 			{"let a = 4; a++; a;", 5},
 			{"let a = 4; a--; a;", 3},
+
+			{"let a = [1, 2]; a[0] = 5; a[0];", 5},
+			{"let a = [1, 2]; a[0] += 5; a[0];", 6},
+			{"let a = [1, 2]; a[0] -= 5; a[0];", -4},
+			{"let a = [4, 2]; a[0] *= 5; a[0];", 20},
+			{"let a = [4, 2]; a[0] /= 2; a[0];", 2},
+			{"let a = [4, 2]; a[0]++; a[0];", 5},
+			{"let a = [4, 2]; a[0]--; a[0];", 3},
+
+			{`let a = {"x":1}; a["x"] = 5; a["x"];`, 5},
+			{`let a = {"x":1}; a["x"] += 5; a["x"];`, 6},
+			{`let a = {"x":1}; a["x"] -= 5; a["x"];`, -4},
+			{`let a = {"x":4}; a["x"] *= 5; a["x"];`, 20},
+			{`let a = {"x":4}; a["x"] /= 2; a["x"];`, 2},
+			{`let a = {"x":4}; a["x"]++; a["x"];`, 5},
+			{`let a = {"x":4}; a["x"]--; a["x"];`, 3},
 		}
 
 		for _, tt := range tests {
 			testIntegerObject(t, testEval(t, tt.input), tt.expected)
+		}
+	})
+
+	t.Run("assign integers to floats", func(t *testing.T) {
+		tests := []struct {
+			input    string
+			expected float64
+		}{
+			{"let a = 1.3; a = 5.3; a;", 5.3},
+			{"let a = 1.3; a = 5.3 * 5; a;", 26.5},
+			{"let a = 1.3; a = 5.3; let b = a; b;", 5.3},
+			{"let a = 1.3; a = 5.3; let b = a; let c = a; c = c + b + 5; c;", 15.6},
+
+			{"let a = 1.3+5; a;", 6.3},
+			{"let a = 1.3; a += 5; a;", 6.3},
+			{"let a = 1.3; a -= 5; a;", -3.7},
+			{"let a = 4.3; a *= 5; a;", 21.5},
+			{"let a = 4.3; a /= 2; a;", 2.15},
+
+			{"let a = [1.3, 2]; a[0] = 5.3; a[0];", 5.3},
+			{"let a = [1.3, 2]; a[0] += 5; a[0];", 6.3},
+			{"let a = [1.3, 2]; a[0] -= 5; a[0];", -3.7},
+			{"let a = [4.3, 2]; a[0] *= 5; a[0];", 21.5},
+			{"let a = [4.3, 2]; a[0] /= 2; a[0];", 2.15},
+
+			{`let a = {"x":1.3}; a["x"] = 5.3; a["x"];`, 5.3},
+			{`let a = {"x":1.3}; a["x"] += 5; a["x"];`, 6.3},
+			{`let a = {"x":1.3}; a["x"] -= 5; a["x"];`, -3.7},
+			{`let a = {"x":4.3}; a["x"] *= 5; a["x"];`, 21.5},
+			{`let a = {"x":4.3}; a["x"] /= 2; a["x"];`, 2.15},
+		}
+
+		for _, tt := range tests {
+			testFloatObject(t, testEval(t, tt.input), tt.expected)
+		}
+	})
+
+	t.Run("assign floats to integers", func(t *testing.T) {
+		tests := []struct {
+			input    string
+			expected float64
+		}{
+			{"let a = 1; a += 5.3; a;", 6.3},
+			{"let a = 1; a -= 5.3; a;", -4.3},
+			{"let a = 4; a *= 5.3; a;", 21.2},
+			{"let a = 5; a /= 2.5; a;", 2.0},
+
+			{"let a = [1, 2]; a[0] += 5.3; a[0];", 6.3},
+			{"let a = [1, 2]; a[0] -= 5.3; a[0];", -4.3},
+			{"let a = [4, 2]; a[0] *= 5.3; a[0];", 21.2},
+			{"let a = [5, 2]; a[0] /= 2.5; a[0];", 2.0},
+
+			{`let a = {"x":1}; a["x"] += 5.3; a["x"];`, 6.3},
+			{`let a = {"x":1}; a["x"] -= 5.3; a["x"];`, -4.3},
+			{`let a = {"x":4}; a["x"] *= 5.3; a["x"];`, 21.2},
+			{`let a = {"x":5}; a["x"] /= 2.5; a["x"];`, 2.0},
+		}
+
+		for _, tt := range tests {
+			testFloatObject(t, testEval(t, tt.input), tt.expected)
+		}
+	})
+
+	t.Run("assign floats to floats", func(t *testing.T) {
+		tests := []struct {
+			input    string
+			expected float64
+		}{
+			{"let a = 1.2; a += 5.3; a;", 6.5},
+			{"let a = 1.2; a -= 5.3; a;", -4.1},
+			{"let a = 4.2; a *= 5.3; a;", 22.26},
+			{"let a = 5.2; a /= 2.6; a;", 2.0},
+
+			{"let a = [1.2, 2]; a[0] += 5.3; a[0];", 6.5},
+			{"let a = [1.2, 2]; a[0] -= 5.3; a[0];", -4.1},
+			{"let a = [4.2, 2]; a[0] *= 5.3; a[0];", 22.26},
+			{"let a = [5.2, 2]; a[0] /= 2.6; a[0];", 2.0},
+
+			{`let a = {"x":1.2}; a["x"] += 5.3; a["x"];`, 6.5},
+			{`let a = {"x":1.2}; a["x"] -= 5.3; a["x"];`, -4.1},
+			{`let a = {"x":4.2}; a["x"] *= 5.3; a["x"];`, 22.26},
+			{`let a = {"x":5.2}; a["x"] /= 2.6; a["x"];`, 2.0},
+		}
+
+		for _, tt := range tests {
+			testFloatObject(t, testEval(t, tt.input), tt.expected)
 		}
 	})
 
@@ -469,7 +576,13 @@ func TestAssignStatements(t *testing.T) {
 		}{
 			{`let a = "x"; a = "A"; a;`, "A"},
 			{`let a = "x"; a = "A" + "B"; a;`, "AB"},
+			{`let a = "x"; a = "A"+1; a;`, "A1"},
+			{`let a = "x"; a = "A"+3.3; a;`, "A3.3"},
+			{`let a = "x"; a = "A"+true; a;`, "Atrue"},
 			{`let a = "x"; a += "A"; a;`, "xA"},
+			{`let a = "x"; a += 1; a;`, "x1"},
+			{`let a = "x"; a += 3.3; a;`, "x3.3"},
+			{`let a = "x"; a += true; a;`, "xtrue"},
 		}
 
 		for _, tt := range tests {
@@ -657,7 +770,7 @@ func TestArrayLiterals(t *testing.T) {
 func TestArrayIndexExpressions(t *testing.T) {
 	tests := []struct {
 		input    string
-		expected interface{}
+		expected int
 	}{
 		{
 			"[1, 2, 3][0]",
@@ -691,24 +804,28 @@ func TestArrayIndexExpressions(t *testing.T) {
 			"let myArray = [1, 2, 3]; let i = myArray[0]; myArray[i]",
 			2,
 		},
+	}
+
+	for _, tt := range tests {
+		evaluated := testEval(t, tt.input)
+		testIntegerObject(t, evaluated, int64(tt.expected))
+	}
+}
+
+func TestArrayAssignmentExpressions(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected int
+	}{
 		{
-			"[1, 2, 3][3]",
-			nil,
-		},
-		{
-			"[1, 2, 3][-1]",
-			nil,
+			`let h=[1,2]; h[0]=42; h[0]`,
+			42,
 		},
 	}
 
 	for _, tt := range tests {
 		evaluated := testEval(t, tt.input)
-		integer, ok := tt.expected.(int)
-		if ok {
-			testIntegerObject(t, evaluated, int64(integer))
-		} else {
-			testNullObject(t, evaluated)
-		}
+		testIntegerObject(t, evaluated, int64(tt.expected))
 	}
 }
 
@@ -739,12 +856,12 @@ func TestHashLiterals(t *testing.T) {
 	}
 
 	for expectedKey, expectedValue := range expected {
-		pair, ok := result.Pairs[expectedKey]
+		v, ok := result.Pairs[expectedKey]
 		if !ok {
 			t.Errorf("no pair for given key in Pairs")
 		}
 
-		testIntegerObject(t, pair.Value, expectedValue)
+		testIntegerObject(t, v, expectedValue)
 	}
 }
 
@@ -780,6 +897,32 @@ func TestHashIndexExpressions(t *testing.T) {
 		{
 			`{"5": 3}[5]`,
 			3,
+		},
+	}
+
+	for _, tt := range tests {
+		evaluated := testEval(t, tt.input)
+		integer, ok := tt.expected.(int)
+		if ok {
+			testIntegerObject(t, evaluated, int64(integer))
+		} else {
+			testNullObject(t, evaluated)
+		}
+	}
+}
+
+func TestHashAssignmentExpressions(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected interface{}
+	}{
+		{
+			`let h={}; h["a"]=42; h["a"]`,
+			42,
+		},
+		{
+			`let h={"a": 1}; h["a"]=42; h["a"]`,
+			42,
 		},
 	}
 

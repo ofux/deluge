@@ -110,13 +110,13 @@ func TestEquals(t *testing.T) {
 
 func TestHash_GetAs(t *testing.T) {
 	hash := &Hash{
-		Pairs: map[HashKey]HashPair{
-			HashKey("a"): {Key: &String{"a"}, Value: &String{"foo"}},
-			HashKey("b"): {Key: &String{"b"}, Value: &Integer{42}},
-			HashKey("c"): {Key: &String{"c"}, Value: &Hash{Pairs: map[HashKey]HashPair{}}},
-			HashKey("d"): {Key: &String{"d"}, Value: &Array{[]Object{}}},
-			HashKey("e"): {Key: &String{"e"}, Value: &Float{1.2}},
-			HashKey("f"): {Key: &String{"f"}, Value: &Boolean{true}},
+		Pairs: map[HashKey]Object{
+			HashKey("a"): &String{"foo"},
+			HashKey("b"): &Integer{42},
+			HashKey("c"): &Hash{Pairs: map[HashKey]Object{}},
+			HashKey("d"): &Array{[]Object{}},
+			HashKey("e"): &Float{1.2},
+			HashKey("f"): &Boolean{true},
 		},
 	}
 

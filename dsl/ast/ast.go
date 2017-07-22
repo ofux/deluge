@@ -108,31 +108,6 @@ func (rs *ReturnStatement) String() string {
 	return out.String()
 }
 
-type AssignStatement struct {
-	Token    token.Token // the token.ASSIGN token
-	Operator string      // the assignment operator (eg. = += -= *= /= ++ --)
-	Name     *Identifier
-	Value    Expression
-}
-
-func (as *AssignStatement) statementNode()            {}
-func (as *AssignStatement) TokenDetails() token.Token { return as.Token }
-func (as *AssignStatement) TokenLiteral() string      { return as.Token.Literal }
-func (as *AssignStatement) String() string {
-	var out bytes.Buffer
-
-	out.WriteString(as.Name.String())
-	out.WriteString(" " + as.TokenLiteral() + " ")
-
-	if as.Value != nil {
-		out.WriteString(as.Value.String())
-	}
-
-	out.WriteString(";")
-
-	return out.String()
-}
-
 type ExpressionStatement struct {
 	Token      token.Token // the first token of the expression
 	Expression Expression
@@ -253,6 +228,48 @@ func (oe *InfixExpression) String() string {
 	out.WriteString(oe.Left.String())
 	out.WriteString(" " + oe.Operator + " ")
 	out.WriteString(oe.Right.String())
+	out.WriteString(")")
+
+	return out.String()
+}
+
+type AssignmentExpression struct {
+	Token    token.Token // The operator token, e.g. =
+	Left     Expression
+	Operator string
+	Right    Expression
+}
+
+func (ae *AssignmentExpression) expressionNode()           {}
+func (ae *AssignmentExpression) TokenDetails() token.Token { return ae.Token }
+func (ae *AssignmentExpression) TokenLiteral() string      { return ae.Token.Literal }
+func (ae *AssignmentExpression) String() string {
+	var out bytes.Buffer
+
+	out.WriteString("(")
+	out.WriteString(ae.Left.String())
+	out.WriteString(" " + ae.Operator + " ")
+	out.WriteString(ae.Right.String())
+	out.WriteString(")")
+
+	return out.String()
+}
+
+type PostAssignmentExpression struct {
+	Token    token.Token // The operator token, e.g. ++
+	Left     Expression
+	Operator string
+}
+
+func (pae *PostAssignmentExpression) expressionNode()           {}
+func (pae *PostAssignmentExpression) TokenDetails() token.Token { return pae.Token }
+func (pae *PostAssignmentExpression) TokenLiteral() string      { return pae.Token.Literal }
+func (pae *PostAssignmentExpression) String() string {
+	var out bytes.Buffer
+
+	out.WriteString("(")
+	out.WriteString(pae.Left.String())
+	out.WriteString(pae.Operator)
 	out.WriteString(")")
 
 	return out.String()

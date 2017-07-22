@@ -1,7 +1,9 @@
 package evaluator
 
 import (
+	"github.com/ofux/deluge/dsl/ast"
 	"github.com/ofux/deluge/dsl/object"
+	"github.com/ofux/deluge/dsl/token"
 	"testing"
 )
 
@@ -85,23 +87,6 @@ if (10 > 1) {
 			"index operator not supported: INTEGER",
 		},
 		{
-			`a = 3`,
-			"identifier not found: a",
-		},
-		{
-			`let a = 3; let a = 4;`,
-			"variable a redeclared in this block",
-		},
-		{
-			`
-function() {
-	let b = 1;
-}();
-b = 2;
-`,
-			"identifier not found: b",
-		},
-		{
 			`"a" < "b"`,
 			"unknown operator: STRING < STRING",
 		},
@@ -142,12 +127,111 @@ b = 2;
 			"unknown operator: STRING && BOOLEAN",
 		},
 		{
+			`-"foo";`,
+			"unknown operator: -STRING",
+		},
+		{
+			`-x;`,
+			"identifier not found: x",
+		},
+		{
+			`x();`,
+			"identifier not found: x",
+		},
+		{
+			`let f=function(){}; f(x);`,
+			"identifier not found: x",
+		},
+		{
+			`[1, 2, x]`,
+			"identifier not found: x",
+		},
+		{
+			`x[1]`,
+			"identifier not found: x",
+		},
+		{
+			`[1, 2][x]`,
+			"identifier not found: x",
+		},
+		{
+			`f() && true`,
+			"identifier not found: f",
+		},
+		{
+			`true && f()`,
+			"identifier not found: f",
+		},
+		{
+			`f() || true`,
+			"identifier not found: f",
+		},
+		{
+			`false || f()`,
+			"identifier not found: f",
+		},
+		{
+			`3.0 % 2`,
+			"unknown operator: FLOAT % INTEGER",
+		},
+		{
+			`[1,2,3][-1]`,
+			"index -1 out of bounds [0, 2]",
+		},
+		{
+			`[1,2,3][3]`,
+			"index 3 out of bounds [0, 2]",
+		},
+	}
+
+	for _, tt := range tests {
+		testError(t, tt)
+	}
+}
+
+func TestStringAssignmentErrorHandling(t *testing.T) {
+	tests := []expectedError{
+		{
+			`let a = "a"+null; a`,
+			"cannot convert value of type NULL to STRING",
+		},
+		{
+			`let a = "a"; a += null; a`,
+			"unknown operator STRING += NULL",
+		},
+	}
+
+	for _, tt := range tests {
+		testError(t, tt)
+	}
+}
+
+func TestAssignmentIdentifierErrorHandling(t *testing.T) {
+	tests := []expectedError{
+		{
+			`a = 3`,
+			"identifier not found: a",
+		},
+		{
+			`let a = 3; let a = 4;`,
+			"variable a redeclared in this block",
+		},
+		{
+			`
+			function() {
+				let b = 1;
+			}();
+			b = 2;
+			`,
+			"identifier not found: b",
+		},
+		{
 			`let a = "x"; a--`,
-			"unknown operator STRING -- INTEGER",
+			"unknown operator STRING --",
 		},
 		{
 			`let a = "x"; a++`,
-			"unknown operator STRING ++ INTEGER",
+			"unknown operator STRING ++",
 		},
 		{
 			`let a = "x"; a -= 2`,
@@ -198,65 +282,344 @@ b = 2;
 			"identifier not found: x",
 		},
 		{
-			`-"foo";`,
-			"unknown operator: -STRING",
-		},
-		{
-			`-x;`,
-			"identifier not found: x",
-		},
-		{
-			`x();`,
-			"identifier not found: x",
-		},
-		{
-			`let f=function(){}; f(x);`,
-			"identifier not found: x",
-		},
-		{
-			`[1, 2, x]`,
-			"identifier not found: x",
-		},
-		{
-			`x[1]`,
-			"identifier not found: x",
-		},
-		{
-			`[1, 2][x]`,
-			"identifier not found: x",
-		},
-		{
 			`let a = [1, 2]; a += 1`,
-			"unknown operator ARRAY +=",
+			"unknown operator ARRAY += INTEGER",
 		},
 		{
 			`let a = null; a += 1`,
-			"unknown operator NULL +=",
+			"unknown operator NULL += INTEGER",
 		},
 		{
-			`f() && true`,
-			"identifier not found: f",
+			`x++`,
+			"identifier not found: x",
 		},
 		{
-			`true && f()`,
-			"identifier not found: f",
+			`1.3++`,
+			"unknown operator: FLOAT ++",
 		},
 		{
-			`f() || true`,
-			"identifier not found: f",
-		},
-		{
-			`false || f()`,
-			"identifier not found: f",
-		},
-		{
-			`3.0 % 2`,
-			"unknown operator: FLOAT % INTEGER",
+			`2.5--`,
+			"unknown operator: FLOAT --",
 		},
 	}
 
 	for _, tt := range tests {
 		testError(t, tt)
+	}
+}
+
+func TestAssignmentArrayIndexErrorHandling(t *testing.T) {
+	tests := []expectedError{
+		{
+			`let a = ["x"]; a[0]--`,
+			"unknown operator STRING --",
+		},
+		{
+			`let a = ["x"]; a[0]++`,
+			"unknown operator STRING ++",
+		},
+		{
+			`let a = ["x"]; a[0] -= 2`,
+			"unknown operator STRING -= INTEGER",
+		},
+		{
+			`let a = ["x"]; a[0] *= 2`,
+			"unknown operator STRING *= INTEGER",
+		},
+		{
+			`let a = ["x"]; a[0] /= 2`,
+			"unknown operator STRING /= INTEGER",
+		},
+		{
+			`let a = [4]; a[0] += "1"`,
+			"unknown operator INTEGER += STRING",
+		},
+		{
+			`let a = [4]; a[0] -= "1"`,
+			"unknown operator INTEGER -= STRING",
+		},
+		{
+			`let a = [4]; a[0] *= "1"`,
+			"unknown operator INTEGER *= STRING",
+		},
+		{
+			`let a = [4]; a[0] /= "1"`,
+			"unknown operator INTEGER /= STRING",
+		},
+		{
+			`let a = [4]; a[0] = b;`,
+			"identifier not found: b",
+		},
+		{
+			`let a = [4]; a[0] += x`,
+			"identifier not found: x",
+		},
+		{
+			`let a = [[1, 2]]; a[0] += 1`,
+			"unknown operator ARRAY += INTEGER",
+		},
+		{
+			`let a = [null]; a[0] += 1`,
+			"unknown operator NULL += INTEGER",
+		},
+		{
+			`let a = [4]; a[x] = 1`,
+			"identifier not found: x",
+		},
+		{
+			`let a = [4]; a[x]--`,
+			"identifier not found: x",
+		},
+		{
+			`let a = [4]; a[1] = 1`,
+			"index 1 out of bounds [0, 0]",
+		},
+		{
+			`let a = [4]; a[-1] = 1`,
+			"index -1 out of bounds [0, 0]",
+		},
+		{
+			`let a = [4]; a[-1]++`,
+			"index -1 out of bounds [0, 0]",
+		},
+		{
+			`a[0] = 1`,
+			"identifier not found: a",
+		},
+		{
+			`a[0]++`,
+			"identifier not found: a",
+		},
+		{
+			`[1,2] = 4`,
+			"unknown operator: [ = INTEGER",
+		},
+		{
+			`[1,2]++`,
+			"unknown operator: [ ++",
+		},
+	}
+
+	for _, tt := range tests {
+		testError(t, tt)
+	}
+}
+
+func TestAssignmentHashIndexErrorHandling(t *testing.T) {
+	tests := []expectedError{
+		{
+			`let a = {"x":"y"}; a["x"]--`,
+			"unknown operator STRING --",
+		},
+		{
+			`let a = {"x":"y"}; a["x"]++`,
+			"unknown operator STRING ++",
+		},
+		{
+			`let a = {"x":"y"}; a["x"] -= 2`,
+			"unknown operator STRING -= INTEGER",
+		},
+		{
+			`let a = {"x":"y"}; a["x"] *= 2`,
+			"unknown operator STRING *= INTEGER",
+		},
+		{
+			`let a = {"x":"y"}; a["x"] /= 2`,
+			"unknown operator STRING /= INTEGER",
+		},
+		{
+			`let a = {"x":4}; a["x"] += "1"`,
+			"unknown operator INTEGER += STRING",
+		},
+		{
+			`let a = {"x":4}; a["x"] -= "1"`,
+			"unknown operator INTEGER -= STRING",
+		},
+		{
+			`let a = {"x":4}; a["x"] *= "1"`,
+			"unknown operator INTEGER *= STRING",
+		},
+		{
+			`let a = {"x":4}; a["x"] /= "1"`,
+			"unknown operator INTEGER /= STRING",
+		},
+		{
+			`let a = {"x":4}; a["x"] = b;`,
+			"identifier not found: b",
+		},
+		{
+			`let a = {"x":4}; a["x"] += x`,
+			"identifier not found: x",
+		},
+		{
+			`let a = {"x":{}}; a["x"] += 1`,
+			"unknown operator HASH += INTEGER",
+		},
+		{
+			`let a = {"x":null}; a["x"] += 1`,
+			"unknown operator NULL += INTEGER",
+		},
+		{
+			`let a = {"x":4}; a[x] = 1`,
+			"identifier not found: x",
+		},
+		{
+			`let a = {"x":4}; a[x]++`,
+			"identifier not found: x",
+		},
+		{
+			`a["x"] = 1`,
+			"identifier not found: a",
+		},
+		{
+			`a["x"]--`,
+			"identifier not found: a",
+		},
+		{
+			`{"x":4} = 4`,
+			"unknown operator: { = INTEGER",
+		},
+		{
+			`let a = {"x":4}; a[function(){}] = 1`,
+			"unusable as hash key: FUNCTION",
+		},
+		{
+			`let a = {}; a["x"] += 1`,
+			"undefined hash key: x",
+		},
+		{
+			`let a = {"x":4}; a[function(){}]--`,
+			"unusable as hash key: FUNCTION",
+		},
+		{
+			`let a = {}; a["x"]++`,
+			"undefined hash key: x",
+		},
+		{
+			`{} = 4`,
+			"unknown operator: { = INTEGER",
+		},
+		{
+			`{}++`,
+			"unknown operator: { ++",
+		},
+	}
+
+	for _, tt := range tests {
+		testError(t, tt)
+	}
+}
+
+func TestAssignmentOfImmutableErrorHandling(t *testing.T) {
+	tests := []expectedError{
+		{
+			token.ASSIGN,
+			"hash is immutable, you cannot modify it",
+		},
+		{
+			token.ASSIGN_DEC,
+			"hash is immutable, you cannot modify it",
+		},
+		{
+			token.ASSIGN_INC,
+			"hash is immutable, you cannot modify it",
+		},
+		{
+			token.ASSIGN_DIV,
+			"hash is immutable, you cannot modify it",
+		},
+		{
+			token.ASSIGN_MULT,
+			"hash is immutable, you cannot modify it",
+		},
+	}
+
+	for _, tt := range tests {
+		immutableHash := &object.Hash{
+			Pairs: map[object.HashKey]object.Object{
+				object.HashKey("x"): &object.Integer{1},
+			},
+			IsImmutable: true,
+		}
+		index := &object.String{"x"}
+		value := &object.Integer{42}
+		node := &ast.AssignmentExpression{
+			Operator: tt.input,
+			Token: token.Token{
+				Type:    token.TokenType(tt.input),
+				Column:  1,
+				Line:    3,
+				Literal: tt.input,
+			},
+		}
+
+		evaluated := evalAssignmentHashIndexExpression(node, immutableHash, index, value)
+
+		errObj, ok := evaluated.(*object.Error)
+		if !ok {
+			t.Errorf("no error object returned. got=%T(%+v)",
+				evaluated, evaluated)
+			return
+		}
+
+		if errObj.Message != tt.expectedMessage {
+			t.Errorf("wrong error message. expected=%q, got=%q",
+				tt.expectedMessage, errObj.Message)
+		}
+		if errObj.StackToken[0].Line != 3 || errObj.StackToken[0].Column != 1 {
+			t.Errorf("wrong stack of tokens %v",
+				errObj.StackToken)
+		}
+	}
+}
+
+func TestReassignmentOfImmutableErrorHandling(t *testing.T) {
+	tests := []expectedError{
+		{
+			token.ASSIGN_INC1,
+			"hash is immutable, you cannot modify it",
+		},
+		{
+			token.ASSIGN_DEC1,
+			"hash is immutable, you cannot modify it",
+		},
+	}
+
+	for _, tt := range tests {
+		immutableHash := &object.Hash{
+			Pairs: map[object.HashKey]object.Object{
+				object.HashKey("x"): &object.Integer{1},
+			},
+			IsImmutable: true,
+		}
+		index := &object.String{"x"}
+		node := &ast.PostAssignmentExpression{
+			Operator: tt.input,
+			Token: token.Token{
+				Type:    token.TokenType(tt.input),
+				Column:  1,
+				Line:    3,
+				Literal: tt.input,
+			},
+		}
+
+		evaluated := evalPostAssignmentHashIndexExpression(node, immutableHash, index)
+
+		errObj, ok := evaluated.(*object.Error)
+		if !ok {
+			t.Errorf("no error object returned. got=%T(%+v)",
+				evaluated, evaluated)
+			return
+		}
+
+		if errObj.Message != tt.expectedMessage {
+			t.Errorf("wrong error message. expected=%q, got=%q",
+				tt.expectedMessage, errObj.Message)
+		}
+		if errObj.StackToken[0].Line != 3 || errObj.StackToken[0].Column != 1 {
+			t.Errorf("wrong stack of tokens %v",
+				errObj.StackToken)
+		}
 	}
 }
 
@@ -498,16 +861,16 @@ sum(f1, f2);
 func TestEvalStringInfixExpression(t *testing.T) {
 	tests := []expectedError{
 		{
-			`["array"] == "array"`,
-			"cannot convert value of type ARRAY to STRING",
+			`["array"] += "array"`,
+			"unknown operator: [ += STRING",
 		},
 		{
 			`{"foo":"bar"} + "foo:bar"`,
 			"cannot convert value of type HASH to STRING",
 		},
 		{
-			`"function" == function(){}`,
-			"cannot convert value of type FUNCTION to STRING",
+			`"function" += function(){}`,
+			"unknown operator: STRING += FUNCTION",
 		},
 	}
 
