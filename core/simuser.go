@@ -3,13 +3,10 @@ package core
 import (
 	"github.com/ofux/deluge/cleanhttp"
 	"github.com/ofux/deluge/core/recording"
-	"github.com/ofux/deluge/dsl/ast"
 	"github.com/ofux/deluge/dsl/evaluator"
 	"github.com/ofux/deluge/dsl/object"
 	log "github.com/sirupsen/logrus"
-	"io"
 	"net/http"
-	"strings"
 	"time"
 )
 
@@ -94,74 +91,4 @@ func (su *simUser) createEnvironment() *object.Environment {
 		env.Add(params[1].Value, su.session)
 	}
 	return env
-}
-
-func (su *simUser) execHTTPRequest(node ast.Node, args ...object.Object) object.Object {
-	if oErr := evaluator.AssertArgsType(node, args, object.STRING_OBJ, object.HASH_OBJ); oErr != nil {
-		return oErr
-	}
-	reqName := args[0].(*object.String).Value
-	reqObj := args[1].(*object.Hash)
-
-	url, _, err := reqObj.GetAsString("url")
-	if err != nil {
-		return evaluator.NewError(node, "invalid HTTP request: %s", err.Error())
-	}
-
-	var method = "GET"
-	if m, ok, err := reqObj.GetAsString("method"); ok {
-		if err != nil {
-			return evaluator.NewError(node, "invalid HTTP request: %s", err.Error())
-		}
-		method = m.Value
-	}
-
-	var body io.Reader
-	if b, ok, err := reqObj.GetAsString("body"); ok {
-		if err != nil {
-			return evaluator.NewError(node, "invalid HTTP request: %s", err.Error())
-		}
-		body = strings.NewReader(b.Value)
-	}
-
-	// Create request
-	req, err := http.NewRequest(method, url.Value, body)
-	if err != nil {
-		return evaluator.NewError(node, err.Error())
-	}
-
-	if headers, ok, err := reqObj.GetAsHash("headers"); ok {
-		if err != nil {
-			return evaluator.NewError(node, "invalid HTTP request: %s", err.Error())
-		}
-		for headerKey, headerVal := range headers.Pairs {
-			headerValStr, ok := headerVal.(*object.String)
-			if !ok {
-				return evaluator.NewError(node, "invalid HTTP header '%s': should be of type %s but was %s", headerKey, object.STRING_OBJ, headerVal.Type())
-			}
-			req.Header.Add(string(headerKey), headerValStr.Value)
-		}
-	}
-
-	su.log.Debugf("Performing HTTP request: %s %s", req.Method, req.URL.String())
-	start := time.Now()
-	res, err := su.client.Do(req)
-	end := time.Now()
-
-	if err != nil {
-		su.log.Debugf("Request error: %s", err.Error())
-		return evaluator.NewError(node, err.Error())
-	}
-	defer res.Body.Close()
-
-	duration := end.Sub(start)
-	su.log.Debugf("Response status: %s in %s", "res.Status", duration.String())
-	su.httpRecorder.Record(&recording.HTTPRecordEntry{
-		Iteration:  su.iteration,
-		Name:       reqName,
-		Value:      duration.Nanoseconds() / 100000,
-		StatusCode: res.StatusCode,
-	})
-
-	return evaluator.NULL
 }

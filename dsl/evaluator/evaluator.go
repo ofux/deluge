@@ -978,7 +978,7 @@ func NewError(node ast.Node, format string, a ...interface{}) *object.Error {
 }
 
 func IsError(obj object.Object) bool {
-	return obj != nil && obj.Type() == object.ERROR_OBJ
+	return obj != nil && obj.Type() == object.ERROR_OBJ && obj.(*object.Error) != nil
 }
 
 func extendFunctionEnv(
