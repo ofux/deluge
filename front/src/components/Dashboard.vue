@@ -16,6 +16,9 @@
     <div class="graph">
       <bar-stacked :data="barStacked.data" :x-label="barStacked.xLabel" :y-label="barStacked.yLabel"></bar-stacked>
     </div>
+    <div class="graph">
+      <scatter-plot :data="scatter.data" :title="scatter.title" :x-label="scatter.xLabel" :y-label="scatter.yLabel"></scatter-plot>
+    </div>
   </div>
 </template>
 
@@ -24,6 +27,7 @@
   import BarStacked from '@/components/BarStacked';
   import Histogram from '@/components/Histogram';
   import LineGraph from '@/components/LineGraph';
+  import ScatterPlot from '@/components/ScatterPlot';
 
   export default {
     components: {
@@ -31,11 +35,14 @@
       BarStacked,
       Histogram,
       LineGraph,
+      ScatterPlot,
     },
     data: function data() {
       this.$http.get('http://localhost:8000/ex1_output.json').then((response) => {
         const scenarioIterations = response.data.Scenarios.sc1.Report.Stats.PerIteration;
         const scenarioGlobal = response.data.Scenarios.sc1.Report.Stats.Global;
+        const requestsName = Object.keys(scenarioGlobal.PerRequests);
+        const colors = ['rgba(223, 83, 83, .5)', 'rgba(119, 152, 191, .5)'];
 
         this.name = response.data.Name;
 
@@ -74,17 +81,27 @@
           return old;
         }, [{ name: 'Ok', data: [] }, { name: 'Ko', data: [] }]);
 
-        this.barStacked.data = Object.keys(scenarioGlobal.PerRequests)
-          .reduce((acc, requestName) => {
-            const requestOk = scenarioGlobal.PerRequests[requestName].PerOkKo.Ok;
-            const requestKo = scenarioGlobal.PerRequests[requestName].PerOkKo.Ko;
+        this.barStacked.data = requestsName.reduce((acc, requestName) => {
+          const requestOk = scenarioGlobal.PerRequests[requestName].PerOkKo.Ok;
+          const requestKo = scenarioGlobal.PerRequests[requestName].PerOkKo.Ko;
 
-            acc.push({
-              name: requestName,
-              data: [requestOk ? requestOk.CallCount : 0, requestKo ? requestKo.CallCount : 0],
-            });
-            return acc;
-          }, []);
+          acc.push({
+            name: requestName,
+            data: [requestOk ? requestOk.CallCount : 0, requestKo ? requestKo.CallCount : 0],
+          });
+          return acc;
+        }, []);
+
+        this.scatter.data = requestsName.reduce((acc, requestName, i) => {
+          acc.push({
+            name: requestName,
+            color: colors[i],
+            data: scenarioIterations
+              .map((iter, index) => [index, iter.PerRequests[requestName].Global.MeanTime]),
+          });
+
+          return acc;
+        }, []);
       });
 
       return {
@@ -110,6 +127,12 @@
           title: 'Global Time of requests over iterations',
           xLabel: 'N° of iteration',
           yLabel: 'Time',
+        },
+        scatter: {
+          data: [],
+          title: 'Mean time over iterations',
+          xLabel: 'N° of iteration',
+          yLabel: 'Mean time',
         },
       };
     },
