@@ -69,7 +69,6 @@ func TestSimUser_ExecHTTPRequest(t *testing.T) {
 		assert(res["status"] == 200);
 		assert(res["body"] == "");
 		assert(res["headers"]["Content-Length"] == "0");
-		assert(res["headers"]["Content-Type"] == "text/plain; charset=utf-8");
 		`)
 		su.run(0)
 		checkSimUserStatus(t, su, UserDoneSuccess)
