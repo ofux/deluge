@@ -2,6 +2,7 @@
 
 [![Build Status](https://travis-ci.org/ofux/deluge.svg?branch=master)](https://travis-ci.org/ofux/deluge)
 [![Go Report Card](https://goreportcard.com/badge/github.com/ofux/deluge)](https://goreportcard.com/report/github.com/ofux/deluge)
+[![codecov](https://codecov.io/gh/ofux/deluge/branch/master/graph/badge.svg)](https://codecov.io/gh/ofux/deluge)
 
 **Deluge** is a load testing tool for web applications, web APIs, IoT, or any TCP based application.
 
