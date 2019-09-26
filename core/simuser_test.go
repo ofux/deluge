@@ -27,8 +27,13 @@ func NewSimUserTest(t *testing.T, js string) *simUser {
 	logger.Out = ioutil.Discard
 
 	sc := &RunnableScenario{
-		Name:         "Test scenario",
-		script:       script,
+		compiledScenario: &CompiledScenario{
+			scenario: &ScenarioDefinition{
+				ID:   "test-scenario",
+				Name: "Test scenario",
+			},
+			script: script,
+		},
 		httpRecorder: recording.NewHTTPRecorder(),
 		log: logger.WithFields(log.Fields{
 			"scenario": "Test scenario",

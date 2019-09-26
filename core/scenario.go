@@ -58,6 +58,7 @@ func CompileScenario(script string) (*CompiledScenario, error) {
 }
 
 type scenarioBuilder struct {
+	visited      bool
 	ID           string
 	name         string
 	script       ast.Node
@@ -65,6 +66,11 @@ type scenarioBuilder struct {
 }
 
 func (d *scenarioBuilder) dslCreateScenario(node ast.Node, args ...object.Object) object.Object {
+	if d.visited {
+		return evaluator.NewError(node, "Expected only one deluge definition at %s\n", ast.PrintLocation(node))
+	}
+	d.visited = true
+
 	if len(args) != 3 {
 		return evaluator.NewError(node, "Expected %d arguments at %s\n", 3, ast.PrintLocation(node))
 	}

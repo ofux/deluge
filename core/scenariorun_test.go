@@ -4,6 +4,7 @@ import (
 	"github.com/ofux/deluge/core/recording"
 	"github.com/ofux/deluge/core/recording/recordingtest"
 	"github.com/ofux/deluge/dsl/object"
+	"github.com/ofux/deluge/repov2"
 	"github.com/ofux/docilemonkey/docilemonkey"
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
@@ -25,16 +26,19 @@ func TestScenario_Run(t *testing.T) {
 
 		srv := httptest.NewServer(http.HandlerFunc(docilemonkey.Handler))
 		defer srv.Close()
+		clearScenarioRepo()
 
 		const reqName = "My request"
-		program, params := compileTest(t, `
+		compiledScenario := compileScenario(t, `
+scenario("sc1", "Some scenario", function () {
 		http("`+reqName+`", {
 			"url": "`+srv.URL+`/hello/toto?s=201",
 			"method": "POST"
 		});
+});
 		`)
 
-		scenario := newRunnableScenario("foo", 50, 50*time.Millisecond, program, params, nil, logTest)
+		scenario := newRunnableScenario(compiledScenario, 50, 50*time.Millisecond, nil, logTest)
 		scenario.run(200*time.Millisecond, nil)
 
 		records, err := scenario.httpRecorder.GetRecords()
@@ -62,8 +66,10 @@ func TestScenario_Run(t *testing.T) {
 
 		srv := httptest.NewServer(http.HandlerFunc(docilemonkey.Handler))
 		defer srv.Close()
+		clearScenarioRepo()
 
-		program, params := compileTest(t, `
+		compiledScenario := compileScenario(t, `
+scenario("sc1", "Some scenario", function (args, session) {
 		let c = session["count"];
 		if (c == null) {
 			c = 1;
@@ -72,9 +78,10 @@ func TestScenario_Run(t *testing.T) {
 		}
 		session["count"] = c;
 		assert(c < 3);
+});
 		`)
 
-		scenario := newRunnableScenario("foo", 5, 10*time.Millisecond, program, params, nil, logTest)
+		scenario := newRunnableScenario(compiledScenario, 5, 10*time.Millisecond, nil, logTest)
 		scenario.run(20000*time.Millisecond, nil)
 
 		assert.Equal(t, uint64(5), scenario.EffectiveUserCount)
@@ -85,12 +92,15 @@ func TestScenario_Run(t *testing.T) {
 
 		srv := httptest.NewServer(http.HandlerFunc(docilemonkey.Handler))
 		defer srv.Close()
+		clearScenarioRepo()
 
-		program, params := compileTest(t, `
+		compiledScenario := compileScenario(t, `
+scenario("sc1", "Some scenario", function () {
 		pause("50ms");
+});
 		`)
 
-		scenario := newRunnableScenario("foo", 50, 1*time.Millisecond, program, params, nil, logTest)
+		scenario := newRunnableScenario(compiledScenario, 50, 1*time.Millisecond, nil, logTest)
 		scenario.run(200*time.Millisecond, nil)
 
 		assert.Equal(t, uint64(50), scenario.EffectiveUserCount)
@@ -103,14 +113,18 @@ func TestScenario_Run(t *testing.T) {
 
 		srv := httptest.NewServer(http.HandlerFunc(docilemonkey.Handler))
 		defer srv.Close()
+		clearScenarioRepo()
 
 		const reqName = "My request"
-		program, params := compileTest(t, `
+		compiledScenario := compileScenario(t, `
+scenario("sc1", "Some scenario", function (args) {
 		http("`+reqName+`", {
 			"url": args["baseUrl"] + "/hello/toto?s=500",
 			"method": args["method"]
 		});
+});
 		`)
+
 		scriptArgs := &object.Hash{
 			Pairs: map[object.HashKey]object.Object{
 				"baseUrl": &object.String{srv.URL},
@@ -119,7 +133,7 @@ func TestScenario_Run(t *testing.T) {
 			IsImmutable: true,
 		}
 
-		scenario := newRunnableScenario("foo", 50, 50*time.Millisecond, program, params, scriptArgs, logTest)
+		scenario := newRunnableScenario(compiledScenario, 50, 50*time.Millisecond, scriptArgs, logTest)
 		scenario.run(200*time.Millisecond, nil)
 
 		records, err := scenario.httpRecorder.GetRecords()
@@ -144,8 +158,11 @@ func TestScenario_Run(t *testing.T) {
 	})
 
 	t.Run("Run scenario with args and try to modify it", func(t *testing.T) {
-		program, params := compileTest(t, `
+		clearScenarioRepo()
+		compiledScenario := compileScenario(t, `
+scenario("sc1", "Some scenario", function (args) {
 		args["method"] = "foobar"
+});
 		`)
 		scriptArgs := &object.Hash{
 			Pairs: map[object.HashKey]object.Object{
@@ -154,7 +171,7 @@ func TestScenario_Run(t *testing.T) {
 			IsImmutable: true,
 		}
 
-		scenario := newRunnableScenario("foo", 50, 50*time.Millisecond, program, params, scriptArgs, logTest)
+		scenario := newRunnableScenario(compiledScenario, 50, 50*time.Millisecond, scriptArgs, logTest)
 		scenario.run(200*time.Millisecond, nil)
 
 		assert.Equal(t, ScenarioDoneError, scenario.Status)
@@ -166,12 +183,15 @@ func TestScenario_Run(t *testing.T) {
 
 		srv := httptest.NewServer(http.HandlerFunc(docilemonkey.Handler))
 		defer srv.Close()
+		clearScenarioRepo()
 
-		program, params := compileTest(t, `
+		compiledScenario := compileScenario(t, `
+scenario("sc1", "Some scenario", function () {
 		doesntexists();
+});
 		`)
 
-		scenario := newRunnableScenario("foo", 50, 1*time.Millisecond, program, params, nil, logTest)
+		scenario := newRunnableScenario(compiledScenario, 50, 1*time.Millisecond, nil, logTest)
 		scenario.run(200*time.Millisecond, nil)
 
 		if len(scenario.Errors) != 50 {
@@ -186,4 +206,20 @@ func TestScenario_Run(t *testing.T) {
 		assert.Equal(t, uint64(50), scenario.EffectiveUserCount)
 		assert.Equal(t, uint64(50), scenario.EffectiveExecCount)
 	})
+}
+
+func compileScenario(t testing.TB, script string) *CompiledScenario {
+	compiled, err := CompileScenario(script)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = repov2.ScenarioDefinitions.Save((*repov2.PersistedScenario)(compiled.GetScenarioDefinition()))
+	if err != nil {
+		t.Fatal(err)
+	}
+	return compiled
+}
+
+func clearScenarioRepo() {
+	repov2.ScenarioDefinitions = repov2.NewScenarioDefinitionsRepository()
 }

@@ -3,7 +3,9 @@ package core
 import (
 	"github.com/ofux/deluge/dsl/ast"
 	"github.com/ofux/deluge/dsl/evaluator"
+	"github.com/ofux/deluge/dsl/lexer"
 	"github.com/ofux/deluge/dsl/object"
+	"github.com/ofux/deluge/dsl/parser"
 	"github.com/ofux/deluge/repov2"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
@@ -33,6 +35,7 @@ type Deluge struct {
 }
 
 type delugeBuilder struct {
+	visited         bool
 	name            string
 	globalDuration  time.Duration
 	scenarioConfigs map[string]*scenarioConfig
@@ -44,7 +47,15 @@ type scenarioConfig struct {
 	args              *object.Hash
 }
 
-func NewDeluge(ID string, script *ast.Program) (*Deluge, error) {
+func NewDeluge(ID string, script string) (*Deluge, error) {
+	l := lexer.New(script)
+	p := parser.New(l)
+
+	program, ok := p.ParseProgram()
+	if !ok {
+		return nil, p.Errors()
+	}
+
 	builder := &delugeBuilder{
 		scenarioConfigs: make(map[string]*scenarioConfig),
 	}
@@ -53,7 +64,7 @@ func NewDeluge(ID string, script *ast.Program) (*Deluge, error) {
 		log.Fatal(err.Error())
 	}
 
-	evaluated := ev.Eval(script, object.NewEnvironment())
+	evaluated := ev.Eval(program, object.NewEnvironment())
 	if evaluated != nil && evaluated.Type() == object.ERROR_OBJ {
 		return nil, errors.New(evaluated.Inspect())
 	}
@@ -150,6 +161,11 @@ func (d *Deluge) Interrupt() {
 }
 
 func (d *delugeBuilder) dslCreateDeluge(node ast.Node, args ...object.Object) object.Object {
+	if d.visited {
+		return evaluator.NewError(node, "Expected only one deluge definition at %s\n", ast.PrintLocation(node))
+	}
+	d.visited = true
+
 	if len(args) != 3 {
 		return evaluator.NewError(node, "Expected %d arguments at %s\n", 3, ast.PrintLocation(node))
 	}

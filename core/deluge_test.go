@@ -3,9 +3,6 @@ package core
 import (
 	"github.com/ofux/deluge/core/recording"
 	"github.com/ofux/deluge/core/recording/recordingtest"
-	"github.com/ofux/deluge/dsl/ast"
-	"github.com/ofux/deluge/dsl/lexer"
-	"github.com/ofux/deluge/dsl/parser"
 	"github.com/ofux/docilemonkey/docilemonkey"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -20,16 +17,10 @@ func TestDeluge_Run(t *testing.T) {
 	t.Run("Run deluge with HTTP requests", func(t *testing.T) {
 		srv := httptest.NewServer(http.HandlerFunc(docilemonkey.Handler))
 		defer srv.Close()
+		clearScenarioRepo()
 
 		const reqName = "My request"
-		program, _ := compileTest(t, `
-		deluge("Some name", "200ms", {
-			"myScenario": {
-				"concurrent": 100,
-				"delay": "100ms"
-			}
-		});
-
+		compileScenario(t, `
 		scenario("myScenario", "My scenario", function () {
 
 			http("`+reqName+`", {
@@ -39,7 +30,13 @@ func TestDeluge_Run(t *testing.T) {
 
 		});`)
 
-		dlg, err := NewDeluge("foo", program)
+		dlg, err := NewDeluge("foo", `
+		deluge("Some name", "200ms", {
+			"myScenario": {
+				"concurrent": 100,
+				"delay": "100ms"
+			}
+		});`)
 		assert.NoError(t, err)
 		<-dlg.Run()
 
@@ -57,16 +54,10 @@ func TestDeluge_Run(t *testing.T) {
 	t.Run("Run and interrupt a deluge", func(t *testing.T) {
 		srv := httptest.NewServer(http.HandlerFunc(docilemonkey.Handler))
 		defer srv.Close()
+		clearScenarioRepo()
 
 		const reqName = "My request"
-		program, _ := compileTest(t, `
-		deluge("Some name", "20s", {
-			"myScenario": {
-				"concurrent": 100,
-				"delay": "500ms"
-			}
-		});
-
+		compileScenario(t, `
 		scenario("myScenario", "My scenario", function () {
 
 			http("`+reqName+`", {
@@ -76,7 +67,13 @@ func TestDeluge_Run(t *testing.T) {
 
 		});`)
 
-		dlg, err := NewDeluge("foo", program)
+		dlg, err := NewDeluge("foo", `
+		deluge("Some name", "20s", {
+			"myScenario": {
+				"concurrent": 100,
+				"delay": "500ms"
+			}
+		});`)
 		assert.NoError(t, err)
 
 		start := time.Now()
@@ -101,8 +98,17 @@ func TestDeluge_Run(t *testing.T) {
 	})
 
 	t.Run("Run deluge with args", func(t *testing.T) {
+		clearScenarioRepo()
 
-		program, _ := compileTest(t, `
+		compileScenario(t, `
+		scenario("myScenario", "My scenario with args", function (args) {
+
+			assert(args["foo"] == "bar");
+			assert(args["x"] == null);
+
+		});`)
+
+		dlg, err := NewDeluge("foo", `
 		deluge("Some name", "100ms", {
 			"myScenario": {
 				"concurrent": 10,
@@ -111,16 +117,7 @@ func TestDeluge_Run(t *testing.T) {
 					"foo": "bar"
 				}
 			}
-		});
-
-		scenario("myScenario", "My scenario with args", function (args) {
-
-			assert(args["foo"] == "bar");
-			assert(args["x"] == null);
-
 		});`)
-
-		dlg, err := NewDeluge("foo", program)
 		assert.NoError(t, err)
 
 		<-dlg.Run()
@@ -131,18 +128,9 @@ func TestDeluge_Run(t *testing.T) {
 	})
 
 	t.Run("Run deluge with args and session", func(t *testing.T) {
+		clearScenarioRepo()
 
-		program, _ := compileTest(t, `
-		deluge("Some name", "20s", {
-			"myScenario": {
-				"concurrent": 5,
-				"delay": "10ms",
-				"args": {
-					"foo": "bar"
-				}
-			}
-		});
-
+		compileScenario(t, `
 		scenario("myScenario", "My scenario", function (args, session) {
 
 			assert(args["foo"] == "bar");
@@ -155,7 +143,16 @@ func TestDeluge_Run(t *testing.T) {
 
 		});`)
 
-		dlg, err := NewDeluge("foo", program)
+		dlg, err := NewDeluge("foo", `
+		deluge("Some name", "20s", {
+			"myScenario": {
+				"concurrent": 5,
+				"delay": "10ms",
+				"args": {
+					"foo": "bar"
+				}
+			}
+		});`)
 		assert.NoError(t, err)
 
 		<-dlg.Run()
@@ -171,21 +168,19 @@ func TestDeluge_Run(t *testing.T) {
 func TestDeluge_Run_With_Errors(t *testing.T) {
 
 	t.Run("Assert fails", func(t *testing.T) {
-		program, _ := compileTest(t, `
+		clearScenarioRepo()
+		compileScenario(t, `
+		scenario("myScenario", "My scenario", function () {
+			assert(false);
+		});`)
+
+		dlg, err := NewDeluge("foo", `
 		deluge("Some name", "100ms", {
 			"myScenario": {
 				"concurrent": 10,
 				"delay": "10ms"
 			}
-		});
-
-		scenario("myScenario", "My scenario", function () {
-
-			assert(false);
-
 		});`)
-
-		dlg, err := NewDeluge("foo", program)
 		assert.NoError(t, err)
 
 		<-dlg.Run()
@@ -197,7 +192,18 @@ func TestDeluge_Run_With_Errors(t *testing.T) {
 	})
 
 	t.Run("Error trying to modify args hash", func(t *testing.T) {
-		program, _ := compileTest(t, `
+		clearScenarioRepo()
+		compileScenario(t, `
+		scenario("s1", "My scenario 1", function (args) {
+			args["hello"] = "world";
+		});`)
+
+		compileScenario(t, `
+		scenario("s2", "My scenario 2", function (args) {
+			args["x"]++;
+		});`)
+
+		dlg, err := NewDeluge("foo", `
 		deluge("Some name", "100ms", {
 			"s1": {
 				"concurrent": 10,
@@ -213,16 +219,7 @@ func TestDeluge_Run_With_Errors(t *testing.T) {
 					"x": 1
 				}
 			}
-		});
-
-		scenario("s1", "My scenario 1", function (args) {
-			args["hello"] = "world";
-		});
-		scenario("s2", "My scenario 2", function (args) {
-			args["x"]++;
 		});`)
-
-		dlg, err := NewDeluge("foo", program)
 		assert.NoError(t, err)
 
 		<-dlg.Run()
@@ -257,7 +254,7 @@ func TestDeluge_New_With_Deluge_Errors(t *testing.T) {
 					"delay": "100ms"
 				}
 			});`,
-			"Scenario 'myScenario' is configured but not defined.",
+			"scenario 'myScenario' is configured but not defined",
 		},
 		{
 			`deluge("200ms", {
@@ -358,67 +355,24 @@ func TestDeluge_New_With_Deluge_Errors(t *testing.T) {
 			});`,
 			"RUNTIME ERROR: Expected 'args' to be an object at",
 		},
-	}
-
-	for _, tt := range tests {
-		program, _ := compileTest(t, tt.input)
-		_, err := NewDeluge("foo", program)
-		assert.Error(t, err)
-		assert.Contains(t, err.Error(), tt.expected)
-	}
-}
-
-func TestDeluge_New_With_Scenario_Errors(t *testing.T) {
-	tests := []struct {
-		input    string
-		expected string
-	}{
 		{
-			`
-			scenario("My scenario", function () {})`,
-			"RUNTIME ERROR: Expected 3 arguments at",
-		},
-		{
-			`
-			scenario(1, "My scenario", function () {})`,
-			"RUNTIME ERROR: Expected 1st argument to be a string at",
-		},
-		{
-			`
-			scenario("myScenario", 1, function () {})`,
-			"RUNTIME ERROR: Expected 2nd argument to be a string at",
-		},
-		{
-			`
-			scenario("myScenario", "My scenario", "bad")`,
-			"RUNTIME ERROR: Expected 3rd argument to be a function at",
-		},
-		{
-			`
-			scenario("myScenario", "My scenario 1", function () {});
-			scenario("myScenario", "My scenario 2", function () {});`,
-			"RUNTIME ERROR: Scenario 'myScenario' is already defined",
+			`deluge("Some name", "200ms", {}); deluge("Some other name", "200ms", {});`,
+			"RUNTIME ERROR: Expected only one deluge definition at",
 		},
 	}
 
 	for _, tt := range tests {
-		program, _ := compileTest(t, tt.input)
-		_, err := NewDeluge("foo", program)
-		assert.Error(t, err)
+		clearScenarioRepo()
+		_, err := NewDeluge("foo", tt.input)
+		require.Error(t, err)
 		assert.Contains(t, err.Error(), tt.expected)
 	}
 }
 
 func BenchmarkNewDeluge(b *testing.B) {
+	clearScenarioRepo()
 
-	program, _ := compileTest(b, `
-deluge("Some name", "200ms", {
-    "myScenario": {
-        "concurrent": 100,
-        "delay": "100ms"
-    }
-});
-
+	compileScenario(b, `
 scenario("myScenario", "My scenario", function () {
 
     http("My request", {
@@ -428,22 +382,16 @@ scenario("myScenario", "My scenario", function () {
 });`)
 
 	for i := 0; i < b.N; i++ {
-		NewDeluge("foo", program)
-	}
-}
+		_, err := NewDeluge("foo", `
+		deluge("Some name", "200ms", {
+			"myScenario": {
+				"concurrent": 100,
+				"delay": "100ms"
+			}
+		});`)
 
-func compileTest(t testing.TB, script string) (*ast.Program, []*ast.Identifier) {
-	l := lexer.New(script)
-	p := parser.New(l)
-
-	program, ok := p.ParseProgram()
-	if !ok {
-		PrintParserErrors(p.Errors())
-		t.Fatal("Parsing error(s)")
-	}
-
-	return program, []*ast.Identifier{
-		{Value: "args"},
-		{Value: "session"},
+		if err != nil {
+			b.Fatal(err)
+		}
 	}
 }
