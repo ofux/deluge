@@ -24,7 +24,7 @@ const (
 	ScenarioInterrupted
 )
 
-type Scenario struct {
+type RunnableScenario struct {
 	Name              string
 	simUsers          []*simUser
 	script            ast.Node
@@ -42,7 +42,7 @@ type Scenario struct {
 	Mutex              *sync.Mutex
 }
 
-func newScenario(
+func newRunnableScenario(
 	name string,
 	concurrent int,
 	iterationDuration time.Duration,
@@ -50,8 +50,8 @@ func newScenario(
 	scriptParams []*ast.Identifier,
 	scriptArgs *object.Hash,
 	logEntry *log.Entry,
-) *Scenario {
-	s := &Scenario{
+) *RunnableScenario {
+	s := &RunnableScenario{
 		Name:              name,
 		script:            script,
 		scriptParams:      scriptParams,
@@ -77,7 +77,7 @@ func newScenario(
 	return s
 }
 
-func (sc *Scenario) run(globalDuration time.Duration, interrupt chan struct{}) {
+func (sc *RunnableScenario) run(globalDuration time.Duration, interrupt chan struct{}) {
 	var waitg sync.WaitGroup
 
 	start := time.Now()
@@ -106,7 +106,7 @@ func (sc *Scenario) run(globalDuration time.Duration, interrupt chan struct{}) {
 	sc.log.Infof("Scenario executed in %s simulating %d users for %d executions", time.Now().Sub(start).String(), sc.EffectiveUserCount, sc.EffectiveExecCount)
 }
 
-func (sc *Scenario) runSimUser(su *simUser, endTime time.Time, interrupt chan struct{}) {
+func (sc *RunnableScenario) runSimUser(su *simUser, endTime time.Time, interrupt chan struct{}) {
 	defer func() {
 		atomic.AddUint64(&sc.EffectiveUserCount, 1)
 	}()
@@ -145,7 +145,7 @@ func (sc *Scenario) runSimUser(su *simUser, endTime time.Time, interrupt chan st
 	}
 }
 
-func (sc *Scenario) end() {
+func (sc *RunnableScenario) end() {
 
 	sc.httpRecorder.Close()
 	reporter := &reporting.HTTPReporter{}

@@ -34,7 +34,7 @@ func TestScenario_Run(t *testing.T) {
 		});
 		`)
 
-		scenario := newScenario("foo", 50, 50*time.Millisecond, program, params, nil, logTest)
+		scenario := newRunnableScenario("foo", 50, 50*time.Millisecond, program, params, nil, logTest)
 		scenario.run(200*time.Millisecond, nil)
 
 		records, err := scenario.httpRecorder.GetRecords()
@@ -74,7 +74,7 @@ func TestScenario_Run(t *testing.T) {
 		assert(c < 3);
 		`)
 
-		scenario := newScenario("foo", 5, 10*time.Millisecond, program, params, nil, logTest)
+		scenario := newRunnableScenario("foo", 5, 10*time.Millisecond, program, params, nil, logTest)
 		scenario.run(20000*time.Millisecond, nil)
 
 		assert.Equal(t, uint64(5), scenario.EffectiveUserCount)
@@ -90,7 +90,7 @@ func TestScenario_Run(t *testing.T) {
 		pause("50ms");
 		`)
 
-		scenario := newScenario("foo", 50, 1*time.Millisecond, program, params, nil, logTest)
+		scenario := newRunnableScenario("foo", 50, 1*time.Millisecond, program, params, nil, logTest)
 		scenario.run(200*time.Millisecond, nil)
 
 		assert.Equal(t, uint64(50), scenario.EffectiveUserCount)
@@ -119,7 +119,7 @@ func TestScenario_Run(t *testing.T) {
 			IsImmutable: true,
 		}
 
-		scenario := newScenario("foo", 50, 50*time.Millisecond, program, params, scriptArgs, logTest)
+		scenario := newRunnableScenario("foo", 50, 50*time.Millisecond, program, params, scriptArgs, logTest)
 		scenario.run(200*time.Millisecond, nil)
 
 		records, err := scenario.httpRecorder.GetRecords()
@@ -154,7 +154,7 @@ func TestScenario_Run(t *testing.T) {
 			IsImmutable: true,
 		}
 
-		scenario := newScenario("foo", 50, 50*time.Millisecond, program, params, scriptArgs, logTest)
+		scenario := newRunnableScenario("foo", 50, 50*time.Millisecond, program, params, scriptArgs, logTest)
 		scenario.run(200*time.Millisecond, nil)
 
 		assert.Equal(t, ScenarioDoneError, scenario.Status)
@@ -171,7 +171,7 @@ func TestScenario_Run(t *testing.T) {
 		doesntexists();
 		`)
 
-		scenario := newScenario("foo", 50, 1*time.Millisecond, program, params, nil, logTest)
+		scenario := newRunnableScenario("foo", 50, 1*time.Millisecond, program, params, nil, logTest)
 		scenario.run(200*time.Millisecond, nil)
 
 		if len(scenario.Errors) != 50 {

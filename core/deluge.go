@@ -25,7 +25,7 @@ type Deluge struct {
 	ID             string
 	Name           string
 	GlobalDuration time.Duration
-	Scenarios      map[string]*Scenario
+	Scenarios      map[string]*RunnableScenario
 
 	Status    DelugeStatus
 	Mutex     *sync.Mutex
@@ -73,14 +73,14 @@ func NewDeluge(ID string, script *ast.Program) (*Deluge, error) {
 		ID:             ID,
 		Name:           builder.name,
 		GlobalDuration: builder.globalDuration,
-		Scenarios:      make(map[string]*Scenario),
+		Scenarios:      make(map[string]*RunnableScenario),
 		Status:         DelugeVirgin,
 		Mutex:          &sync.Mutex{},
 		interrupt:      make(chan struct{}),
 	}
 	for id, sConf := range builder.scenarioConfigs {
 		if sCore, ok := builder.scenarioCores[id]; ok {
-			dlg.Scenarios[id] = newScenario(
+			dlg.Scenarios[id] = newRunnableScenario(
 				sCore.name,
 				sConf.concurrent,
 				sConf.iterationDuration,
@@ -121,7 +121,7 @@ func (d *Deluge) run() {
 	var waitg sync.WaitGroup
 	for _, scenario := range d.Scenarios {
 		waitg.Add(1)
-		go func(scenario *Scenario) {
+		go func(scenario *RunnableScenario) {
 			defer waitg.Done()
 			scenario.run(d.GlobalDuration, d.interrupt)
 		}(scenario)

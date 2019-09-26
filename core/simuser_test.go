@@ -26,7 +26,7 @@ func NewSimUserTest(t *testing.T, js string) *simUser {
 	// discard DSL logs for testing
 	logger.Out = ioutil.Discard
 
-	sc := &Scenario{
+	sc := &RunnableScenario{
 		Name:         "Test scenario",
 		script:       script,
 		httpRecorder: recording.NewHTTPRecorder(),

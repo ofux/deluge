@@ -22,7 +22,7 @@ const (
 
 type simUser struct {
 	name          string
-	scenario      *Scenario
+	scenario      *RunnableScenario
 	evaluator     *evaluator.Evaluator
 	client        *http.Client
 	sleepDuration time.Duration
@@ -35,7 +35,7 @@ type simUser struct {
 	execError *object.Error
 }
 
-func newSimUser(name string, scenario *Scenario) *simUser {
+func newSimUser(name string, scenario *RunnableScenario) *simUser {
 	su := &simUser{
 		name:      name,
 		status:    UserVirgin,

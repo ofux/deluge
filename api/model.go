@@ -80,7 +80,7 @@ func mapDelugeLite(d *core.Deluge) *DelugeLite {
 	return dDTO
 }
 
-func mapScenario(sc *core.Scenario) *Scenario {
+func mapScenario(sc *core.RunnableScenario) *Scenario {
 	return &Scenario{
 		Name:              sc.Name,
 		IterationDuration: sc.IterationDuration,
