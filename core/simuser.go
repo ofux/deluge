@@ -3,6 +3,7 @@ package core
 import (
 	"github.com/ofux/deluge/cleanhttp"
 	"github.com/ofux/deluge/core/recording"
+	"github.com/ofux/deluge/dsl/ast"
 	"github.com/ofux/deluge/dsl/evaluator"
 	"github.com/ofux/deluge/dsl/object"
 	log "github.com/sirupsen/logrus"
@@ -59,11 +60,15 @@ func newSimUser(name string, scenario *RunnableScenario) *simUser {
 	return su
 }
 
+func (su *simUser) getRootAstNode() ast.Node {
+	return su.scenario.compiledScenario.script
+}
+
 func (su *simUser) run(iteration int) {
 	su.iteration = iteration
 	su.status = UserInProgress
 	env := su.createEnvironment()
-	evaluated := su.evaluator.Eval(su.scenario.script, env)
+	evaluated := su.evaluator.Eval(su.getRootAstNode(), env)
 
 	su.client.Transport.(*http.Transport).CloseIdleConnections()
 
@@ -81,7 +86,7 @@ func (su *simUser) run(iteration int) {
 
 func (su *simUser) createEnvironment() *object.Environment {
 	env := object.NewEnvironment()
-	params := su.scenario.scriptParams
+	params := su.scenario.compiledScenario.scriptParams
 	// Inject ARGS into first param
 	if len(params) >= 1 {
 		env.Add(params[0].Value, su.scenario.scriptArgs)

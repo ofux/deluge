@@ -1,11 +1,11 @@
 package core
 
 import (
-	"errors"
-	"fmt"
 	"github.com/ofux/deluge/dsl/ast"
 	"github.com/ofux/deluge/dsl/evaluator"
 	"github.com/ofux/deluge/dsl/object"
+	"github.com/ofux/deluge/repov2"
+	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"sync"
 	"time"
@@ -35,14 +35,7 @@ type Deluge struct {
 type delugeBuilder struct {
 	name            string
 	globalDuration  time.Duration
-	scenarioCores   map[string]*scenarioCore
 	scenarioConfigs map[string]*scenarioConfig
-}
-
-type scenarioCore struct {
-	name         string
-	script       ast.Node
-	scriptParams []*ast.Identifier
 }
 
 type scenarioConfig struct {
@@ -53,14 +46,10 @@ type scenarioConfig struct {
 
 func NewDeluge(ID string, script *ast.Program) (*Deluge, error) {
 	builder := &delugeBuilder{
-		scenarioCores:   make(map[string]*scenarioCore),
 		scenarioConfigs: make(map[string]*scenarioConfig),
 	}
 	ev := evaluator.NewEvaluator()
 	if err := ev.AddBuiltin("deluge", builder.dslCreateDeluge); err != nil {
-		log.Fatal(err.Error())
-	}
-	if err := ev.AddBuiltin("scenario", builder.dslCreateScenario); err != nil {
 		log.Fatal(err.Error())
 	}
 
@@ -79,18 +68,20 @@ func NewDeluge(ID string, script *ast.Program) (*Deluge, error) {
 		interrupt:      make(chan struct{}),
 	}
 	for id, sConf := range builder.scenarioConfigs {
-		if sCore, ok := builder.scenarioCores[id]; ok {
+		if sCore, ok := repov2.ScenarioDefinitions.Get(id); ok {
+			compiledScenario, err := CompileScenario(sCore.Script)
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to recompile scenario %s", id)
+			}
 			dlg.Scenarios[id] = newRunnableScenario(
-				sCore.name,
+				compiledScenario,
 				sConf.concurrent,
 				sConf.iterationDuration,
-				sCore.script,
-				sCore.scriptParams,
 				sConf.args,
 				log.New().WithField("deluge", dlg.Name),
 			)
 		} else {
-			return nil, errors.New(fmt.Sprintf("Scenario '%s' is configured but not defined.", id))
+			return nil, errors.Errorf("scenario '%s' is configured but not defined", id)
 		}
 	}
 	return dlg, nil
@@ -236,40 +227,6 @@ func (d *delugeBuilder) dslCreateDeluge(node ast.Node, args ...object.Object) ob
 			iterationDuration: delayHash,
 			args:              argsHash,
 		}
-	}
-
-	return evaluator.NULL
-}
-
-func (d *delugeBuilder) dslCreateScenario(node ast.Node, args ...object.Object) object.Object {
-	if len(args) != 3 {
-		return evaluator.NewError(node, "Expected %d arguments at %s\n", 3, ast.PrintLocation(node))
-	}
-
-	scenarioId, ok := args[0].(*object.String)
-	if !ok {
-		return evaluator.NewError(node, "Expected 1st argument to be a string at %s\n", ast.PrintLocation(node))
-	}
-
-	name, ok := args[1].(*object.String)
-	if !ok {
-		return evaluator.NewError(node, "Expected 2nd argument to be a string at %s\n", ast.PrintLocation(node))
-	}
-
-	coreFunc, ok := args[2].(*object.Function)
-	if !ok {
-		return evaluator.NewError(node, "Expected 3rd argument to be a function at %s\n", ast.PrintLocation(node))
-	}
-
-	_, ok = d.scenarioCores[scenarioId.Value]
-	if ok {
-		return evaluator.NewError(node, "Scenario '%s' is already defined", scenarioId.Value)
-	}
-
-	d.scenarioCores[scenarioId.Value] = &scenarioCore{
-		name:         name.Value,
-		script:       coreFunc.Body,
-		scriptParams: coreFunc.Parameters,
 	}
 
 	return evaluator.NULL

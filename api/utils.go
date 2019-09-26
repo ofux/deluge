@@ -34,3 +34,15 @@ func SendJSONOk(w http.ResponseWriter, d interface{}) {
 func SendJSONError(w http.ResponseWriter, error string, code int) {
 	SendJSONWithHTTPCode(w, Error{error}, code)
 }
+
+// SendRawStringHTTPCode outputs string as-is with an HTTP code
+func SendRawStringHTTPCode(w http.ResponseWriter, str string, code int) {
+	w.Header().Set(HeaderContentTypeKey, HeaderContentTypeJsonUTF8)
+	w.WriteHeader(code)
+	_, err := w.Write([]byte(str))
+	if err != nil {
+		log.WithField("body", str).WithField("code", code).Error("error while writing body of response")
+		// panic will cause the http.StatusInternalServerError to be send to users thanks to negroni recovery
+		panic(err)
+	}
+}

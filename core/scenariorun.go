@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/ofux/deluge/core/recording"
 	"github.com/ofux/deluge/core/reporting"
-	"github.com/ofux/deluge/dsl/ast"
 	"github.com/ofux/deluge/dsl/object"
 	log "github.com/sirupsen/logrus"
 	"strconv"
@@ -25,10 +24,8 @@ const (
 )
 
 type RunnableScenario struct {
-	Name              string
+	compiledScenario  *CompiledScenario
 	simUsers          []*simUser
-	script            ast.Node
-	scriptParams      []*ast.Identifier
 	scriptArgs        *object.Hash
 	IterationDuration time.Duration
 	httpRecorder      *recording.HTTPRecorder
@@ -43,25 +40,21 @@ type RunnableScenario struct {
 }
 
 func newRunnableScenario(
-	name string,
+	compiledScenario *CompiledScenario,
 	concurrent int,
 	iterationDuration time.Duration,
-	script ast.Node,
-	scriptParams []*ast.Identifier,
 	scriptArgs *object.Hash,
 	logEntry *log.Entry,
 ) *RunnableScenario {
 	s := &RunnableScenario{
-		Name:              name,
-		script:            script,
-		scriptParams:      scriptParams,
+		compiledScenario:  compiledScenario,
 		scriptArgs:        scriptArgs,
 		IterationDuration: iterationDuration,
 		simUsers:          make([]*simUser, concurrent),
 
 		httpRecorder: recording.NewHTTPRecorder(),
 		log: logEntry.WithFields(log.Fields{
-			"scenario": name,
+			"scenario": compiledScenario.scenario.ID,
 		}),
 
 		Status: ScenarioVirgin,
@@ -75,6 +68,10 @@ func newRunnableScenario(
 	}
 
 	return s
+}
+
+func (sc *RunnableScenario) GetScenarioDefinition() *ScenarioDefinition {
+	return sc.compiledScenario.scenario
 }
 
 func (sc *RunnableScenario) run(globalDuration time.Duration, interrupt chan struct{}) {

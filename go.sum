@@ -26,6 +26,8 @@ github.com/ofux/docilemonkey v0.0.0-20190920152726-5c0f670246ca/go.mod h1:9n04lO
 github.com/ofux/floa v0.0.0-20170708090307-9b9e96298d3e h1:CtSYUYTxy4EWaM0WR4ZfwKBm3QmH/OyfN/2rKCiYaqQ=
 github.com/ofux/floa v0.0.0-20170708090307-9b9e96298d3e/go.mod h1:kGd51rnek+P8CVmL94SettpFDoGh/iSWUgFHRGlvbok=
 github.com/pelletier/go-toml v1.2.0/go.mod h1:5z9KED0ma1S8pY6P1sdut58dfprrGBbd/94hg7ilaic=
+github.com/pkg/errors v0.8.1 h1:iURUrRGxPUNPdy5/HRSm+Yj6okJ6UtLINN0Q9M4+h3I=
+github.com/pkg/errors v0.8.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/russross/blackfriday v1.5.2/go.mod h1:JO/DiYxRf+HjHt06OyowR9PTA263kcR/rfWxYHBV53g=
