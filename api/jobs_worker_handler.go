@@ -3,11 +3,10 @@ package api
 import (
 	"fmt"
 	"github.com/gorilla/mux"
-	"github.com/ofux/deluge/core"
 	"github.com/ofux/deluge/repo"
 	"github.com/ofux/deluge/repov2"
+	"github.com/ofux/deluge/worker"
 	uuid "github.com/satori/go.uuid"
-	log "github.com/sirupsen/logrus"
 	"net/http"
 	"net/url"
 )
@@ -149,32 +148,22 @@ func (d *JobsWorkerHandler) StartJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	dlg, err := core.NewRunnableDeluge(jobShell.DelugeID)
+	err := worker.GetManager().CreateAll(&worker.JobShell{
+		ID:       jobShell.ID,
+		DelugeID: jobShell.DelugeID,
+	})
 	if err != nil {
 		SendJSONError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	repo.Jobs.Store(&repo.RunningJob{
-		ID:             jobShell.ID,
-		RunnableDeluge: dlg,
+	err = worker.GetManager().StartAll(&worker.JobShell{
+		ID:       jobShell.ID,
+		DelugeID: jobShell.DelugeID,
 	})
-
-	if jobShell.Webhook == "" {
-		dlg.Run()
-	} else {
-		go func() {
-			<-dlg.Run()
-			resp, err := http.Get(jobShell.Webhook)
-			if err != nil {
-				log.Warnf("Error calling webhook (%s): %v", jobShell.Webhook, err)
-				return
-			}
-			defer resp.Body.Close()
-			if resp.StatusCode >= 400 {
-				log.Warnf("The webhook (%s) responded with status: %d (%s)", jobShell.Webhook, resp.StatusCode, resp.Status)
-			}
-		}()
+	if err != nil {
+		SendJSONError(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
 	w.WriteHeader(http.StatusAccepted)

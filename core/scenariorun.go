@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/ofux/deluge/core/recording"
-	"github.com/ofux/deluge/core/reporting"
 	"github.com/ofux/deluge/dsl/object"
 	log "github.com/sirupsen/logrus"
 	"strconv"
@@ -33,7 +32,7 @@ type RunnableScenario struct {
 
 	Status             ScenarioStatus
 	Errors             []*object.Error
-	Report             reporting.Report
+	Records            *recording.HTTPRecordsOverTime
 	EffectiveUserCount uint64
 	EffectiveExecCount uint64
 	Mutex              *sync.Mutex
@@ -146,9 +145,8 @@ func (sc *RunnableScenario) runSimUser(su *simUser, endTime time.Time, interrupt
 func (sc *RunnableScenario) end() {
 
 	sc.httpRecorder.Close()
-	reporter := &reporting.HTTPReporter{}
-	if report, err := reporter.Report(sc.httpRecorder); err == nil {
-		sc.Report = report
+	if records, err := sc.httpRecorder.GetRecords(); err == nil {
+		sc.Records = records
 	} else {
 		sc.log.Error(err)
 	}

@@ -88,11 +88,12 @@ func mapDelugeLite(d *core.RunnableDeluge) *JobLite {
 }
 
 func mapScenario(sc *core.RunnableScenario) *JobScenario {
+	httpReporter := &reporting.HTTPReporter{}
 	return &JobScenario{
 		Name:              sc.GetScenarioDefinition().Name,
 		IterationDuration: sc.IterationDuration,
 		Errors:            sc.Errors,
-		Report:            sc.Report,
+		Report:            httpReporter.Report(sc.Records),
 		Status:            mapScenarioStatus(sc.Status),
 	}
 }

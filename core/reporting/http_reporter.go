@@ -26,12 +26,7 @@ type HTTPRequestStats struct {
 	PerOkKo   map[recording.OkKo]*Stats
 }
 
-func (r *HTTPReporter) Report(httpRecorder *recording.HTTPRecorder) (Report, error) {
-	records, err := httpRecorder.GetRecords()
-	if err != nil {
-		return nil, err
-	}
-
+func (r *HTTPReporter) Report(records *recording.HTTPRecordsOverTime) Report {
 	report := &HTTPReport{
 		Stats: &HTTPStatsOverTime{
 			Global:       newHTTPStats(records.Global),
@@ -42,7 +37,7 @@ func (r *HTTPReporter) Report(httpRecorder *recording.HTTPRecorder) (Report, err
 		report.Stats.PerIteration = append(report.Stats.PerIteration, newHTTPStats(v))
 	}
 
-	return report, nil
+	return report
 }
 
 func newHTTPStats(rec *recording.HTTPRecord) *HTTPStats {
