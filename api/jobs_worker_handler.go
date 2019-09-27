@@ -1,13 +1,13 @@
 package api
 
 import (
+	"fmt"
 	"github.com/gorilla/mux"
 	"github.com/ofux/deluge/core"
-	"github.com/ofux/deluge/dsl/lexer"
-	"github.com/ofux/deluge/dsl/parser"
 	"github.com/ofux/deluge/repo"
+	"github.com/ofux/deluge/repov2"
+	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 )
@@ -52,12 +52,12 @@ func NewJobsWorkerHandler() *JobsWorkerHandler {
 		Pattern:     "",
 		HandlerFunc: jobsHandler.GetAllJobs,
 	})
-	// Delete one Job
+	// Start a Job
 	routes = append(routes, Route{
-		Name:        "Delete a job",
-		Method:      http.MethodDelete,
-		Pattern:     "/{id}",
-		HandlerFunc: jobsHandler.DeleteJob,
+		Name:        "Interrupt a job",
+		Method:      http.MethodPut,
+		Pattern:     "/start/{id}",
+		HandlerFunc: jobsHandler.StartJob,
 	})
 	// Interrupt a Job
 	routes = append(routes, Route{
@@ -73,109 +73,122 @@ func NewJobsWorkerHandler() *JobsWorkerHandler {
 }
 
 func (d *JobsWorkerHandler) CreateJob(w http.ResponseWriter, r *http.Request) {
-	body, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		SendJSONError(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-	if len(body) == 0 {
-		SendJSONError(w, "Missing body", http.StatusBadRequest)
+	var job JobCreation
+	if ok := GetJSONBody(w, r, &job); !ok {
 		return
 	}
 
-	l := lexer.New(string(body))
-	p := parser.New(l)
-
-	program, ok := p.ParseProgram()
-	if !ok {
-		SendJSONError(w, core.SPrintParserErrors(p.Errors()), http.StatusBadRequest)
+	_, exists := repov2.Instance.GetDeluge(job.DelugeID)
+	if !exists {
+		SendJSONError(w, fmt.Sprintf("Deluge with ID '%s' does not exist.", job.DelugeID), http.StatusBadRequest)
 		return
 	}
 
-	jobID := r.FormValue("id")
-	var dlg *core.Deluge
-	if jobID == "" {
-		dlg, err = repo.Jobs.Create(program)
-	} else {
-		dlg, err = repo.Jobs.CreateWithID(program, jobID)
-	}
-	if err != nil {
-		SendJSONError(w, err.Error(), http.StatusBadRequest)
-		return
-	}
+	jobID := uuid.NewV4().String()
 
-	wURLParam := r.FormValue("webhook")
-	if wURLParam == "" {
-		dlg.Run()
-	} else {
-		wURL, err := url.ParseRequestURI(wURLParam)
+	webhook := ""
+	if job.Webhook != "" {
+		wURL, err := url.ParseRequestURI(job.Webhook)
 		if err != nil {
 			SendJSONError(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 		q := wURL.Query()
-		q.Set("job_id", dlg.ID)
+		q.Set("job_id", jobID)
 		wURL.RawQuery = q.Encode()
-		go func() {
-			<-dlg.Run()
-			resp, err := http.Get(wURL.String())
-			if err != nil {
-				log.Warnf("Error calling webhook (%s): %v", wURL.String(), err)
-				return
-			}
-			defer resp.Body.Close()
-			if resp.StatusCode >= 400 {
-				log.Warnf("The webhook (%s) responded with status: %d (%s)", wURL.String(), resp.StatusCode, resp.Status)
-			}
-		}()
+		webhook = wURL.String()
 	}
 
-	SendJSONWithHTTPCode(w, mapDeluge(dlg), http.StatusAccepted)
+	err := repov2.Instance.SaveJobShell(&repov2.PersistedJobShell{
+		ID:       jobID,
+		DelugeID: job.DelugeID,
+		Webhook:  webhook,
+	})
+	if err != nil {
+		SendJSONError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	respDTO := &JobLite{
+		ID:       jobID,
+		DelugeID: job.DelugeID,
+		Status:   JobVirgin,
+	}
+
+	SendJSONWithHTTPCode(w, respDTO, http.StatusAccepted)
 }
 
 func (d *JobsWorkerHandler) GetJob(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
-	dlg, ok := repo.Jobs.Get(id)
+	job, ok := repo.Jobs.Get(id)
 	if !ok {
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
 
-	SendJSONWithHTTPCode(w, mapDeluge(dlg), http.StatusOK)
+	SendJSONWithHTTPCode(w, mapDeluge(job.RunnableDeluge), http.StatusOK)
 }
 
 func (d *JobsWorkerHandler) GetAllJobs(w http.ResponseWriter, r *http.Request) {
-	dlgs := repo.Jobs.GetAll()
-	dlgsDTO := make([]*DelugeLite, 0, len(dlgs))
-	for _, dlg := range dlgs {
-		dlgsDTO = append(dlgsDTO, mapDelugeLite(dlg))
+	jobs := repo.Jobs.GetAll()
+	dlgsDTO := make([]*JobLite, 0, len(jobs))
+	for _, job := range jobs {
+		dlgsDTO = append(dlgsDTO, mapDelugeLite(job.RunnableDeluge))
 	}
 
 	SendJSONWithHTTPCode(w, dlgsDTO, http.StatusOK)
 }
 
-func (d *JobsWorkerHandler) DeleteJob(w http.ResponseWriter, r *http.Request) {
+func (d *JobsWorkerHandler) StartJob(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
-	ok := repo.Jobs.Delete(id)
+	jobShell, ok := repov2.Instance.GetJobShell(id)
 	if !ok {
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
+	dlg, err := core.NewRunnableDeluge(jobShell.DelugeID)
+	if err != nil {
+		SendJSONError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	repo.Jobs.Store(&repo.RunningJob{
+		ID:             jobShell.ID,
+		RunnableDeluge: dlg,
+	})
+
+	if jobShell.Webhook == "" {
+		dlg.Run()
+	} else {
+		go func() {
+			<-dlg.Run()
+			resp, err := http.Get(jobShell.Webhook)
+			if err != nil {
+				log.Warnf("Error calling webhook (%s): %v", jobShell.Webhook, err)
+				return
+			}
+			defer resp.Body.Close()
+			if resp.StatusCode >= 400 {
+				log.Warnf("The webhook (%s) responded with status: %d (%s)", jobShell.Webhook, resp.StatusCode, resp.Status)
+			}
+		}()
+	}
+
+	w.WriteHeader(http.StatusAccepted)
 }
 
 func (d *JobsWorkerHandler) InterruptJob(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
-	dlg, ok := repo.Jobs.Get(id)
+	job, ok := repo.Jobs.Get(id)
 	if !ok {
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
 
-	dlg.Interrupt()
+	job.RunnableDeluge.Interrupt()
 	w.WriteHeader(http.StatusOK)
 }

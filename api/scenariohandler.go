@@ -5,11 +5,10 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/ofux/deluge/core"
 	"github.com/ofux/deluge/repov2"
-	"io/ioutil"
 	"net/http"
 )
 
-// ScenarioHandler handles requests for 'jobs' resource as a worker
+// ScenarioHandler handles requests for 'scenarios' resource
 type ScenarioHandler struct {
 	routes []Route
 }
@@ -70,13 +69,8 @@ func NewScenarioHandler() *ScenarioHandler {
 }
 
 func (d *ScenarioHandler) Create(w http.ResponseWriter, r *http.Request) {
-	body, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		SendJSONError(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-	if len(body) == 0 {
-		SendJSONError(w, "Missing body", http.StatusBadRequest)
+	body, ok := GetNonEmptyBody(w, r)
+	if !ok {
 		return
 	}
 
@@ -86,13 +80,13 @@ func (d *ScenarioHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, exists := repov2.ScenarioDefinitions.Get(compiledScenario.GetScenarioDefinition().ID)
+	_, exists := repov2.Instance.GetScenario(compiledScenario.GetScenarioDefinition().ID)
 	if exists {
 		SendJSONError(w, fmt.Sprintf("Scenario with ID %s already exists", compiledScenario.GetScenarioDefinition().ID), http.StatusBadRequest)
 		return
 	}
 
-	err = repov2.ScenarioDefinitions.Save((*repov2.PersistedScenario)(compiledScenario.GetScenarioDefinition()))
+	err = repov2.Instance.SaveScenario((*repov2.PersistedScenario)(compiledScenario.GetScenarioDefinition()))
 	if err != nil {
 		SendJSONError(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -102,13 +96,8 @@ func (d *ScenarioHandler) Create(w http.ResponseWriter, r *http.Request) {
 }
 
 func (d *ScenarioHandler) Update(w http.ResponseWriter, r *http.Request) {
-	body, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		SendJSONError(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-	if len(body) == 0 {
-		SendJSONError(w, "Missing body", http.StatusBadRequest)
+	body, ok := GetNonEmptyBody(w, r)
+	if !ok {
 		return
 	}
 
@@ -118,13 +107,13 @@ func (d *ScenarioHandler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, exists := repov2.ScenarioDefinitions.Get(compiledScenario.GetScenarioDefinition().ID)
+	_, exists := repov2.Instance.GetScenario(compiledScenario.GetScenarioDefinition().ID)
 	if !exists {
 		SendJSONError(w, fmt.Sprintf("Scenario with ID %s does not exist", compiledScenario.GetScenarioDefinition().ID), http.StatusBadRequest)
 		return
 	}
 
-	err = repov2.ScenarioDefinitions.Save((*repov2.PersistedScenario)(compiledScenario.GetScenarioDefinition()))
+	err = repov2.Instance.SaveScenario((*repov2.PersistedScenario)(compiledScenario.GetScenarioDefinition()))
 	if err != nil {
 		SendJSONError(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -136,7 +125,7 @@ func (d *ScenarioHandler) Update(w http.ResponseWriter, r *http.Request) {
 func (d *ScenarioHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
-	scenDef, ok := repov2.ScenarioDefinitions.Get(id)
+	scenDef, ok := repov2.Instance.GetScenario(id)
 	if !ok {
 		w.WriteHeader(http.StatusNotFound)
 		return
@@ -151,7 +140,7 @@ type ScenarioLite struct {
 }
 
 func (d *ScenarioHandler) GetAll(w http.ResponseWriter, r *http.Request) {
-	scenDefs := repov2.ScenarioDefinitions.GetAll()
+	scenDefs := repov2.Instance.GetAllScenarios()
 	scenDefsDTO := make([]ScenarioLite, 0, len(scenDefs))
 	for _, def := range scenDefs {
 		scenDefsDTO = append(scenDefsDTO, ScenarioLite{
@@ -166,7 +155,7 @@ func (d *ScenarioHandler) GetAll(w http.ResponseWriter, r *http.Request) {
 func (d *ScenarioHandler) DeleteByID(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
-	ok := repov2.ScenarioDefinitions.Delete(id)
+	ok := repov2.Instance.DeleteScenario(id)
 	if !ok {
 		w.WriteHeader(http.StatusNotFound)
 		return

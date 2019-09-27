@@ -213,7 +213,7 @@ func compileScenario(t testing.TB, script string) *CompiledScenario {
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = repov2.ScenarioDefinitions.Save((*repov2.PersistedScenario)(compiled.GetScenarioDefinition()))
+	err = repov2.Instance.SaveScenario((*repov2.PersistedScenario)(compiled.GetScenarioDefinition()))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -221,5 +221,5 @@ func compileScenario(t testing.TB, script string) *CompiledScenario {
 }
 
 func clearScenarioRepo() {
-	repov2.ScenarioDefinitions = repov2.NewScenarioDefinitionsRepository()
+	repov2.Instance = repov2.NewInMemoryRepository()
 }

@@ -3,6 +3,7 @@ package core
 import (
 	"github.com/ofux/deluge/core/recording"
 	"github.com/ofux/deluge/core/recording/recordingtest"
+	"github.com/ofux/deluge/repov2"
 	"github.com/ofux/docilemonkey/docilemonkey"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -30,7 +31,7 @@ func TestDeluge_Run(t *testing.T) {
 
 		});`)
 
-		dlg, err := NewDeluge("foo", `
+		dlg, err := NewRunnableDeluge("foo", `
 		deluge("Some name", "200ms", {
 			"myScenario": {
 				"concurrent": 100,
@@ -67,7 +68,7 @@ func TestDeluge_Run(t *testing.T) {
 
 		});`)
 
-		dlg, err := NewDeluge("foo", `
+		dlg, err := NewRunnableDeluge("foo", `
 		deluge("Some name", "20s", {
 			"myScenario": {
 				"concurrent": 100,
@@ -108,7 +109,7 @@ func TestDeluge_Run(t *testing.T) {
 
 		});`)
 
-		dlg, err := NewDeluge("foo", `
+		dlg, err := NewRunnableDeluge("foo", `
 		deluge("Some name", "100ms", {
 			"myScenario": {
 				"concurrent": 10,
@@ -143,7 +144,7 @@ func TestDeluge_Run(t *testing.T) {
 
 		});`)
 
-		dlg, err := NewDeluge("foo", `
+		dlg, err := NewRunnableDeluge("foo", `
 		deluge("Some name", "20s", {
 			"myScenario": {
 				"concurrent": 5,
@@ -174,7 +175,7 @@ func TestDeluge_Run_With_Errors(t *testing.T) {
 			assert(false);
 		});`)
 
-		dlg, err := NewDeluge("foo", `
+		dlg, err := NewRunnableDeluge("foo", `
 		deluge("Some name", "100ms", {
 			"myScenario": {
 				"concurrent": 10,
@@ -203,7 +204,7 @@ func TestDeluge_Run_With_Errors(t *testing.T) {
 			args["x"]++;
 		});`)
 
-		dlg, err := NewDeluge("foo", `
+		dlg, err := NewRunnableDeluge("foo", `
 		deluge("Some name", "100ms", {
 			"s1": {
 				"concurrent": 10,
@@ -363,7 +364,7 @@ func TestDeluge_New_With_Deluge_Errors(t *testing.T) {
 
 	for _, tt := range tests {
 		clearScenarioRepo()
-		_, err := NewDeluge("foo", tt.input)
+		_, err := NewRunnableDeluge("foo", tt.input)
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), tt.expected)
 	}
@@ -382,7 +383,7 @@ scenario("myScenario", "My scenario", function () {
 });`)
 
 	for i := 0; i < b.N; i++ {
-		_, err := NewDeluge("foo", `
+		_, err := NewRunnableDeluge("foo", `
 		deluge("Some name", "200ms", {
 			"myScenario": {
 				"concurrent": 100,
@@ -394,4 +395,20 @@ scenario("myScenario", "My scenario", function () {
 			b.Fatal(err)
 		}
 	}
+}
+
+func compileDeluge(t testing.TB, script string) *CompiledDeluge {
+	compiled, err := CompileDeluge(script)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = repov2.Instance.SaveScenario((*repov2.PersistedDeluge)(compiled.GetDelugeDefinition()))
+	if err != nil {
+		t.Fatal(err)
+	}
+	return compiled
+}
+
+func clearDelugeRepo() {
+	repov2.DelugeDefinitions = repov2.NewDelugeDefinitionsRepository()
 }

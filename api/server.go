@@ -20,7 +20,7 @@ func NewServer() *negroni.Negroni {
 	n.Use(recovery)
 
 	// route handler goes last
-	n.UseHandler(NewRouter(NewJobsWorkerHandler(), NewScenarioHandler()))
+	n.UseHandler(NewRouter(NewJobsWorkerHandler(), NewScenarioHandler(), NewDelugeHandler()))
 
 	return n
 }

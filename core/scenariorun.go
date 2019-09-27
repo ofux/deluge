@@ -70,8 +70,9 @@ func newRunnableScenario(
 	return s
 }
 
-func (sc *RunnableScenario) GetScenarioDefinition() *ScenarioDefinition {
-	return sc.compiledScenario.scenario
+// GetScenarioDefinition returns a copy of the scenario definition
+func (sc *RunnableScenario) GetScenarioDefinition() ScenarioDefinition {
+	return *sc.compiledScenario.scenario
 }
 
 func (sc *RunnableScenario) run(globalDuration time.Duration, interrupt chan struct{}) {

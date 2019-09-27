@@ -43,13 +43,13 @@ func TestJobsWorkerHandler_CreateJob(t *testing.T) {
 
 		assert.Equal(t, w.Code, http.StatusAccepted)
 		dlg := deserializeDeluge(t, w.Body)
-		assert.Equal(t, dlg.Name, dlgName)
-		assert.True(t, dlg.Status == DelugeVirgin || dlg.Status == DelugeInProgress)
+		assert.Equal(t, dlg.DelugeName, dlgName)
+		assert.True(t, dlg.Status == JobVirgin || dlg.Status == JobInProgress)
 		assert.Len(t, dlg.Scenarios, 1)
 		assert.Contains(t, dlg.Scenarios, scenarioKey)
 		assert.Equal(t, dlg.Scenarios[scenarioKey].Name, scenarioName)
 		assert.Len(t, dlg.Scenarios[scenarioKey].Errors, 0)
-		assert.True(t, dlg.Scenarios[scenarioKey].Status == ScenarioVirgin || dlg.Scenarios[scenarioKey].Status == ScenarioInProgress)
+		assert.True(t, dlg.Scenarios[scenarioKey].Status == JobScenarioVirgin || dlg.Scenarios[scenarioKey].Status == JobScenarioInProgress)
 	})
 
 	t.Run("Create a job with syntax error in script", func(t *testing.T) {
@@ -100,14 +100,14 @@ func TestJobsWorkerHandler_CreateJob(t *testing.T) {
 
 		assert.Equal(t, w.Code, http.StatusAccepted)
 		dlg := deserializeDeluge(t, w.Body)
-		assert.Equal(t, dlg.ID, dlgID)
-		assert.Equal(t, dlg.Name, dlgName)
-		assert.True(t, dlg.Status == DelugeVirgin || dlg.Status == DelugeInProgress)
+		assert.Equal(t, dlg.DelugeID, dlgID)
+		assert.Equal(t, dlg.DelugeName, dlgName)
+		assert.True(t, dlg.Status == JobVirgin || dlg.Status == JobInProgress)
 		assert.Len(t, dlg.Scenarios, 1)
 		assert.Contains(t, dlg.Scenarios, scenarioKey)
 		assert.Equal(t, dlg.Scenarios[scenarioKey].Name, scenarioName)
 		assert.Len(t, dlg.Scenarios[scenarioKey].Errors, 0)
-		assert.True(t, dlg.Scenarios[scenarioKey].Status == ScenarioVirgin || dlg.Scenarios[scenarioKey].Status == ScenarioInProgress)
+		assert.True(t, dlg.Scenarios[scenarioKey].Status == JobScenarioVirgin || dlg.Scenarios[scenarioKey].Status == JobScenarioInProgress)
 	})
 
 	t.Run("Create a job with an existing ID", func(t *testing.T) {
@@ -132,7 +132,7 @@ func TestJobsWorkerHandler_CreateJob(t *testing.T) {
 		router.ServeHTTP(w, r)
 		assert.Equal(t, w.Code, http.StatusAccepted)
 		dlg := deserializeDeluge(t, w.Body)
-		assert.Equal(t, dlg.ID, dlgID)
+		assert.Equal(t, dlg.DelugeID, dlgID)
 
 		r = httptest.NewRequest("POST", "http://example.com/v1/jobs?id="+dlgID, strings.NewReader(body))
 		w = httptest.NewRecorder()
@@ -169,8 +169,8 @@ func TestJobsWorkerHandler_CreateJob(t *testing.T) {
 
 		assert.Equal(t, w.Code, http.StatusAccepted)
 		dlg := deserializeDeluge(t, w.Body)
-		assert.Equal(t, dlg.Name, dlgName)
-		assert.True(t, dlg.Status == DelugeVirgin || dlg.Status == DelugeInProgress)
+		assert.Equal(t, dlg.DelugeName, dlgName)
+		assert.True(t, dlg.Status == JobVirgin || dlg.Status == JobInProgress)
 		assert.Len(t, dlg.Scenarios, 1)
 
 		assert.True(t, isChanClosed(webhook, 50, 100*time.Millisecond))
@@ -216,8 +216,8 @@ func TestJobsWorkerHandler_GetJob(t *testing.T) {
 
 		assert.Equal(t, http.StatusOK, w.Code)
 		dlg := deserializeDeluge(t, w.Body)
-		assert.Equal(t, dlg.ID, givenID)
-		assert.Equal(t, dlg.Name, "Some name")
+		assert.Equal(t, dlg.DelugeID, givenID)
+		assert.Equal(t, dlg.DelugeName, "Some name")
 	})
 
 	t.Run("Get a job that does not exist", func(t *testing.T) {
@@ -362,8 +362,8 @@ func TestJobsOrchestratorHandler_InterruptJob(t *testing.T) {
 		router.ServeHTTP(w, r)
 		assert.Equal(t, http.StatusOK, w.Code)
 		dlgGet := deserializeDeluge(t, w.Body)
-		assert.Equal(t, givenID, dlgGet.ID)
-		assert.Equal(t, DelugeDoneSuccess, dlgGet.Status)
+		assert.Equal(t, givenID, dlgGet.DelugeID)
+		assert.Equal(t, JobDoneSuccess, dlgGet.Status)
 	})
 
 	t.Run("Interrupt a job done with errors", func(t *testing.T) {
@@ -388,8 +388,8 @@ func TestJobsOrchestratorHandler_InterruptJob(t *testing.T) {
 		router.ServeHTTP(w, r)
 		assert.Equal(t, http.StatusOK, w.Code)
 		dlgGet := deserializeDeluge(t, w.Body)
-		assert.Equal(t, givenID, dlgGet.ID)
-		assert.Equal(t, DelugeDoneError, dlgGet.Status)
+		assert.Equal(t, givenID, dlgGet.DelugeID)
+		assert.Equal(t, JobDoneError, dlgGet.Status)
 	})
 
 	t.Run("Interrupt a job in progress", func(t *testing.T) {
@@ -414,8 +414,8 @@ func TestJobsOrchestratorHandler_InterruptJob(t *testing.T) {
 		router.ServeHTTP(w, r)
 		assert.Equal(t, http.StatusOK, w.Code)
 		dlgGet := deserializeDeluge(t, w.Body)
-		assert.Equal(t, givenID, dlgGet.ID)
-		assert.Equal(t, DelugeInterrupted, dlgGet.Status)
+		assert.Equal(t, givenID, dlgGet.DelugeID)
+		assert.Equal(t, JobInterrupted, dlgGet.Status)
 	})
 
 	t.Run("Interrupt a non-existing job", func(t *testing.T) {
@@ -443,13 +443,13 @@ func isChanClosed(ch chan struct{}, maxIterations int, iterationTime time.Durati
 	return false
 }
 
-func deserializeArrayOfDeluges(t *testing.T, body *bytes.Buffer) []*Deluge {
+func deserializeArrayOfDeluges(t *testing.T, body *bytes.Buffer) []*Job {
 	p := make([]byte, body.Len())
 	if _, err := body.Read(p); err != nil {
 		t.Fatalf("Could not read body")
 		return nil
 	}
-	dlgs := make([]*Deluge, 0)
+	dlgs := make([]*Job, 0)
 	if err := json.Unmarshal(p, &dlgs); err != nil {
 		t.Fatalf("Could not deserialize array of Deluges out of %s", string(p))
 		return nil
@@ -457,13 +457,13 @@ func deserializeArrayOfDeluges(t *testing.T, body *bytes.Buffer) []*Deluge {
 	return dlgs
 }
 
-func deserializeDeluge(t *testing.T, body *bytes.Buffer) *Deluge {
+func deserializeDeluge(t *testing.T, body *bytes.Buffer) *Job {
 	p := make([]byte, body.Len())
 	if _, err := body.Read(p); err != nil {
 		t.Fatalf("Could not read body")
 		return nil
 	}
-	dlg := &Deluge{}
+	dlg := &Job{}
 	if err := json.Unmarshal(p, dlg); err != nil {
 		t.Fatalf("Could not deserialize Deluge out of %s", string(p))
 		return nil

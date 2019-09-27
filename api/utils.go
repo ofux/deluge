@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	log "github.com/sirupsen/logrus"
+	"io/ioutil"
 	"net/http"
 )
 
@@ -45,4 +46,35 @@ func SendRawStringHTTPCode(w http.ResponseWriter, str string, code int) {
 		// panic will cause the http.StatusInternalServerError to be send to users thanks to negroni recovery
 		panic(err)
 	}
+}
+
+func GetNonEmptyBody(w http.ResponseWriter, r *http.Request) ([]byte, bool) {
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		SendJSONError(w, err.Error(), http.StatusBadRequest)
+		return nil, false
+	}
+	if len(body) == 0 {
+		SendJSONError(w, "Missing body", http.StatusBadRequest)
+		return nil, false
+	}
+	return body, true
+}
+
+func GetJSONBody(w http.ResponseWriter, r *http.Request, out interface{}) bool {
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		SendJSONError(w, err.Error(), http.StatusBadRequest)
+		return false
+	}
+	if len(body) == 0 {
+		SendJSONError(w, "Missing body", http.StatusBadRequest)
+		return false
+	}
+	err = json.Unmarshal(body, out)
+	if err != nil {
+		SendJSONError(w, err.Error(), http.StatusBadRequest)
+		return false
+	}
+	return true
 }

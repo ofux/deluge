@@ -9,56 +9,63 @@ import (
 	"time"
 )
 
-type DelugeStatus string
+type JobStatus string
 
 const (
-	DelugeVirgin      DelugeStatus = "Virgin"
-	DelugeInProgress  DelugeStatus = "InProgress"
-	DelugeDoneSuccess DelugeStatus = "DoneSuccess"
-	DelugeDoneError   DelugeStatus = "DoneError"
-	DelugeInterrupted DelugeStatus = "Interrupted"
+	JobVirgin      JobStatus = "Virgin"
+	JobInProgress  JobStatus = "InProgress"
+	JobDoneSuccess JobStatus = "DoneSuccess"
+	JobDoneError   JobStatus = "DoneError"
+	JobInterrupted JobStatus = "Interrupted"
 )
 
-type ScenarioStatus string
+type JobScenarioStatus string
 
 const (
-	ScenarioVirgin      ScenarioStatus = "Virgin"
-	ScenarioInProgress  ScenarioStatus = "InProgress"
-	ScenarioDoneSuccess ScenarioStatus = "DoneSuccess"
-	ScenarioDoneError   ScenarioStatus = "DoneError"
-	ScenarioInterrupted ScenarioStatus = "Interrupted"
+	JobScenarioVirgin      JobScenarioStatus = "Virgin"
+	JobScenarioInProgress  JobScenarioStatus = "InProgress"
+	JobScenarioDoneSuccess JobScenarioStatus = "DoneSuccess"
+	JobScenarioDoneError   JobScenarioStatus = "DoneError"
+	JobScenarioInterrupted JobScenarioStatus = "Interrupted"
 )
 
-type Deluge struct {
-	ID             string
-	Name           string
-	Status         DelugeStatus
-	GlobalDuration time.Duration
-	Scenarios      map[string]*Scenario
+type JobCreation struct {
+	DelugeID string `json:"delugeId"`
+	Webhook  string `json:"webhook"`
 }
 
-type DelugeLite struct {
-	ID     string
-	Name   string
-	Status DelugeStatus
+type Job struct {
+	ID             string                  `json:"id"`
+	DelugeID       string                  `json:"delugeId"`
+	DelugeName     string                  `json:"delugeName"`
+	Status         JobStatus               `json:"status"`
+	GlobalDuration time.Duration           `json:"globalDuration"`
+	Scenarios      map[string]*JobScenario `json:"scenarios"`
 }
 
-type Scenario struct {
-	Name              string
-	IterationDuration time.Duration
-	Status            ScenarioStatus
-	Errors            []*object.Error
-	Report            reporting.Report
+type JobLite struct {
+	ID         string    `json:"id"`
+	DelugeID   string    `json:"delugeId"`
+	DelugeName string    `json:"delugeName"`
+	Status     JobStatus `json:"status"`
 }
 
-func mapDeluge(d *core.Deluge) *Deluge {
+type JobScenario struct {
+	Name              string            `json:"name"`
+	IterationDuration time.Duration     `json:"iterationDuration"`
+	Status            JobScenarioStatus `json:"status"`
+	Errors            []*object.Error   `json:"errors"`
+	Report            reporting.Report  `json:"report"`
+}
+
+func mapDeluge(d *core.RunnableDeluge) *Job {
 	d.Mutex.Lock()
-	dDTO := &Deluge{
-		ID:             d.ID,
-		Name:           d.Name,
-		GlobalDuration: d.GlobalDuration,
+	dDTO := &Job{
+		DelugeID:       d.GetDelugeDefinition().ID,
+		DelugeName:     d.GetDelugeDefinition().Name,
+		GlobalDuration: d.GetGlobalDuration(),
 		Status:         mapDelugeStatus(d.Status),
-		Scenarios:      make(map[string]*Scenario),
+		Scenarios:      make(map[string]*JobScenario),
 	}
 	d.Mutex.Unlock()
 	for scID, sc := range d.Scenarios {
@@ -69,19 +76,19 @@ func mapDeluge(d *core.Deluge) *Deluge {
 	return dDTO
 }
 
-func mapDelugeLite(d *core.Deluge) *DelugeLite {
+func mapDelugeLite(d *core.RunnableDeluge) *JobLite {
 	d.Mutex.Lock()
-	dDTO := &DelugeLite{
-		ID:     d.ID,
-		Name:   d.Name,
-		Status: mapDelugeStatus(d.Status),
+	dDTO := &JobLite{
+		DelugeID:   d.GetDelugeDefinition().ID,
+		DelugeName: d.GetDelugeDefinition().Name,
+		Status:     mapDelugeStatus(d.Status),
 	}
 	d.Mutex.Unlock()
 	return dDTO
 }
 
-func mapScenario(sc *core.RunnableScenario) *Scenario {
-	return &Scenario{
+func mapScenario(sc *core.RunnableScenario) *JobScenario {
+	return &JobScenario{
 		Name:              sc.GetScenarioDefinition().Name,
 		IterationDuration: sc.IterationDuration,
 		Errors:            sc.Errors,
@@ -90,34 +97,34 @@ func mapScenario(sc *core.RunnableScenario) *Scenario {
 	}
 }
 
-func mapScenarioStatus(st core.ScenarioStatus) ScenarioStatus {
+func mapScenarioStatus(st core.ScenarioStatus) JobScenarioStatus {
 	switch st {
 	case core.ScenarioVirgin:
-		return ScenarioVirgin
+		return JobScenarioVirgin
 	case core.ScenarioInProgress:
-		return ScenarioInProgress
+		return JobScenarioInProgress
 	case core.ScenarioDoneSuccess:
-		return ScenarioDoneSuccess
+		return JobScenarioDoneSuccess
 	case core.ScenarioDoneError:
-		return ScenarioDoneError
+		return JobScenarioDoneError
 	case core.ScenarioInterrupted:
-		return ScenarioInterrupted
+		return JobScenarioInterrupted
 	}
 	panic(errors.New(fmt.Sprintf("Invalid scenario status %d", st)))
 }
 
-func mapDelugeStatus(st core.DelugeStatus) DelugeStatus {
+func mapDelugeStatus(st core.DelugeStatus) JobStatus {
 	switch st {
 	case core.DelugeVirgin:
-		return DelugeVirgin
+		return JobVirgin
 	case core.DelugeInProgress:
-		return DelugeInProgress
+		return JobInProgress
 	case core.DelugeDoneSuccess:
-		return DelugeDoneSuccess
+		return JobDoneSuccess
 	case core.DelugeDoneError:
-		return DelugeDoneError
+		return JobDoneError
 	case core.DelugeInterrupted:
-		return DelugeInterrupted
+		return JobInterrupted
 	}
 	panic(errors.New(fmt.Sprintf("Invalid deluge status %d", st)))
 }

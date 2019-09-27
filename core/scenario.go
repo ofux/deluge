@@ -76,8 +76,8 @@ func (d *scenarioBuilder) dslCreateScenario(node ast.Node, args ...object.Object
 	}
 
 	scenarioId, ok := args[0].(*object.String)
-	if !ok {
-		return evaluator.NewError(node, "Expected 1st argument to be a string at %s\n", ast.PrintLocation(node))
+	if !ok || len(scenarioId.Value) < 3 {
+		return evaluator.NewError(node, "Expected 1st argument to be a string with at least 3 characters at %s\n", ast.PrintLocation(node))
 	}
 
 	name, ok := args[1].(*object.String)

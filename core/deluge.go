@@ -6,48 +6,28 @@ import (
 	"github.com/ofux/deluge/dsl/lexer"
 	"github.com/ofux/deluge/dsl/object"
 	"github.com/ofux/deluge/dsl/parser"
-	"github.com/ofux/deluge/repov2"
 	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
-	"sync"
+	"log"
 	"time"
 )
 
-type DelugeStatus int
-
-const (
-	DelugeVirgin DelugeStatus = iota
-	DelugeInProgress
-	DelugeDoneSuccess
-	DelugeDoneError
-	DelugeInterrupted
-)
-
-type Deluge struct {
-	ID             string
-	Name           string
-	GlobalDuration time.Duration
-	Scenarios      map[string]*RunnableScenario
-
-	Status    DelugeStatus
-	Mutex     *sync.Mutex
-	interrupt chan struct{}
+type DelugeDefinition struct {
+	ID     string
+	Name   string
+	Script string
 }
 
-type delugeBuilder struct {
-	visited         bool
-	name            string
+type CompiledDeluge struct {
+	definition      *DelugeDefinition
 	globalDuration  time.Duration
 	scenarioConfigs map[string]*scenarioConfig
 }
 
-type scenarioConfig struct {
-	concurrent        int
-	iterationDuration time.Duration
-	args              *object.Hash
+func (c *CompiledDeluge) GetDelugeDefinition() *DelugeDefinition {
+	return c.definition
 }
 
-func NewDeluge(ID string, script string) (*Deluge, error) {
+func CompileDeluge(script string) (*CompiledDeluge, error) {
 	l := lexer.New(script)
 	p := parser.New(l)
 
@@ -69,95 +49,29 @@ func NewDeluge(ID string, script string) (*Deluge, error) {
 		return nil, errors.New(evaluated.Inspect())
 	}
 
-	dlg := &Deluge{
-		ID:             ID,
-		Name:           builder.name,
-		GlobalDuration: builder.globalDuration,
-		Scenarios:      make(map[string]*RunnableScenario),
-		Status:         DelugeVirgin,
-		Mutex:          &sync.Mutex{},
-		interrupt:      make(chan struct{}),
-	}
-	for id, sConf := range builder.scenarioConfigs {
-		if sCore, ok := repov2.ScenarioDefinitions.Get(id); ok {
-			compiledScenario, err := CompileScenario(sCore.Script)
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to recompile scenario %s", id)
-			}
-			dlg.Scenarios[id] = newRunnableScenario(
-				compiledScenario,
-				sConf.concurrent,
-				sConf.iterationDuration,
-				sConf.args,
-				log.New().WithField("deluge", dlg.Name),
-			)
-		} else {
-			return nil, errors.Errorf("scenario '%s' is configured but not defined", id)
-		}
-	}
-	return dlg, nil
+	return &CompiledDeluge{
+		definition: &DelugeDefinition{
+			ID:     builder.ID,
+			Name:   builder.name,
+			Script: script,
+		},
+		globalDuration:  builder.globalDuration,
+		scenarioConfigs: builder.scenarioConfigs,
+	}, nil
 }
 
-// Run runs the deluge asynchronously. It returns a channel that will be closed once the execution is finished.
-func (d *Deluge) Run() <-chan struct{} {
-	done := make(chan struct{})
-	go func() {
-		defer close(done)
-		d.run()
-	}()
-	return done
+type delugeBuilder struct {
+	visited         bool
+	ID              string
+	name            string
+	globalDuration  time.Duration
+	scenarioConfigs map[string]*scenarioConfig
 }
 
-func (d *Deluge) run() {
-	log.Infof("Executing %d scenario(s)", len(d.Scenarios))
-	start := time.Now()
-
-	d.Mutex.Lock()
-	if d.Status != DelugeVirgin {
-		log.Warnf("Cannot run a deluge %s with status %d", d.ID, d.Status)
-		return
-	}
-	d.Status = DelugeInProgress
-	d.Mutex.Unlock()
-
-	var waitg sync.WaitGroup
-	for _, scenario := range d.Scenarios {
-		waitg.Add(1)
-		go func(scenario *RunnableScenario) {
-			defer waitg.Done()
-			scenario.run(d.GlobalDuration, d.interrupt)
-		}(scenario)
-	}
-	waitg.Wait()
-
-	d.Mutex.Lock()
-	d.end()
-	d.Mutex.Unlock()
-
-	log.Infof("Deluge executed %d scenario(s) in %s", len(d.Scenarios), time.Now().Sub(start).String())
-}
-
-func (d *Deluge) end() {
-	if d.Status == DelugeInProgress {
-		d.Status = DelugeDoneSuccess
-		for _, scenario := range d.Scenarios {
-			if scenario.Status == ScenarioDoneError {
-				d.Status = DelugeDoneError
-				break
-			}
-		}
-	}
-}
-
-func (d *Deluge) Interrupt() {
-	d.Mutex.Lock()
-	if d.Status == DelugeVirgin || d.Status == DelugeInProgress {
-		d.Status = DelugeInterrupted
-		d.Mutex.Unlock()
-		close(d.interrupt)
-	} else {
-		d.Mutex.Unlock()
-	}
+type scenarioConfig struct {
+	concurrent        int
+	iterationDuration time.Duration
+	args              *object.Hash
 }
 
 func (d *delugeBuilder) dslCreateDeluge(node ast.Node, args ...object.Object) object.Object {
@@ -166,29 +80,35 @@ func (d *delugeBuilder) dslCreateDeluge(node ast.Node, args ...object.Object) ob
 	}
 	d.visited = true
 
-	if len(args) != 3 {
-		return evaluator.NewError(node, "Expected %d arguments at %s\n", 3, ast.PrintLocation(node))
+	if len(args) != 4 {
+		return evaluator.NewError(node, "Expected %d arguments at %s\n", 4, ast.PrintLocation(node))
 	}
 
-	name, ok := args[0].(*object.String)
-	if !ok {
-		return evaluator.NewError(node, "Expected 1st argument to be a string at %s\n", ast.PrintLocation(node))
+	delugeId, ok := args[0].(*object.String)
+	if !ok || len(delugeId.Value) < 3 {
+		return evaluator.NewError(node, "Expected 1st argument to be a string with at least 3 characters at %s\n", ast.PrintLocation(node))
 	}
-	d.name = name.Value
+	d.ID = delugeId.Value
 
-	durationStr, ok := args[1].(*object.String)
+	name, ok := args[1].(*object.String)
 	if !ok {
 		return evaluator.NewError(node, "Expected 2nd argument to be a string at %s\n", ast.PrintLocation(node))
 	}
+	d.name = name.Value
+
+	durationStr, ok := args[2].(*object.String)
+	if !ok {
+		return evaluator.NewError(node, "Expected 3rd argument to be a string at %s\n", ast.PrintLocation(node))
+	}
 	duration, err := time.ParseDuration(durationStr.Value)
 	if err != nil {
-		return evaluator.NewError(node, "Expected 2nd argument to be a valid duration at %s. Error: %s\n", ast.PrintLocation(node), err.Error())
+		return evaluator.NewError(node, "Expected 3rd argument to be a valid duration at %s. Error: %s\n", ast.PrintLocation(node), err.Error())
 	}
 	d.globalDuration = duration
 
-	conf, ok := args[2].(*object.Hash)
+	conf, ok := args[3].(*object.Hash)
 	if !ok {
-		return evaluator.NewError(node, "Expected 3rd argument to be an object at %s\n", ast.PrintLocation(node))
+		return evaluator.NewError(node, "Expected 4th argument to be an object at %s\n", ast.PrintLocation(node))
 	}
 
 	for scenarioId, v := range conf.Pairs {
