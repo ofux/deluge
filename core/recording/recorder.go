@@ -86,3 +86,13 @@ func (r *Recorder) processRecords(processRecord func(RecordEntry)) {
 func createHistogram() *hdr.Histogram {
 	return hdr.New(0, 3600000000, 3)
 }
+
+func mergeHistograms(h1, h2 *hdr.Histogram) *hdr.Histogram {
+	h := hdr.Import(h1.Export())
+	h.Merge(h2)
+	return h
+}
+
+func copyHistogram(h *hdr.Histogram) *hdr.Histogram {
+	return hdr.Import(h.Export())
+}

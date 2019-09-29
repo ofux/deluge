@@ -4,22 +4,13 @@ import (
 	"errors"
 	"fmt"
 	"github.com/ofux/deluge/core/recording"
+	"github.com/ofux/deluge/core/status"
 	"github.com/ofux/deluge/dsl/object"
 	log "github.com/sirupsen/logrus"
 	"strconv"
 	"sync"
 	"sync/atomic"
 	"time"
-)
-
-type ScenarioStatus int
-
-const (
-	ScenarioVirgin ScenarioStatus = iota
-	ScenarioInProgress
-	ScenarioDoneSuccess
-	ScenarioDoneError
-	ScenarioInterrupted
 )
 
 type RunnableScenario struct {
@@ -30,7 +21,7 @@ type RunnableScenario struct {
 	httpRecorder      *recording.HTTPRecorder
 	log               *log.Entry
 
-	Status             ScenarioStatus
+	Status             status.ScenarioStatus
 	Errors             []*object.Error
 	Records            *recording.HTTPRecordsOverTime
 	EffectiveUserCount uint64
@@ -56,7 +47,7 @@ func newRunnableScenario(
 			"scenario": compiledScenario.scenario.ID,
 		}),
 
-		Status: ScenarioVirgin,
+		Status: status.ScenarioVirgin,
 		Errors: make([]*object.Error, 0),
 
 		Mutex: &sync.Mutex{},
@@ -81,10 +72,10 @@ func (sc *RunnableScenario) run(globalDuration time.Duration, interrupt chan str
 	endTime := start.Add(globalDuration)
 
 	sc.Mutex.Lock()
-	if sc.Status != ScenarioVirgin {
+	if sc.Status != status.ScenarioVirgin {
 		panic(errors.New(fmt.Sprintf("Cannot run a scenario with status %d", sc.Status)))
 	}
-	sc.Status = ScenarioInProgress
+	sc.Status = status.ScenarioInProgress
 	sc.Mutex.Unlock()
 
 	for _, su := range sc.simUsers {
@@ -151,13 +142,13 @@ func (sc *RunnableScenario) end() {
 		sc.log.Error(err)
 	}
 
-	sc.Status = ScenarioDoneSuccess
+	sc.Status = status.ScenarioDoneSuccess
 	for _, su := range sc.simUsers {
 		if su.status == UserDoneError {
-			sc.Status = ScenarioDoneError
+			sc.Status = status.ScenarioDoneError
 			sc.Errors = append(sc.Errors, su.execError)
-		} else if su.status == UserInterrupted && sc.Status != ScenarioDoneError {
-			sc.Status = ScenarioInterrupted
+		} else if su.status == UserInterrupted && sc.Status != status.ScenarioDoneError {
+			sc.Status = status.ScenarioInterrupted
 		}
 	}
 

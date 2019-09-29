@@ -3,6 +3,7 @@ package worker
 type Manager interface {
 	CreateAll(jobShell *JobShell) error
 	StartAll(jobShell *JobShell) error
+	InterruptAll(jobShellID string) error
 }
 
 type JobShell struct {

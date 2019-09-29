@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/ofux/deluge/api"
+	"github.com/ofux/deluge/core/status"
 	"github.com/spf13/cobra"
 	"io/ioutil"
 	"net"
@@ -62,7 +63,7 @@ Otherwise, a local worker will be silently started on a random port to run the s
 		dlg := postDeluge(fileContent)
 
 		// polling
-		for dlg.Status == api.JobVirgin || dlg.Status == api.JobInProgress {
+		for dlg.Status == status.DelugeVirgin || dlg.Status == status.DelugeInProgress {
 			dlg = getDeluge(dlg.DelugeID)
 			time.Sleep(500 * time.Millisecond)
 		}

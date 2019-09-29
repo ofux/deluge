@@ -6,25 +6,39 @@ import (
 	"github.com/ofux/deluge/dsl/lexer"
 	"github.com/ofux/deluge/dsl/object"
 	"github.com/ofux/deluge/dsl/parser"
+	"github.com/ofux/deluge/repov2"
 	"github.com/pkg/errors"
 	"log"
 	"time"
 )
 
 type DelugeDefinition struct {
-	ID     string
-	Name   string
-	Script string
+	ID             string
+	Name           string
+	Script         string
+	GlobalDuration time.Duration
 }
 
 type CompiledDeluge struct {
 	definition      *DelugeDefinition
-	globalDuration  time.Duration
 	scenarioConfigs map[string]*scenarioConfig
 }
 
 func (c *CompiledDeluge) GetDelugeDefinition() *DelugeDefinition {
 	return c.definition
+}
+
+func (c *CompiledDeluge) MapToPersistedDeluge() *repov2.PersistedDeluge {
+	pd := &repov2.PersistedDeluge{
+		ID:             c.definition.ID,
+		Name:           c.definition.Name,
+		Script:         c.definition.Script,
+		GlobalDuration: c.definition.GlobalDuration,
+	}
+	for k, _ := range c.scenarioConfigs {
+		pd.ScenarioIDs = append(pd.ScenarioIDs, k)
+	}
+	return pd
 }
 
 func CompileDeluge(script string) (*CompiledDeluge, error) {
@@ -51,11 +65,11 @@ func CompileDeluge(script string) (*CompiledDeluge, error) {
 
 	return &CompiledDeluge{
 		definition: &DelugeDefinition{
-			ID:     builder.ID,
-			Name:   builder.name,
-			Script: script,
+			ID:             builder.ID,
+			Name:           builder.name,
+			Script:         script,
+			GlobalDuration: builder.globalDuration,
 		},
-		globalDuration:  builder.globalDuration,
 		scenarioConfigs: builder.scenarioConfigs,
 	}, nil
 }

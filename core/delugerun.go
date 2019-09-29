@@ -1,6 +1,7 @@
 package core
 
 import (
+	"github.com/ofux/deluge/core/status"
 	"github.com/ofux/deluge/repov2"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
@@ -8,23 +9,14 @@ import (
 	"time"
 )
 
-type DelugeStatus int
-
-const (
-	DelugeVirgin DelugeStatus = iota
-	DelugeInProgress
-	DelugeDoneSuccess
-	DelugeDoneError
-	DelugeInterrupted
-)
-
 type RunnableDeluge struct {
 	compiledDeluge *CompiledDeluge
 	Scenarios      map[string]*RunnableScenario
 
-	Status    DelugeStatus
-	Mutex     *sync.Mutex
-	interrupt chan struct{}
+	Status       status.DelugeStatus
+	Mutex        *sync.Mutex
+	interrupt    chan struct{}
+	statusChange chan status.DelugeStatus
 }
 
 // GetDelugeDefinition returns a copy of the deluge definition
@@ -33,7 +25,11 @@ func (d *RunnableDeluge) GetDelugeDefinition() DelugeDefinition {
 }
 
 func (d *RunnableDeluge) GetGlobalDuration() time.Duration {
-	return d.compiledDeluge.globalDuration
+	return d.compiledDeluge.GetDelugeDefinition().GlobalDuration
+}
+
+func (d *RunnableDeluge) OnStatusChangeChan() chan status.DelugeStatus {
+	return d.statusChange
 }
 
 func NewRunnableDeluge(delugeID string) (*RunnableDeluge, error) {
@@ -49,10 +45,12 @@ func NewRunnableDeluge(delugeID string) (*RunnableDeluge, error) {
 	dlg := &RunnableDeluge{
 		compiledDeluge: compiledDeluge,
 		Scenarios:      make(map[string]*RunnableScenario),
-		Status:         DelugeVirgin,
+		Status:         status.DelugeVirgin,
 		Mutex:          &sync.Mutex{},
 		interrupt:      make(chan struct{}),
+		statusChange:   make(chan status.DelugeStatus, 5), // Status cannot change more than 5 times
 	}
+	dlg.statusChange <- dlg.Status
 	for id, sConf := range compiledDeluge.scenarioConfigs {
 		if persistedScenario, ok := repov2.Instance.GetScenario(id); ok {
 			compiledScenario, err := CompileScenario(persistedScenario.Script)
@@ -88,19 +86,20 @@ func (d *RunnableDeluge) run() {
 	start := time.Now()
 
 	d.Mutex.Lock()
-	if d.Status != DelugeVirgin {
+	if d.Status != status.DelugeVirgin {
 		log.Warnf("Cannot run a deluge %s with status %d", d.GetDelugeDefinition().ID, d.Status)
 		return
 	}
-	d.Status = DelugeInProgress
+	d.Status = status.DelugeInProgress
 	d.Mutex.Unlock()
+	d.statusChange <- d.Status
 
 	var waitg sync.WaitGroup
 	for _, scenario := range d.Scenarios {
 		waitg.Add(1)
 		go func(scenario *RunnableScenario) {
 			defer waitg.Done()
-			scenario.run(d.compiledDeluge.globalDuration, d.interrupt)
+			scenario.run(d.GetGlobalDuration(), d.interrupt)
 		}(scenario)
 	}
 	waitg.Wait()
@@ -113,23 +112,26 @@ func (d *RunnableDeluge) run() {
 }
 
 func (d *RunnableDeluge) end() {
-	if d.Status == DelugeInProgress {
-		d.Status = DelugeDoneSuccess
+	if d.Status == status.DelugeInProgress {
+		d.Status = status.DelugeDoneSuccess
 		for _, scenario := range d.Scenarios {
-			if scenario.Status == ScenarioDoneError {
-				d.Status = DelugeDoneError
+			if scenario.Status == status.ScenarioDoneError {
+				d.Status = status.DelugeDoneError
 				break
 			}
 		}
+		d.statusChange <- d.Status
 	}
+	close(d.statusChange)
 }
 
 func (d *RunnableDeluge) Interrupt() {
 	d.Mutex.Lock()
-	if d.Status == DelugeVirgin || d.Status == DelugeInProgress {
-		d.Status = DelugeInterrupted
+	if d.Status == status.DelugeVirgin || d.Status == status.DelugeInProgress {
+		d.Status = status.DelugeInterrupted
 		d.Mutex.Unlock()
 		close(d.interrupt)
+		d.statusChange <- d.Status
 	} else {
 		d.Mutex.Unlock()
 	}

@@ -3,7 +3,6 @@ package api
 import (
 	"fmt"
 	"github.com/gorilla/mux"
-	"github.com/ofux/deluge/repo"
 	"github.com/ofux/deluge/repov2"
 	"github.com/ofux/deluge/worker"
 	uuid "github.com/satori/go.uuid"
@@ -109,9 +108,7 @@ func (d *JobsWorkerHandler) CreateJob(w http.ResponseWriter, r *http.Request) {
 	}
 
 	respDTO := &JobLite{
-		ID:       jobID,
-		DelugeID: job.DelugeID,
-		Status:   JobVirgin,
+		ID: jobID,
 	}
 
 	SendJSONWithHTTPCode(w, respDTO, http.StatusAccepted)
@@ -120,20 +117,40 @@ func (d *JobsWorkerHandler) CreateJob(w http.ResponseWriter, r *http.Request) {
 func (d *JobsWorkerHandler) GetJob(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
-	job, ok := repo.Jobs.Get(id)
+	job, ok := repov2.Instance.GetJobShell(id)
 	if !ok {
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
 
-	SendJSONWithHTTPCode(w, mapDeluge(job.RunnableDeluge), http.StatusOK)
+	deluge, ok := repov2.Instance.GetDeluge(job.DelugeID)
+	if !ok {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+
+	scenarios := repov2.Instance.GetDelugeScenarios(deluge.ScenarioIDs)
+
+	reports := repov2.Instance.GetWorkerReports(id)
+	if len(reports) == 0 {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+
+	jobReport, err := mapDeluge(job, deluge, scenarios, reports)
+	if err != nil {
+		SendJSONError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	SendJSONWithHTTPCode(w, jobReport, http.StatusOK)
 }
 
 func (d *JobsWorkerHandler) GetAllJobs(w http.ResponseWriter, r *http.Request) {
-	jobs := repo.Jobs.GetAll()
-	dlgsDTO := make([]*JobLite, 0, len(jobs))
+	jobs := repov2.Instance.GetAllJobShell()
+	dlgsDTO := make([]JobLite, 0, len(jobs))
 	for _, job := range jobs {
-		dlgsDTO = append(dlgsDTO, mapDelugeLite(job.RunnableDeluge))
+		dlgsDTO = append(dlgsDTO, JobLite{ID: job.ID})
 	}
 
 	SendJSONWithHTTPCode(w, dlgsDTO, http.StatusOK)
@@ -172,12 +189,10 @@ func (d *JobsWorkerHandler) StartJob(w http.ResponseWriter, r *http.Request) {
 func (d *JobsWorkerHandler) InterruptJob(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
-	job, ok := repo.Jobs.Get(id)
-	if !ok {
-		w.WriteHeader(http.StatusNotFound)
+	err := worker.GetManager().InterruptAll(id)
+	if err != nil {
+		SendJSONError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
-	job.RunnableDeluge.Interrupt()
-	w.WriteHeader(http.StatusOK)
+	w.WriteHeader(http.StatusAccepted)
 }

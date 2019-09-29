@@ -86,7 +86,7 @@ func (d *DelugeHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = repov2.Instance.SaveDeluge((*repov2.PersistedDeluge)(compiledDeluge.GetDelugeDefinition()))
+	err = repov2.Instance.SaveDeluge(compiledDeluge.MapToPersistedDeluge())
 	if err != nil {
 		SendJSONError(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -113,7 +113,7 @@ func (d *DelugeHandler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = repov2.Instance.SaveDeluge((*repov2.PersistedDeluge)(compiledDeluge.GetDelugeDefinition()))
+	err = repov2.Instance.SaveDeluge(compiledDeluge.MapToPersistedDeluge())
 	if err != nil {
 		SendJSONError(w, err.Error(), http.StatusInternalServerError)
 		return
