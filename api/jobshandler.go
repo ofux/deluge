@@ -10,22 +10,22 @@ import (
 	"net/url"
 )
 
-// JobsWorkerHandler handles requests for 'jobs' resource as a worker
-type JobsWorkerHandler struct {
+// JobsHandler handles requests for 'jobs' resource
+type JobsHandler struct {
 	routes []Route
 }
 
-func (d *JobsWorkerHandler) GetBasePath() string {
+func (d *JobsHandler) GetBasePath() string {
 	return "/v1/jobs"
 }
 
-func (d *JobsWorkerHandler) GetRoutes() []Route {
+func (d *JobsHandler) GetRoutes() []Route {
 	return d.routes
 }
 
-// NewJobsWorkerHandler adds handlers to handle jobs as a worker
-func NewJobsWorkerHandler() *JobsWorkerHandler {
-	jobsHandler := &JobsWorkerHandler{}
+// NewJobsWorkerHandler adds handlers to handle jobs
+func NewJobsWorkerHandler() *JobsHandler {
+	jobsHandler := &JobsHandler{}
 
 	// build routes
 	routes := []Route{}
@@ -70,7 +70,7 @@ func NewJobsWorkerHandler() *JobsWorkerHandler {
 	return jobsHandler
 }
 
-func (d *JobsWorkerHandler) CreateJob(w http.ResponseWriter, r *http.Request) {
+func (d *JobsHandler) CreateJob(w http.ResponseWriter, r *http.Request) {
 	var job JobCreation
 	if ok := GetJSONBody(w, r, &job); !ok {
 		return
@@ -114,7 +114,7 @@ func (d *JobsWorkerHandler) CreateJob(w http.ResponseWriter, r *http.Request) {
 	SendJSONWithHTTPCode(w, respDTO, http.StatusAccepted)
 }
 
-func (d *JobsWorkerHandler) GetJob(w http.ResponseWriter, r *http.Request) {
+func (d *JobsHandler) GetJob(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
 	job, ok := repov2.Instance.GetJobShell(id)
@@ -146,7 +146,7 @@ func (d *JobsWorkerHandler) GetJob(w http.ResponseWriter, r *http.Request) {
 	SendJSONWithHTTPCode(w, jobReport, http.StatusOK)
 }
 
-func (d *JobsWorkerHandler) GetAllJobs(w http.ResponseWriter, r *http.Request) {
+func (d *JobsHandler) GetAllJobs(w http.ResponseWriter, r *http.Request) {
 	jobs := repov2.Instance.GetAllJobShell()
 	dlgsDTO := make([]JobLite, 0, len(jobs))
 	for _, job := range jobs {
@@ -156,7 +156,7 @@ func (d *JobsWorkerHandler) GetAllJobs(w http.ResponseWriter, r *http.Request) {
 	SendJSONWithHTTPCode(w, dlgsDTO, http.StatusOK)
 }
 
-func (d *JobsWorkerHandler) StartJob(w http.ResponseWriter, r *http.Request) {
+func (d *JobsHandler) StartJob(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
 	jobShell, ok := repov2.Instance.GetJobShell(id)
@@ -186,7 +186,7 @@ func (d *JobsWorkerHandler) StartJob(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusAccepted)
 }
 
-func (d *JobsWorkerHandler) InterruptJob(w http.ResponseWriter, r *http.Request) {
+func (d *JobsHandler) InterruptJob(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
 	err := worker.GetManager().InterruptAll(id)
