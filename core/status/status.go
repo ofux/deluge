@@ -36,7 +36,7 @@ func (s DelugeStatus) String() string {
 }
 
 func (s DelugeStatus) MarshalJSON() ([]byte, error) {
-	stamp := fmt.Sprintf("\"%s\"", t)
+	stamp := fmt.Sprintf("\"%s\"", s)
 	return []byte(stamp), nil
 }
 
@@ -96,7 +96,7 @@ func (s ScenarioStatus) String() string {
 }
 
 func (s ScenarioStatus) MarshalJSON() ([]byte, error) {
-	stamp := fmt.Sprintf("\"%s\"", t)
+	stamp := fmt.Sprintf("\"%s\"", s)
 	return []byte(stamp), nil
 }
 

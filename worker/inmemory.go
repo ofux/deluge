@@ -68,6 +68,7 @@ func (m *inMemoryManager) start(jobShell *JobShell) error {
 			if err != nil {
 				logrus.WithError(err).Errorf("Failed to save records of worker %s", m.globalWorkerID)
 			}
+			//TODO: tell orchestrator that this worker is done
 		}
 	}()
 

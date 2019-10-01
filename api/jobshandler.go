@@ -131,7 +131,7 @@ func (d *JobsHandler) GetJob(w http.ResponseWriter, r *http.Request) {
 
 	scenarios := repov2.Instance.GetDelugeScenarios(deluge.ScenarioIDs)
 
-	reports := repov2.Instance.GetWorkerReports(id)
+	reports := repov2.Instance.GetJobWorkerReports(id)
 	if len(reports) == 0 {
 		w.WriteHeader(http.StatusNotFound)
 		return
