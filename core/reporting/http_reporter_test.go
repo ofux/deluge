@@ -8,7 +8,7 @@ import (
 )
 
 func TestHTTPReporter_Report(t *testing.T) {
-	recorder := recording.NewHTTPRecorder()
+	recorder := recording.NewHTTPRecorder(1)
 
 	for i := 0; i < 3; i++ {
 		recorder.Record(&recording.HTTPRecordEntry{

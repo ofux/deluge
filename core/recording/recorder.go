@@ -2,6 +2,7 @@ package recording
 
 import (
 	hdr "github.com/codahale/hdrhistogram"
+	"github.com/ofux/deluge/repov2"
 	"sync"
 )
 
@@ -24,18 +25,20 @@ const (
 type RecordEntry interface{}
 
 type Recorder struct {
-	recording           RecordingState
-	recordsQueue        chan RecordEntry
-	recordingWaitGroup  *sync.WaitGroup
-	processingWaitGroup *sync.WaitGroup
+	recording             RecordingState
+	recordsQueue          chan RecordEntry
+	askForRecordsSnapshot chan chan<- *repov2.PersistedHTTPRecordsOverTime
+	recordingWaitGroup    *sync.WaitGroup
+	processingWaitGroup   *sync.WaitGroup
 }
 
-func NewRecorder() *Recorder {
+func NewRecorder(concurrent int) *Recorder {
 	return &Recorder{
-		recording:           READY,
-		recordsQueue:        make(chan RecordEntry),
-		recordingWaitGroup:  new(sync.WaitGroup),
-		processingWaitGroup: new(sync.WaitGroup),
+		recording:             READY,
+		recordsQueue:          make(chan RecordEntry, concurrent),
+		askForRecordsSnapshot: make(chan chan<- *repov2.PersistedHTTPRecordsOverTime),
+		recordingWaitGroup:    new(sync.WaitGroup),
+		processingWaitGroup:   new(sync.WaitGroup),
 	}
 }
 
@@ -65,7 +68,7 @@ func (r *Recorder) Close() {
 	}
 }
 
-func (r *Recorder) processRecords(processRecord func(RecordEntry)) {
+func (r *Recorder) processRecords(processRecord func(RecordEntry), processSnapshotRequest func(chan<- *repov2.PersistedHTTPRecordsOverTime)) {
 	r.recording = RECORDING
 	r.processingWaitGroup.Add(1)
 
@@ -73,11 +76,17 @@ func (r *Recorder) processRecords(processRecord func(RecordEntry)) {
 		defer r.processingWaitGroup.Done()
 
 		for {
-			rec, ok := <-r.recordsQueue
-			if !ok {
-				return
+			select {
+			case rec, ok := <-r.recordsQueue:
+				if !ok {
+					return // exit for loop and goroutine when recordsQueue is closed
+				}
+				processRecord(rec)
+			case snapshotChan, ok := <-r.askForRecordsSnapshot:
+				if ok {
+					processSnapshotRequest(snapshotChan)
+				}
 			}
-			processRecord(rec)
 		}
 	}()
 

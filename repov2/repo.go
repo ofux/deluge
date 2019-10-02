@@ -2,7 +2,6 @@ package repov2
 
 import (
 	hdr "github.com/codahale/hdrhistogram"
-	"github.com/ofux/deluge/core/recording"
 	"github.com/ofux/deluge/core/status"
 	"github.com/ofux/deluge/dsl/object"
 	"time"
@@ -90,90 +89,3 @@ const (
 	Ok OkKo = "Ok"
 	Ko OkKo = "Ko"
 )
-
-func MapHTTPRecords(records *recording.HTTPRecordsOverTime) (*PersistedHTTPRecordsOverTime, error) {
-	report := &PersistedHTTPRecordsOverTime{
-		Global:       mapHTTPRecord(records.Global),
-		PerIteration: make([]*PersistedHTTPRecord, 0, 16),
-	}
-	for _, v := range records.PerIteration {
-		report.PerIteration = append(report.PerIteration, mapHTTPRecord(v))
-	}
-
-	return report, nil
-}
-
-func mapHTTPRecord(rec *recording.HTTPRecord) *PersistedHTTPRecord {
-	st := &PersistedHTTPRecord{
-		PersistedHTTPRequestRecord: *mapHTTPRequestRecord(&(rec.HTTPRequestRecord)),
-		PerRequests:                make(map[string]*PersistedHTTPRequestRecord),
-	}
-	for k, v := range rec.PerRequests {
-		st.PerRequests[k] = mapHTTPRequestRecord(v)
-	}
-	return st
-}
-
-func mapHTTPRequestRecord(rec *recording.HTTPRequestRecord) *PersistedHTTPRequestRecord {
-	st := &PersistedHTTPRequestRecord{
-		Global:    rec.Global.Export(),
-		PerStatus: make(map[int]*hdr.Snapshot),
-		PerOkKo:   make(map[OkKo]*hdr.Snapshot),
-	}
-	for k, v := range rec.PerStatus {
-		st.PerStatus[k] = v.Export()
-	}
-	for k, v := range rec.PerOkKo {
-		key := Ok
-		if k == recording.Ko {
-			key = Ko
-		}
-		st.PerOkKo[key] = v.Export()
-	}
-	return st
-}
-
-func MapPersistedHTTPRecords(records *PersistedHTTPRecordsOverTime) *recording.HTTPRecordsOverTime {
-	if records == nil {
-		return nil
-	}
-	report := &recording.HTTPRecordsOverTime{
-		Global:       mapPersistedHTTPRecord(records.Global),
-		PerIteration: make([]*recording.HTTPRecord, 0, 16),
-	}
-	for _, v := range records.PerIteration {
-		report.PerIteration = append(report.PerIteration, mapPersistedHTTPRecord(v))
-	}
-
-	return report
-}
-
-func mapPersistedHTTPRecord(rec *PersistedHTTPRecord) *recording.HTTPRecord {
-	st := &recording.HTTPRecord{
-		HTTPRequestRecord: *mapPersistedHTTPRequestRecord(&(rec.PersistedHTTPRequestRecord)),
-		PerRequests:       make(map[string]*recording.HTTPRequestRecord),
-	}
-	for k, v := range rec.PerRequests {
-		st.PerRequests[k] = mapPersistedHTTPRequestRecord(v)
-	}
-	return st
-}
-
-func mapPersistedHTTPRequestRecord(rec *PersistedHTTPRequestRecord) *recording.HTTPRequestRecord {
-	st := &recording.HTTPRequestRecord{
-		Global:    hdr.Import(rec.Global),
-		PerStatus: make(map[int]*hdr.Histogram),
-		PerOkKo:   make(map[recording.OkKo]*hdr.Histogram),
-	}
-	for k, v := range rec.PerStatus {
-		st.PerStatus[k] = hdr.Import(v)
-	}
-	for k, v := range rec.PerOkKo {
-		key := recording.Ok
-		if k == Ko {
-			key = recording.Ko
-		}
-		st.PerOkKo[key] = hdr.Import(v)
-	}
-	return st
-}

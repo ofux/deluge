@@ -3,6 +3,7 @@ package recording
 import (
 	"errors"
 	hdr "github.com/codahale/hdrhistogram"
+	"github.com/ofux/deluge/repov2"
 )
 
 type HTTPRecorder struct {
@@ -33,9 +34,9 @@ type HTTPRecordEntry struct {
 	StatusCode int
 }
 
-func NewHTTPRecorder() *HTTPRecorder {
+func NewHTTPRecorder(concurrent int) *HTTPRecorder {
 	recorder := &HTTPRecorder{
-		Recorder: NewRecorder(),
+		Recorder: NewRecorder(concurrent),
 		records: &HTTPRecordsOverTime{
 			Global: &HTTPRecord{
 				HTTPRequestRecord: HTTPRequestRecord{
@@ -48,15 +49,30 @@ func NewHTTPRecorder() *HTTPRecorder {
 			PerIteration: make([]*HTTPRecord, 0, 16),
 		},
 	}
-	recorder.processRecords(recorder.processHTTPEntry)
+	recorder.processRecords(recorder.processHTTPEntry, recorder.processRecordsSnapshotRequest)
 	return recorder
 }
 
+// GetRecords returns the full records and can be called only once recording has ended.
 func (r *HTTPRecorder) GetRecords() (*HTTPRecordsOverTime, error) {
 	if r.recording != TERMINATED {
 		return nil, errors.New("Cannot get records while recording. Did you forget to call the 'Close()' method?")
 	}
 	return r.records, nil
+}
+
+// GetRecordsSnapshot returns a channel where a copy of current records will be sent.
+func (r *HTTPRecorder) GetRecordsSnapshot() (<-chan *repov2.PersistedHTTPRecordsOverTime, error) {
+	if r.recording != RECORDING {
+		return nil, errors.New("GetRecordsSnapshot should be used while recording. Used GetRecords instead")
+	}
+	newChan := make(chan *repov2.PersistedHTTPRecordsOverTime, 1)
+	r.askForRecordsSnapshot <- newChan
+	return newChan, nil
+}
+
+func (r *HTTPRecorder) processRecordsSnapshotRequest(snapshotChan chan<- *repov2.PersistedHTTPRecordsOverTime) {
+	snapshotChan <- MapHTTPRecords(r.records)
 }
 
 func (r *HTTPRecorder) processHTTPEntry(record RecordEntry) {

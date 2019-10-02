@@ -34,7 +34,7 @@ func NewSimUserTest(t *testing.T, js string) *simUser {
 			},
 			script: script,
 		},
-		httpRecorder: recording.NewHTTPRecorder(),
+		httpRecorder: recording.NewHTTPRecorder(1),
 		log: logger.WithFields(log.Fields{
 			"scenario": "Test scenario",
 		}),

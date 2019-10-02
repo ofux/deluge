@@ -2,6 +2,7 @@ package worker
 
 import (
 	"github.com/ofux/deluge/core"
+	"github.com/ofux/deluge/core/recording"
 	"github.com/ofux/deluge/repov2"
 	"github.com/pkg/errors"
 	uuid "github.com/satori/go.uuid"
@@ -41,11 +42,7 @@ func (m *inMemoryManager) start(jobShell *JobShell) error {
 				if scenario.Records == nil {
 					continue
 				}
-				records, err := repov2.MapHTTPRecords(scenario.Records)
-				if err != nil {
-					logrus.WithError(err).Errorf("Failed to map records of scenario %s", scenarioID)
-					return
-				}
+				records := recording.MapHTTPRecords(scenario.Records)
 				report.Scenarios[scenarioID] = &repov2.PersistedWorkerScenarioReport{
 					Status:            scenario.Status,
 					Errors:            scenario.Errors,
