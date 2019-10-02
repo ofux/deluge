@@ -92,15 +92,15 @@ func TestDeluge_Run(t *testing.T) {
 			t.Errorf("Looks like deluge was not interrupted")
 		}
 
-		assert.Equal(t, status.DelugeInterrupted, dlg.Status)
+		assert.Equal(t, status.DelugeInterrupted, dlg.runStatus)
 
 		// Should do nothing, should not panic, should not cause race condition
 		go func() {
 			dlg.Interrupt()
-			assert.Equal(t, status.DelugeInterrupted, dlg.Status)
+			assert.Equal(t, status.DelugeInterrupted, dlg.runStatus)
 		}()
 		dlg.Interrupt()
-		assert.Equal(t, status.DelugeInterrupted, dlg.Status)
+		assert.Equal(t, status.DelugeInterrupted, dlg.runStatus)
 	})
 
 	t.Run("Run deluge with args", func(t *testing.T) {
@@ -130,7 +130,7 @@ func TestDeluge_Run(t *testing.T) {
 
 		<-dlg.Run()
 
-		assert.Equal(t, status.DelugeDoneSuccess, dlg.Status)
+		assert.Equal(t, status.DelugeDoneSuccess, dlg.runStatus)
 		assert.Equal(t, uint64(10), dlg.Scenarios["myScenario"].EffectiveExecCount)
 		assert.Equal(t, uint64(10), dlg.Scenarios["myScenario"].EffectiveUserCount)
 	})
@@ -167,7 +167,7 @@ func TestDeluge_Run(t *testing.T) {
 
 		<-dlg.Run()
 
-		assert.Equal(t, status.DelugeDoneError, dlg.Status)
+		assert.Equal(t, status.DelugeDoneError, dlg.runStatus)
 		assert.Len(t, dlg.Scenarios["myScenario"].Errors, 5)
 		assert.Equal(t, "Assertion failed", dlg.Scenarios["myScenario"].Errors[0].Message)
 		assert.Equal(t, uint64(5), dlg.Scenarios["myScenario"].EffectiveUserCount)
@@ -213,7 +213,7 @@ func TestDeluge_Run_With_Errors(t *testing.T) {
 
 		<-dlg.Run()
 
-		assert.Equal(t, status.DelugeDoneError, dlg.Status)
+		assert.Equal(t, status.DelugeDoneError, dlg.runStatus)
 
 		assert.Equal(t, uint64(10), dlg.Scenarios["myScenario"].EffectiveExecCount)
 		assert.Equal(t, uint64(10), dlg.Scenarios["myScenario"].EffectiveUserCount)
@@ -254,7 +254,7 @@ func TestDeluge_Run_With_Errors(t *testing.T) {
 
 		<-dlg.Run()
 
-		assert.Equal(t, status.DelugeDoneError, dlg.Status)
+		assert.Equal(t, status.DelugeDoneError, dlg.runStatus)
 
 		assert.Equal(t, status.ScenarioDoneError, dlg.Scenarios["sc1"].Status)
 		require.Len(t, dlg.Scenarios["sc1"].Errors, 10)

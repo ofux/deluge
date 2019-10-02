@@ -29,23 +29,12 @@ func (m *inMemoryManager) start(jobShell *JobShell) error {
 	}
 	m.runningDeluge = dlg
 
-	// Store empty worker report
-	reportShell := &repov2.PersistedWorkerReport{
-		WorkerID: m.globalWorkerID,
-		JobID:    jobShell.ID,
-		Status:   dlg.Status,
-	}
-	err = repov2.Instance.SaveWorkerReport(reportShell)
-	if err != nil {
-		return errors.Wrapf(err, "failed to create worker report '%s' for jobShell %s (delugeId %s)", reportShell.WorkerID, reportShell.JobID, jobShell.DelugeID)
-	}
-
 	go func() {
-		for range dlg.OnStatusChangeChan() {
+		for newStatus := range dlg.OnStatusChangeChan() {
 			report := &repov2.PersistedWorkerReport{
 				WorkerID:  m.globalWorkerID,
 				JobID:     jobShell.ID,
-				Status:    dlg.Status,
+				Status:    newStatus,
 				Scenarios: make(map[string]*repov2.PersistedWorkerScenarioReport),
 			}
 			for scenarioID, scenario := range dlg.Scenarios {
