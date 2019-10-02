@@ -68,8 +68,8 @@ type PersistedWorkerScenarioReport struct {
 }
 
 type PersistedHTTPRecordsOverTime struct {
-	Global       *PersistedHTTPRecord
-	PerIteration []*PersistedHTTPRecord
+	Global   *PersistedHTTPRecord
+	OverTime []*PersistedHTTPRecord
 }
 
 type PersistedHTTPRecord struct {

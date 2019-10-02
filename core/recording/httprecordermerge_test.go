@@ -73,7 +73,7 @@ func TestMergeHTTPRecordsOverTime(t *testing.T) {
 							},
 						},
 					},
-					PerIteration: []*HTTPRecord{
+					OverTime: []*HTTPRecord{
 						&HTTPRecord{
 							HTTPRequestRecord: HTTPRequestRecord{
 								Global: newFakeHistogram(t, 200, 300),
@@ -171,7 +171,7 @@ func TestMergeHTTPRecordsOverTime(t *testing.T) {
 							},
 						},
 					},
-					PerIteration: []*HTTPRecord{
+					OverTime: []*HTTPRecord{
 						&HTTPRecord{
 							HTTPRequestRecord: HTTPRequestRecord{
 								Global: newFakeHistogram(t, 500, 600),
@@ -282,7 +282,7 @@ func TestMergeHTTPRecordsOverTime(t *testing.T) {
 						},
 					},
 				},
-				PerIteration: []*HTTPRecord{
+				OverTime: []*HTTPRecord{
 					&HTTPRecord{
 						HTTPRequestRecord: HTTPRequestRecord{
 							Global: newFakeHistogram(t, 200, 300, 500, 600),
@@ -403,7 +403,7 @@ func TestMergeHTTPRecordsOverTime(t *testing.T) {
 							},
 						},
 					},
-					PerIteration: []*HTTPRecord{
+					OverTime: []*HTTPRecord{
 						&HTTPRecord{
 							HTTPRequestRecord: HTTPRequestRecord{
 								Global: newFakeHistogram(t, 200, 300),
@@ -501,7 +501,7 @@ func TestMergeHTTPRecordsOverTime(t *testing.T) {
 							},
 						},
 					},
-					PerIteration: []*HTTPRecord{
+					OverTime: []*HTTPRecord{
 						&HTTPRecord{
 							HTTPRequestRecord: HTTPRequestRecord{
 								Global: newFakeHistogram(t, 500, 600),
@@ -640,7 +640,7 @@ func TestMergeHTTPRecordsOverTime(t *testing.T) {
 						},
 					},
 				},
-				PerIteration: []*HTTPRecord{
+				OverTime: []*HTTPRecord{
 					&HTTPRecord{
 						HTTPRequestRecord: HTTPRequestRecord{
 							Global: newFakeHistogram(t, 200, 300, 500, 600),

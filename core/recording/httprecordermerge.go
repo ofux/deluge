@@ -12,17 +12,17 @@ func MergeHTTPRecordsOverTime(rec1, rec2 *HTTPRecordsOverTime) *HTTPRecordsOverT
 		return rec1
 	}
 
-	if len(rec1.PerIteration) < len(rec2.PerIteration) {
+	if len(rec1.OverTime) < len(rec2.OverTime) {
 		rec1, rec2 = rec2, rec1
 	}
 	merged := &HTTPRecordsOverTime{
 		Global: mergeHTTPRecords(rec1.Global, rec2.Global),
 	}
-	for i, v1 := range rec1.PerIteration {
-		if i < len(rec2.PerIteration) {
-			merged.PerIteration = append(merged.PerIteration, mergeHTTPRecords(v1, rec2.PerIteration[i]))
+	for i, v1 := range rec1.OverTime {
+		if i < len(rec2.OverTime) {
+			merged.OverTime = append(merged.OverTime, mergeHTTPRecords(v1, rec2.OverTime[i]))
 		} else {
-			merged.PerIteration = append(merged.PerIteration, v1)
+			merged.OverTime = append(merged.OverTime, v1)
 		}
 	}
 	return merged

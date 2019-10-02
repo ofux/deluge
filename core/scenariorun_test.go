@@ -39,15 +39,15 @@ scenario("sc1", "Some scenario", function () {
 });
 		`)
 
-		scenario := newRunnableScenario(compiledScenario, 50, 50*time.Millisecond, nil, logTest)
-		scenario.run(200*time.Millisecond, nil)
+		scenario := newRunnableScenario(compiledScenario, 50, 200*time.Millisecond, 50*time.Millisecond, nil, logTest)
+		scenario.run(nil)
 
 		records, err := scenario.httpRecorder.GetRecords()
 		if err != nil {
 			t.Fatalf(err.Error())
 		}
 
-		iterCount := len(records.PerIteration)
+		iterCount := len(records.OverTime)
 		if iterCount < 1 {
 			t.Fatalf("Expected to have at least %d iterations, got %d", 1, iterCount)
 		}
@@ -56,7 +56,7 @@ scenario("sc1", "Some scenario", function () {
 			t.Fatalf("Expected to have at least %d executions, got %d", 1, scenario.EffectiveExecCount)
 		}
 		recordingtest.CheckHTTPRecord(t, records.Global, reqName, int64(scenario.EffectiveExecCount), 201, recording.Ok)
-		for i, record := range records.PerIteration {
+		for i, record := range records.OverTime {
 			if i < iterCount-1 {
 				recordingtest.CheckHTTPRecord(t, record, reqName, 1, 201, recording.Ok)
 			}
@@ -82,8 +82,8 @@ scenario("sc1", "Some scenario", function (args, session) {
 });
 		`)
 
-		scenario := newRunnableScenario(compiledScenario, 5, 10*time.Millisecond, nil, logTest)
-		scenario.run(20000*time.Millisecond, nil)
+		scenario := newRunnableScenario(compiledScenario, 5, 20000*time.Millisecond, 10*time.Millisecond, nil, logTest)
+		scenario.run(nil)
 
 		assert.Equal(t, uint64(5), scenario.EffectiveUserCount)
 		assert.Equal(t, uint64(15), scenario.EffectiveExecCount)
@@ -101,8 +101,8 @@ scenario("sc1", "Some scenario", function () {
 });
 		`)
 
-		scenario := newRunnableScenario(compiledScenario, 50, 1*time.Millisecond, nil, logTest)
-		scenario.run(200*time.Millisecond, nil)
+		scenario := newRunnableScenario(compiledScenario, 50, 200*time.Millisecond, 1*time.Millisecond, nil, logTest)
+		scenario.run(nil)
 
 		assert.Equal(t, uint64(50), scenario.EffectiveUserCount)
 		if scenario.EffectiveExecCount < 50 {
@@ -134,15 +134,15 @@ scenario("sc1", "Some scenario", function (args) {
 			IsImmutable: true,
 		}
 
-		scenario := newRunnableScenario(compiledScenario, 50, 50*time.Millisecond, scriptArgs, logTest)
-		scenario.run(200*time.Millisecond, nil)
+		scenario := newRunnableScenario(compiledScenario, 50, 200*time.Millisecond, 50*time.Millisecond, scriptArgs, logTest)
+		scenario.run(nil)
 
 		records, err := scenario.httpRecorder.GetRecords()
 		if err != nil {
 			t.Fatalf(err.Error())
 		}
 
-		iterCount := len(records.PerIteration)
+		iterCount := len(records.OverTime)
 		if iterCount < 1 {
 			t.Fatalf("Expected to have at least %d iterations, got %d", 1, iterCount)
 		}
@@ -151,7 +151,7 @@ scenario("sc1", "Some scenario", function (args) {
 			t.Fatalf("Expected to have at least %d executions, got %d", 1, scenario.EffectiveExecCount)
 		}
 		recordingtest.CheckHTTPRecord(t, records.Global, reqName, int64(scenario.EffectiveExecCount), 500, recording.Ko)
-		for i, record := range records.PerIteration {
+		for i, record := range records.OverTime {
 			if i < iterCount-1 {
 				recordingtest.CheckHTTPRecord(t, record, reqName, 1, 500, recording.Ko)
 			}
@@ -172,8 +172,8 @@ scenario("sc1", "Some scenario", function (args) {
 			IsImmutable: true,
 		}
 
-		scenario := newRunnableScenario(compiledScenario, 50, 50*time.Millisecond, scriptArgs, logTest)
-		scenario.run(200*time.Millisecond, nil)
+		scenario := newRunnableScenario(compiledScenario, 50, 200*time.Millisecond, 50*time.Millisecond, scriptArgs, logTest)
+		scenario.run(nil)
 
 		assert.Equal(t, status.ScenarioDoneError, scenario.Status)
 		assert.Len(t, scenario.Errors, 50)
@@ -192,8 +192,8 @@ scenario("sc1", "Some scenario", function () {
 });
 		`)
 
-		scenario := newRunnableScenario(compiledScenario, 50, 1*time.Millisecond, nil, logTest)
-		scenario.run(200*time.Millisecond, nil)
+		scenario := newRunnableScenario(compiledScenario, 50, 200*time.Millisecond, 1*time.Millisecond, nil, logTest)
+		scenario.run(nil)
 
 		if len(scenario.Errors) != 50 {
 			t.Fatalf("Expected to have %d errors, got %d", 50, len(scenario.Errors))

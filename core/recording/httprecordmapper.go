@@ -7,11 +7,11 @@ import (
 
 func MapHTTPRecords(records *HTTPRecordsOverTime) *repov2.PersistedHTTPRecordsOverTime {
 	report := &repov2.PersistedHTTPRecordsOverTime{
-		Global:       mapHTTPRecord(records.Global),
-		PerIteration: make([]*repov2.PersistedHTTPRecord, 0, 16),
+		Global:   mapHTTPRecord(records.Global),
+		OverTime: make([]*repov2.PersistedHTTPRecord, 0, 16),
 	}
-	for _, v := range records.PerIteration {
-		report.PerIteration = append(report.PerIteration, mapHTTPRecord(v))
+	for _, v := range records.OverTime {
+		report.OverTime = append(report.OverTime, mapHTTPRecord(v))
 	}
 
 	return report
@@ -52,11 +52,11 @@ func MapPersistedHTTPRecords(records *repov2.PersistedHTTPRecordsOverTime) *HTTP
 		return nil
 	}
 	report := &HTTPRecordsOverTime{
-		Global:       mapPersistedHTTPRecord(records.Global),
-		PerIteration: make([]*HTTPRecord, 0, 16),
+		Global:   mapPersistedHTTPRecord(records.Global),
+		OverTime: make([]*HTTPRecord, 0, len(records.OverTime)),
 	}
-	for _, v := range records.PerIteration {
-		report.PerIteration = append(report.PerIteration, mapPersistedHTTPRecord(v))
+	for _, v := range records.OverTime {
+		report.OverTime = append(report.OverTime, mapPersistedHTTPRecord(v))
 	}
 
 	return report

@@ -18,6 +18,7 @@ type RunnableScenario struct {
 	simUsers          []*simUser
 	scriptArgs        *object.Hash
 	IterationDuration time.Duration
+	globalDuration    time.Duration
 	httpRecorder      *recording.HTTPRecorder
 	log               *log.Entry
 
@@ -32,17 +33,20 @@ type RunnableScenario struct {
 func newRunnableScenario(
 	compiledScenario *CompiledScenario,
 	concurrent int,
+	globalDuration time.Duration,
 	iterationDuration time.Duration,
 	scriptArgs *object.Hash,
 	logEntry *log.Entry,
 ) *RunnableScenario {
+	iterationCount := globalDuration.Nanoseconds() / iterationDuration.Nanoseconds()
 	s := &RunnableScenario{
 		compiledScenario:  compiledScenario,
 		scriptArgs:        scriptArgs,
 		IterationDuration: iterationDuration,
+		globalDuration:    globalDuration,
 		simUsers:          make([]*simUser, concurrent),
 
-		httpRecorder: recording.NewHTTPRecorder(1),
+		httpRecorder: recording.NewHTTPRecorder(int(iterationCount), concurrent),
 		log: logEntry.WithFields(log.Fields{
 			"scenario": compiledScenario.scenario.ID,
 		}),
@@ -65,11 +69,11 @@ func (sc *RunnableScenario) GetScenarioDefinition() ScenarioDefinition {
 	return *sc.compiledScenario.scenario
 }
 
-func (sc *RunnableScenario) run(globalDuration time.Duration, interrupt chan struct{}) {
+func (sc *RunnableScenario) run(interrupt chan struct{}) {
 	var waitg sync.WaitGroup
 
 	start := time.Now()
-	endTime := start.Add(globalDuration)
+	endTime := start.Add(sc.globalDuration)
 
 	sc.Mutex.Lock()
 	if sc.Status != status.ScenarioVirgin {

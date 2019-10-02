@@ -34,7 +34,7 @@ func NewSimUserTest(t *testing.T, js string) *simUser {
 			},
 			script: script,
 		},
-		httpRecorder: recording.NewHTTPRecorder(1),
+		httpRecorder: recording.NewHTTPRecorder(1, 1),
 		log: logger.WithFields(log.Fields{
 			"scenario": "Test scenario",
 		}),
@@ -78,6 +78,6 @@ func checkRecords(t *testing.T, rec *recording.HTTPRecorder, recName string, rec
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-	record := records.PerIteration[0]
+	record := records.OverTime[0]
 	recordingtest.CheckHTTPRecord(t, record, recName, recCount, 200, recording.Ok)
 }

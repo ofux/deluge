@@ -6,14 +6,20 @@ import (
 	"github.com/ofux/deluge/repov2"
 )
 
+const (
+	MaxOverTimeCount int = 360
+)
+
 type HTTPRecorder struct {
 	*Recorder
-	records *HTTPRecordsOverTime
+	records        *HTTPRecordsOverTime
+	overTimeCount  int
+	iterationCount int
 }
 
 type HTTPRecordsOverTime struct {
-	Global       *HTTPRecord
-	PerIteration []*HTTPRecord
+	Global   *HTTPRecord
+	OverTime []*HTTPRecord
 }
 
 type HTTPRecord struct {
@@ -34,7 +40,9 @@ type HTTPRecordEntry struct {
 	StatusCode int
 }
 
-func NewHTTPRecorder(concurrent int) *HTTPRecorder {
+func NewHTTPRecorder(iterationCount, concurrent int) *HTTPRecorder {
+	overTimeCount := Min(iterationCount, MaxOverTimeCount)
+
 	recorder := &HTTPRecorder{
 		Recorder: NewRecorder(concurrent),
 		records: &HTTPRecordsOverTime{
@@ -46,8 +54,10 @@ func NewHTTPRecorder(concurrent int) *HTTPRecorder {
 				},
 				PerRequests: make(map[string]*HTTPRequestRecord),
 			},
-			PerIteration: make([]*HTTPRecord, 0, 16),
+			OverTime: make([]*HTTPRecord, 0, overTimeCount),
 		},
+		iterationCount: iterationCount,
+		overTimeCount:  overTimeCount,
 	}
 	recorder.processRecords(recorder.processHTTPEntry, recorder.processRecordsSnapshotRequest)
 	return recorder
@@ -81,11 +91,16 @@ func (r *HTTPRecorder) processHTTPEntry(record RecordEntry) {
 	// Global record for all iterations
 	r.processEntryToHTTPRecord(rec, r.records.Global)
 
-	if len(r.records.PerIteration) <= rec.Iteration {
-		diff := rec.Iteration + 1 - len(r.records.PerIteration)
-		r.records.PerIteration = append(r.records.PerIteration, createHTTPRecords(diff)...)
+	overTimeIndex := r.iterationToTimeIndex(rec.Iteration)
+	if len(r.records.OverTime) <= overTimeIndex {
+		diff := overTimeIndex + 1 - len(r.records.OverTime)
+		r.records.OverTime = append(r.records.OverTime, createHTTPRecords(diff)...)
 	}
-	r.processEntryToHTTPRecord(rec, r.records.PerIteration[rec.Iteration])
+	r.processEntryToHTTPRecord(rec, r.records.OverTime[overTimeIndex])
+}
+
+func (r *HTTPRecorder) iterationToTimeIndex(iteration int) int {
+	return iteration * r.overTimeCount / r.iterationCount
 }
 
 func (r *HTTPRecorder) processEntryToHTTPRecord(rec *HTTPRecordEntry, out *HTTPRecord) {
@@ -160,4 +175,11 @@ func httpOkKo(httpRec *HTTPRecordEntry) OkKo {
 		return Ok
 	}
 	return Ko
+}
+
+func Min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
 }

@@ -60,6 +60,7 @@ func NewRunnableDeluge(delugeID string) (*RunnableDeluge, error) {
 			dlg.Scenarios[id] = newRunnableScenario(
 				compiledScenario,
 				sConf.concurrent,
+				dlg.GetGlobalDuration(),
 				sConf.iterationDuration,
 				sConf.args,
 				log.New().WithField("deluge", dlg.GetDelugeDefinition().Name),
@@ -100,7 +101,7 @@ func (d *RunnableDeluge) run() {
 		waitg.Add(1)
 		go func(scenario *RunnableScenario) {
 			defer waitg.Done()
-			scenario.run(d.GetGlobalDuration(), d.interrupt)
+			scenario.run(d.interrupt)
 		}(scenario)
 	}
 	waitg.Wait()

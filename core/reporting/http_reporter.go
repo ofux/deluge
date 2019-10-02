@@ -33,7 +33,7 @@ func (r *HTTPReporter) Report(records *recording.HTTPRecordsOverTime) Report {
 			PerIteration: make([]*HTTPStats, 0, 16),
 		},
 	}
-	for _, v := range records.PerIteration {
+	for _, v := range records.OverTime {
 		report.Stats.PerIteration = append(report.Stats.PerIteration, newHTTPStats(v))
 	}
 
