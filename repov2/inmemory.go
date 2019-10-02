@@ -144,7 +144,7 @@ func (r *InMemoryRepository) GetAllJobShell() []*PersistedJobShell {
 func (r *InMemoryRepository) SaveWorkerReport(workerReport *PersistedWorkerReport) error {
 	r.mutWorkerReports.Lock()
 	defer r.mutWorkerReports.Unlock()
-	r.workerReports[workerReport.WorkerID] = workerReport
+	r.workerReports[workerReport.GetID()] = workerReport
 	return nil
 }
 

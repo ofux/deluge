@@ -176,13 +176,11 @@ func TestInMemoryRepository_RaceDeluge(t *testing.T) {
 	go func() {
 		err := testedRepo.SaveDeluge(deluge1)
 		assert.NoError(t, err)
-		assert.Equal(t, testedRepo.delugeDefinitions[givenID1], deluge1)
 	}()
 
 	go func() {
 		err := testedRepo.SaveDeluge(deluge2)
 		assert.NoError(t, err)
-		assert.Equal(t, testedRepo.delugeDefinitions[givenID2], deluge2)
 	}()
 
 	go func() {
@@ -284,7 +282,7 @@ func TestInMemoryRepository_GetScenario(t *testing.T) {
 		assert.Equal(t, scenario2, retrievedScenario)
 	})
 
-	t.Run("Get a job that does not exist", func(t *testing.T) {
+	t.Run("Get a scenario that does not exist", func(t *testing.T) {
 		testedRepo := NewInMemoryRepository()
 
 		_, ok := testedRepo.GetScenario("doesNotExist")
@@ -315,7 +313,7 @@ func TestInMemoryRepository_GetDelugeScenarios(t *testing.T) {
 		assert.Equal(t, scenario2, retrievedScenarios[givenID2])
 	})
 
-	t.Run("Get a job that does not exist", func(t *testing.T) {
+	t.Run("Get a scenario that does not exist", func(t *testing.T) {
 		testedRepo := NewInMemoryRepository()
 
 		retrievedScenarios := testedRepo.GetDelugeScenarios([]string{"doesNotExist"})
@@ -324,7 +322,7 @@ func TestInMemoryRepository_GetDelugeScenarios(t *testing.T) {
 }
 
 func TestInMemoryRepository_GetAllScenarios(t *testing.T) {
-	t.Run("Create 3 job and Get all of them", func(t *testing.T) {
+	t.Run("Create 3 scenarios and Get all of them", func(t *testing.T) {
 		testedRepo := NewInMemoryRepository()
 		const givenID1 = "givenID1"
 		const givenID2 = "givenID2"
@@ -347,7 +345,7 @@ func TestInMemoryRepository_GetAllScenarios(t *testing.T) {
 		assert.Contains(t, retrievedScenarios, scenario3)
 	})
 
-	t.Run("Get all jobs of an empty repo", func(t *testing.T) {
+	t.Run("Get all scenarios of an empty repo", func(t *testing.T) {
 		testedRepo := NewInMemoryRepository()
 
 		retrievedDlgs := testedRepo.GetAllScenarios()
@@ -357,7 +355,7 @@ func TestInMemoryRepository_GetAllScenarios(t *testing.T) {
 }
 
 func TestInMemoryRepository_DeleteScenario(t *testing.T) {
-	t.Run("Create 3 job and delete the second one", func(t *testing.T) {
+	t.Run("Create 3 scenarios and delete the second one", func(t *testing.T) {
 		testedRepo := NewInMemoryRepository()
 		const givenID1 = "givenID1"
 		const givenID2 = "givenID2"
@@ -381,7 +379,7 @@ func TestInMemoryRepository_DeleteScenario(t *testing.T) {
 		assert.Contains(t, testedRepo.scenarioDefinitions, givenID3)
 	})
 
-	t.Run("Delete a job that does not exist", func(t *testing.T) {
+	t.Run("Delete a scenario that does not exist", func(t *testing.T) {
 		testedRepo := NewInMemoryRepository()
 
 		ok := testedRepo.DeleteScenario("doesNotExist")
@@ -400,13 +398,11 @@ func TestInMemoryRepository_RaceScenario(t *testing.T) {
 	go func() {
 		err := testedRepo.SaveScenario(scenario1)
 		assert.NoError(t, err)
-		assert.Contains(t, testedRepo.scenarioDefinitions, givenID1)
 	}()
 
 	go func() {
 		err := testedRepo.SaveScenario(scenario2)
 		assert.NoError(t, err)
-		assert.Contains(t, testedRepo.scenarioDefinitions, givenID2)
 	}()
 
 	go func() {
@@ -423,5 +419,293 @@ func TestInMemoryRepository_RaceScenario(t *testing.T) {
 
 	go func() {
 		testedRepo.GetScenario(givenID1)
+	}()
+}
+
+// JOB
+
+func TestInMemoryRepository_SaveJob(t *testing.T) {
+	t.Run("Save one job with ID", func(t *testing.T) {
+		testedRepo := NewInMemoryRepository()
+		const givenID = "givenID"
+		job := &PersistedJobShell{ID: givenID}
+
+		err := testedRepo.SaveJobShell(job)
+
+		assert.NoError(t, err)
+		assert.Len(t, testedRepo.jobShells, 1)
+		assert.Contains(t, testedRepo.jobShells, givenID)
+		assert.Equal(t, testedRepo.jobShells[givenID], job)
+	})
+
+	t.Run("Save 3 jobs with different IDs", func(t *testing.T) {
+		testedRepo := NewInMemoryRepository()
+		const givenID1 = "givenID1"
+		const givenID2 = "givenID2"
+		const givenID3 = "givenID3"
+		job1 := &PersistedJobShell{ID: givenID1}
+		job2 := &PersistedJobShell{ID: givenID2}
+		job3 := &PersistedJobShell{ID: givenID3}
+
+		err := testedRepo.SaveJobShell(job1)
+		assert.NoError(t, err)
+		assert.Len(t, testedRepo.jobShells, 1)
+		assert.Contains(t, testedRepo.jobShells, givenID1)
+		assert.Equal(t, testedRepo.jobShells[givenID1], job1)
+
+		err = testedRepo.SaveJobShell(job2)
+		assert.NoError(t, err)
+		assert.Len(t, testedRepo.jobShells, 2)
+		assert.Contains(t, testedRepo.jobShells, givenID2)
+		assert.Equal(t, testedRepo.jobShells[givenID2], job2)
+
+		err = testedRepo.SaveJobShell(job3)
+		assert.NoError(t, err)
+		assert.Len(t, testedRepo.jobShells, 3)
+		assert.Contains(t, testedRepo.jobShells, givenID3)
+		assert.Equal(t, testedRepo.jobShells[givenID3], job3)
+	})
+
+	t.Run("Save 2 jobs with the same ID", func(t *testing.T) {
+		testedRepo := NewInMemoryRepository()
+		const givenID = "givenID"
+		job1 := &PersistedJobShell{ID: givenID}
+		job2 := &PersistedJobShell{ID: givenID}
+
+		err := testedRepo.SaveJobShell(job1)
+		assert.NoError(t, err)
+		assert.Len(t, testedRepo.jobShells, 1)
+		assert.Contains(t, testedRepo.jobShells, givenID)
+		assert.Equal(t, testedRepo.jobShells[givenID], job1)
+
+		err = testedRepo.SaveJobShell(job1)
+		assert.NoError(t, err)
+		assert.Len(t, testedRepo.jobShells, 1)
+		assert.Contains(t, testedRepo.jobShells, givenID)
+		assert.Equal(t, testedRepo.jobShells[givenID], job2)
+	})
+}
+
+func TestInMemoryRepository_GetJob(t *testing.T) {
+	t.Run("Create 3 jobs and Get the second one", func(t *testing.T) {
+		testedRepo := NewInMemoryRepository()
+		const givenID1 = "givenID1"
+		const givenID2 = "givenID2"
+		const givenID3 = "givenID3"
+		job1 := &PersistedJobShell{ID: givenID1}
+		job2 := &PersistedJobShell{ID: givenID2}
+		job3 := &PersistedJobShell{ID: givenID3}
+		err := testedRepo.SaveJobShell(job1)
+		assert.NoError(t, err)
+		err = testedRepo.SaveJobShell(job2)
+		assert.NoError(t, err)
+		err = testedRepo.SaveJobShell(job3)
+		assert.NoError(t, err)
+		assert.Len(t, testedRepo.jobShells, 3)
+
+		retrievedJob, ok := testedRepo.GetJobShell(givenID2)
+		assert.True(t, ok)
+		assert.Equal(t, job2, retrievedJob)
+	})
+
+	t.Run("Get a job that does not exist", func(t *testing.T) {
+		testedRepo := NewInMemoryRepository()
+
+		_, ok := testedRepo.GetJobShell("doesNotExist")
+		assert.False(t, ok)
+	})
+}
+
+func TestInMemoryRepository_GetAllJobs(t *testing.T) {
+	t.Run("Create 3 jobs and Get all of them", func(t *testing.T) {
+		testedRepo := NewInMemoryRepository()
+		const givenID1 = "givenID1"
+		const givenID2 = "givenID2"
+		const givenID3 = "givenID3"
+		job1 := &PersistedJobShell{ID: givenID1}
+		job2 := &PersistedJobShell{ID: givenID2}
+		job3 := &PersistedJobShell{ID: givenID3}
+		err := testedRepo.SaveJobShell(job1)
+		assert.NoError(t, err)
+		err = testedRepo.SaveJobShell(job2)
+		assert.NoError(t, err)
+		err = testedRepo.SaveJobShell(job3)
+		assert.NoError(t, err)
+		assert.Len(t, testedRepo.jobShells, 3)
+
+		retrievedJobs := testedRepo.GetAllJobShell()
+		assert.Len(t, retrievedJobs, 3)
+		assert.Contains(t, retrievedJobs, job1)
+		assert.Contains(t, retrievedJobs, job2)
+		assert.Contains(t, retrievedJobs, job3)
+	})
+
+	t.Run("Get all jobs of an empty repo", func(t *testing.T) {
+		testedRepo := NewInMemoryRepository()
+
+		retrievedJobs := testedRepo.GetAllJobShell()
+		assert.NotNil(t, retrievedJobs)
+		assert.Len(t, retrievedJobs, 0)
+	})
+}
+
+// TestInMemoryRepository_Race is only meant to be run with the go race detector tool
+func TestInMemoryRepository_RaceJob(t *testing.T) {
+	testedRepo := NewInMemoryRepository()
+	const givenID1 = "givenID1"
+	const givenID2 = "givenID2"
+	job1 := &PersistedJobShell{ID: givenID1}
+	job2 := &PersistedJobShell{ID: givenID2}
+
+	go func() {
+		err := testedRepo.SaveJobShell(job1)
+		assert.NoError(t, err)
+	}()
+
+	go func() {
+		err := testedRepo.SaveJobShell(job2)
+		assert.NoError(t, err)
+	}()
+
+	go func() {
+		testedRepo.GetAllJobShell()
+	}()
+
+	go func() {
+		testedRepo.GetJobShell(givenID1)
+	}()
+}
+
+// WORKER REPORT
+
+func TestInMemoryRepository_WorkerReportsGetID(t *testing.T) {
+	t.Run("Check that worker-report ID is made out of worker ID and job ID", func(t *testing.T) {
+		const wID = "workerID"
+		const jID = "jobID"
+		wr := &PersistedWorkerReport{WorkerID: wID, JobID: jID}
+
+		id := wr.GetID()
+		assert.Equal(t, wID+"_"+jID, id)
+	})
+}
+
+func TestInMemoryRepository_SaveWorkerReport(t *testing.T) {
+	t.Run("Save one worker-report with ID", func(t *testing.T) {
+		testedRepo := NewInMemoryRepository()
+		const givenID = "givenID"
+		workerReport := &PersistedWorkerReport{WorkerID: givenID, JobID: givenID}
+
+		err := testedRepo.SaveWorkerReport(workerReport)
+
+		assert.NoError(t, err)
+		assert.Len(t, testedRepo.workerReports, 1)
+		assert.Contains(t, testedRepo.workerReports, workerReport.GetID())
+		assert.Equal(t, workerReport, testedRepo.workerReports[workerReport.GetID()])
+	})
+
+	t.Run("Save 3 worker-reports with different IDs", func(t *testing.T) {
+		testedRepo := NewInMemoryRepository()
+		const givenID1 = "givenID1"
+		const givenID2 = "givenID2"
+		const givenID3 = "givenID3"
+		wr1 := &PersistedWorkerReport{WorkerID: givenID1, JobID: givenID1}
+		wr2 := &PersistedWorkerReport{WorkerID: givenID2, JobID: givenID2}
+		wr3 := &PersistedWorkerReport{WorkerID: givenID3, JobID: givenID3}
+
+		err := testedRepo.SaveWorkerReport(wr1)
+		assert.NoError(t, err)
+		assert.Len(t, testedRepo.workerReports, 1)
+		assert.Contains(t, testedRepo.workerReports, wr1.GetID())
+		assert.Equal(t, wr1, testedRepo.workerReports[wr1.GetID()])
+
+		err = testedRepo.SaveWorkerReport(wr2)
+		assert.NoError(t, err)
+		assert.Len(t, testedRepo.workerReports, 2)
+		assert.Contains(t, testedRepo.workerReports, wr2.GetID())
+		assert.Equal(t, wr2, testedRepo.workerReports[wr2.GetID()])
+
+		err = testedRepo.SaveWorkerReport(wr3)
+		assert.NoError(t, err)
+		assert.Len(t, testedRepo.workerReports, 3)
+		assert.Contains(t, testedRepo.workerReports, wr3.GetID())
+		assert.Equal(t, wr3, testedRepo.workerReports[wr3.GetID()])
+	})
+
+	t.Run("Save 2 worker-reports with the same ID", func(t *testing.T) {
+		testedRepo := NewInMemoryRepository()
+		const givenID = "givenID"
+		wr1 := &PersistedWorkerReport{WorkerID: givenID, JobID: givenID}
+		wr2 := &PersistedWorkerReport{WorkerID: givenID, JobID: givenID}
+		var id = wr1.GetID()
+
+		err := testedRepo.SaveWorkerReport(wr1)
+		assert.NoError(t, err)
+		assert.Len(t, testedRepo.workerReports, 1)
+		assert.Contains(t, testedRepo.workerReports, id)
+		assert.Equal(t, wr1, testedRepo.workerReports[id])
+
+		err = testedRepo.SaveWorkerReport(wr1)
+		assert.NoError(t, err)
+		assert.Len(t, testedRepo.workerReports, 1)
+		assert.Contains(t, testedRepo.workerReports, id)
+		assert.Equal(t, wr2, testedRepo.workerReports[id])
+	})
+}
+
+func TestInMemoryRepository_GetJobWorkerReports(t *testing.T) {
+	t.Run("Create 3 worker-reports and Get the second and third ones", func(t *testing.T) {
+		testedRepo := NewInMemoryRepository()
+		const givenID1 = "givenID1"
+		const givenID2 = "givenID2"
+		const givenID3 = "givenID3"
+		wr1 := &PersistedWorkerReport{WorkerID: givenID1, JobID: givenID1}
+		wr2 := &PersistedWorkerReport{WorkerID: givenID2, JobID: givenID2}
+		wr3 := &PersistedWorkerReport{WorkerID: givenID3, JobID: givenID2}
+		err := testedRepo.SaveWorkerReport(wr1)
+		assert.NoError(t, err)
+		err = testedRepo.SaveWorkerReport(wr2)
+		assert.NoError(t, err)
+		err = testedRepo.SaveWorkerReport(wr3)
+		assert.NoError(t, err)
+		assert.Len(t, testedRepo.workerReports, 3)
+
+		retrievedReports := testedRepo.GetJobWorkerReports(givenID2)
+		assert.Len(t, retrievedReports, 2)
+		assert.Contains(t, retrievedReports, wr2)
+		assert.Contains(t, retrievedReports, wr3)
+	})
+
+	t.Run("Get a worker-report that does not exist", func(t *testing.T) {
+		testedRepo := NewInMemoryRepository()
+
+		retrievedReports := testedRepo.GetJobWorkerReports("doesNotExist")
+		assert.Len(t, retrievedReports, 0)
+	})
+}
+
+// TestInMemoryRepository_Race is only meant to be run with the go race detector tool
+func TestInMemoryRepository_RaceWorkerReport(t *testing.T) {
+	testedRepo := NewInMemoryRepository()
+	const givenID1 = "givenID1"
+	const givenID2 = "givenID2"
+	wr1 := &PersistedWorkerReport{WorkerID: givenID1, JobID: givenID1}
+	wr2 := &PersistedWorkerReport{WorkerID: givenID2, JobID: givenID2}
+
+	go func() {
+		err := testedRepo.SaveWorkerReport(wr1)
+		assert.NoError(t, err)
+	}()
+
+	go func() {
+		err := testedRepo.SaveWorkerReport(wr2)
+		assert.NoError(t, err)
+	}()
+
+	go func() {
+		testedRepo.GetJobWorkerReports(givenID2)
+	}()
+
+	go func() {
+		testedRepo.GetJobWorkerReports(givenID1)
 	}()
 }

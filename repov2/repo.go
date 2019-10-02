@@ -57,6 +57,10 @@ type PersistedWorkerReport struct {
 	Scenarios map[string]*PersistedWorkerScenarioReport
 }
 
+func (wr *PersistedWorkerReport) GetID() string {
+	return wr.WorkerID + "_" + wr.JobID
+}
+
 type PersistedWorkerScenarioReport struct {
 	Status            status.ScenarioStatus
 	Errors            []*object.Error
