@@ -139,6 +139,7 @@ func (sc *RunnableScenario) end() {
 	if records, err := sc.httpRecorder.GetRecords(); err == nil {
 		sc.Records = records
 	} else {
+		sc.Status = status.ScenarioDoneError
 		sc.log.Error(err)
 	}
 

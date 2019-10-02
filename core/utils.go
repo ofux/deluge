@@ -11,6 +11,9 @@ func PrintParserErrors(errors []parser.ParseError) {
 }
 
 func SPrintParserErrors(errors []parser.ParseError) string {
+	if len(errors) == 0 {
+		return ""
+	}
 	msg := "Syntax error:\n"
 	for _, err := range errors {
 		msg += fmt.Sprintf("\t%s (line %d, col %d)\n", err.Message, err.Line, err.Column)
