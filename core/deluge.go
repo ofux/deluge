@@ -35,8 +35,8 @@ func (c *CompiledDeluge) MapToPersistedDeluge() *repov2.PersistedDeluge {
 		Script:         c.definition.Script,
 		GlobalDuration: c.definition.GlobalDuration,
 	}
-	for k, _ := range c.scenarioConfigs {
-		pd.ScenarioIDs = append(pd.ScenarioIDs, k)
+	for scenarioID := range c.scenarioConfigs {
+		pd.ScenarioIDs = append(pd.ScenarioIDs, scenarioID)
 	}
 	return pd
 }

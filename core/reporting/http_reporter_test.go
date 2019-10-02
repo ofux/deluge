@@ -3,6 +3,7 @@ package reporting
 import (
 	"github.com/ofux/deluge/core/recording"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"testing"
 )
 
@@ -52,8 +53,10 @@ func TestHTTPReporter_Report(t *testing.T) {
 
 	reporter := &HTTPReporter{}
 
-	report, err := reporter.Report(recorder)
-	assert.NoError(t, err)
+	recs, err := recorder.GetRecords()
+	require.NoError(t, err)
+
+	report := reporter.Report(recs)
 	rep := report.(*HTTPReport)
 	assert.Equal(t, int64(18), rep.Stats.Global.Global.CallCount)
 	assert.Equal(t, int64(100), rep.Stats.Global.Global.MinTime)

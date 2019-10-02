@@ -3,6 +3,7 @@ package core
 import (
 	"github.com/ofux/deluge/core/recording"
 	"github.com/ofux/deluge/core/recording/recordingtest"
+	"github.com/ofux/deluge/core/status"
 	"github.com/ofux/deluge/repov2"
 	"github.com/ofux/docilemonkey/docilemonkey"
 	"github.com/stretchr/testify/assert"
@@ -31,13 +32,15 @@ func TestDeluge_Run(t *testing.T) {
 
 		});`)
 
-		dlg, err := NewRunnableDeluge("foo", `
-		deluge("Some name", "200ms", {
+		compileDeluge(t, `
+		deluge("foo", "Some name", "200ms", {
 			"myScenario": {
 				"concurrent": 100,
 				"delay": "100ms"
 			}
 		});`)
+
+		dlg, err := NewRunnableDeluge("foo")
 		assert.NoError(t, err)
 		<-dlg.Run()
 
@@ -68,13 +71,15 @@ func TestDeluge_Run(t *testing.T) {
 
 		});`)
 
-		dlg, err := NewRunnableDeluge("foo", `
-		deluge("Some name", "20s", {
+		compileDeluge(t, `
+		deluge("foo", "Some name", "20s", {
 			"myScenario": {
 				"concurrent": 100,
 				"delay": "500ms"
 			}
 		});`)
+
+		dlg, err := NewRunnableDeluge("foo")
 		assert.NoError(t, err)
 
 		start := time.Now()
@@ -87,15 +92,15 @@ func TestDeluge_Run(t *testing.T) {
 			t.Errorf("Looks like deluge was not interrupted")
 		}
 
-		assert.Equal(t, DelugeInterrupted, dlg.Status)
+		assert.Equal(t, status.DelugeInterrupted, dlg.Status)
 
 		// Should do nothing, should not panic, should not cause race condition
 		go func() {
 			dlg.Interrupt()
-			assert.Equal(t, DelugeInterrupted, dlg.Status)
+			assert.Equal(t, status.DelugeInterrupted, dlg.Status)
 		}()
 		dlg.Interrupt()
-		assert.Equal(t, DelugeInterrupted, dlg.Status)
+		assert.Equal(t, status.DelugeInterrupted, dlg.Status)
 	})
 
 	t.Run("Run deluge with args", func(t *testing.T) {
@@ -109,8 +114,8 @@ func TestDeluge_Run(t *testing.T) {
 
 		});`)
 
-		dlg, err := NewRunnableDeluge("foo", `
-		deluge("Some name", "100ms", {
+		compileDeluge(t, `
+		deluge("foo", "Some name", "100ms", {
 			"myScenario": {
 				"concurrent": 10,
 				"delay": "1000ms",
@@ -119,11 +124,13 @@ func TestDeluge_Run(t *testing.T) {
 				}
 			}
 		});`)
+
+		dlg, err := NewRunnableDeluge("foo")
 		assert.NoError(t, err)
 
 		<-dlg.Run()
 
-		assert.Equal(t, DelugeDoneSuccess, dlg.Status)
+		assert.Equal(t, status.DelugeDoneSuccess, dlg.Status)
 		assert.Equal(t, uint64(10), dlg.Scenarios["myScenario"].EffectiveExecCount)
 		assert.Equal(t, uint64(10), dlg.Scenarios["myScenario"].EffectiveUserCount)
 	})
@@ -144,8 +151,8 @@ func TestDeluge_Run(t *testing.T) {
 
 		});`)
 
-		dlg, err := NewRunnableDeluge("foo", `
-		deluge("Some name", "20s", {
+		compileDeluge(t, `
+		deluge("foo", "Some name", "20s", {
 			"myScenario": {
 				"concurrent": 5,
 				"delay": "10ms",
@@ -154,11 +161,13 @@ func TestDeluge_Run(t *testing.T) {
 				}
 			}
 		});`)
+
+		dlg, err := NewRunnableDeluge("foo")
 		assert.NoError(t, err)
 
 		<-dlg.Run()
 
-		assert.Equal(t, DelugeDoneError, dlg.Status)
+		assert.Equal(t, status.DelugeDoneError, dlg.Status)
 		assert.Len(t, dlg.Scenarios["myScenario"].Errors, 5)
 		assert.Equal(t, "Assertion failed", dlg.Scenarios["myScenario"].Errors[0].Message)
 		assert.Equal(t, uint64(5), dlg.Scenarios["myScenario"].EffectiveUserCount)
@@ -168,6 +177,22 @@ func TestDeluge_Run(t *testing.T) {
 
 func TestDeluge_Run_With_Errors(t *testing.T) {
 
+	t.Run("Missing scenario", func(t *testing.T) {
+		clearScenarioRepo()
+
+		compileDeluge(t, `
+		deluge("foo", "Some name", "100ms", {
+			"missingScenario": {
+				"concurrent": 10,
+				"delay": "10ms"
+			}
+		});`)
+
+		_, err := NewRunnableDeluge("foo")
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "scenario 'missingScenario' is configured but not defined")
+	})
+
 	t.Run("Assert fails", func(t *testing.T) {
 		clearScenarioRepo()
 		compileScenario(t, `
@@ -175,18 +200,20 @@ func TestDeluge_Run_With_Errors(t *testing.T) {
 			assert(false);
 		});`)
 
-		dlg, err := NewRunnableDeluge("foo", `
-		deluge("Some name", "100ms", {
+		compileDeluge(t, `
+		deluge("foo", "Some name", "100ms", {
 			"myScenario": {
 				"concurrent": 10,
 				"delay": "10ms"
 			}
 		});`)
+
+		dlg, err := NewRunnableDeluge("foo")
 		assert.NoError(t, err)
 
 		<-dlg.Run()
 
-		assert.Equal(t, DelugeDoneError, dlg.Status)
+		assert.Equal(t, status.DelugeDoneError, dlg.Status)
 
 		assert.Equal(t, uint64(10), dlg.Scenarios["myScenario"].EffectiveExecCount)
 		assert.Equal(t, uint64(10), dlg.Scenarios["myScenario"].EffectiveUserCount)
@@ -195,25 +222,25 @@ func TestDeluge_Run_With_Errors(t *testing.T) {
 	t.Run("Error trying to modify args hash", func(t *testing.T) {
 		clearScenarioRepo()
 		compileScenario(t, `
-		scenario("s1", "My scenario 1", function (args) {
+		scenario("sc1", "My scenario 1", function (args) {
 			args["hello"] = "world";
 		});`)
 
 		compileScenario(t, `
-		scenario("s2", "My scenario 2", function (args) {
+		scenario("sc2", "My scenario 2", function (args) {
 			args["x"]++;
 		});`)
 
-		dlg, err := NewRunnableDeluge("foo", `
-		deluge("Some name", "100ms", {
-			"s1": {
+		compileDeluge(t, `
+		deluge("foo", "Some name", "100ms", {
+			"sc1": {
 				"concurrent": 10,
 				"delay": "10ms",
 				"args": {
 					"foo": "bar"
 				}
 			},
-			"s2": {
+			"sc2": {
 				"concurrent": 10,
 				"delay": "10ms",
 				"args": {
@@ -221,153 +248,27 @@ func TestDeluge_Run_With_Errors(t *testing.T) {
 				}
 			}
 		});`)
+
+		dlg, err := NewRunnableDeluge("foo")
 		assert.NoError(t, err)
 
 		<-dlg.Run()
 
-		assert.Equal(t, DelugeDoneError, dlg.Status)
+		assert.Equal(t, status.DelugeDoneError, dlg.Status)
 
-		assert.Equal(t, ScenarioDoneError, dlg.Scenarios["s1"].Status)
-		require.Len(t, dlg.Scenarios["s1"].Errors, 10)
-		assert.Equal(t, "hash is immutable, you cannot modify it", dlg.Scenarios["s1"].Errors[0].Message)
-		assert.Equal(t, uint64(10), dlg.Scenarios["s1"].EffectiveExecCount)
-		assert.Equal(t, uint64(10), dlg.Scenarios["s1"].EffectiveUserCount)
+		assert.Equal(t, status.ScenarioDoneError, dlg.Scenarios["sc1"].Status)
+		require.Len(t, dlg.Scenarios["sc1"].Errors, 10)
+		assert.Equal(t, "hash is immutable, you cannot modify it", dlg.Scenarios["sc1"].Errors[0].Message)
+		assert.Equal(t, uint64(10), dlg.Scenarios["sc1"].EffectiveExecCount)
+		assert.Equal(t, uint64(10), dlg.Scenarios["sc1"].EffectiveUserCount)
 
-		assert.Equal(t, ScenarioDoneError, dlg.Scenarios["s2"].Status)
-		require.Len(t, dlg.Scenarios["s2"].Errors, 10)
-		assert.Equal(t, "hash is immutable, you cannot modify it", dlg.Scenarios["s2"].Errors[0].Message)
-		assert.Equal(t, uint64(10), dlg.Scenarios["s2"].EffectiveExecCount)
-		assert.Equal(t, uint64(10), dlg.Scenarios["s2"].EffectiveUserCount)
+		assert.Equal(t, status.ScenarioDoneError, dlg.Scenarios["sc2"].Status)
+		require.Len(t, dlg.Scenarios["sc2"].Errors, 10)
+		assert.Equal(t, "hash is immutable, you cannot modify it", dlg.Scenarios["sc2"].Errors[0].Message)
+		assert.Equal(t, uint64(10), dlg.Scenarios["sc2"].EffectiveExecCount)
+		assert.Equal(t, uint64(10), dlg.Scenarios["sc2"].EffectiveUserCount)
 	})
 
-}
-
-func TestDeluge_New_With_Deluge_Errors(t *testing.T) {
-	tests := []struct {
-		input    string
-		expected string
-	}{
-		{
-			`
-			deluge("Some name", "200ms", {
-				"myScenario": {
-					"concurrent": 100,
-					"delay": "100ms"
-				}
-			});`,
-			"scenario 'myScenario' is configured but not defined",
-		},
-		{
-			`deluge("200ms", {
-				"myScenario": {
-					"concurrent": 100,
-					"delay": "100ms"
-				}
-			});`,
-			"RUNTIME ERROR: Expected 3 arguments at",
-		},
-		{
-			`deluge(1, "200ms", {
-				"myScenario": {
-					"concurrent": 100,
-					"delay": "100ms"
-				}
-			});`,
-			"RUNTIME ERROR: Expected 1st argument to be a string at",
-		},
-		{
-			`deluge("Some name", 200, {
-				"myScenario": {
-					"concurrent": 100,
-					"delay": "100ms"
-				}
-			});`,
-			"RUNTIME ERROR: Expected 2nd argument to be a string at",
-		},
-		{
-			`deluge("Some name", "200", {
-				"myScenario": {
-					"concurrent": 100,
-					"delay": "100ms"
-				}
-			});`,
-			"RUNTIME ERROR: Expected 2nd argument to be a valid duration at",
-		},
-		{
-			`deluge("Some name", "200ms", "bad");`,
-			"RUNTIME ERROR: Expected 3rd argument to be an object at",
-		},
-		{
-			`deluge("Some name", "200ms", {
-				"myScenario": "bad"
-			});`,
-			"RUNTIME ERROR: Expected scenario configuration to be an object at",
-		},
-		{
-			`deluge("Some name", "200ms", {
-				"myScenario": {
-					"delay": "100ms"
-				}
-			});`,
-			"RUNTIME ERROR: Expected 'concurrent' value in configuration at",
-		},
-		{
-			`deluge("Some name", "200ms", {
-				"myScenario": {
-					"concurrent": 100
-				}
-			});`,
-			"RUNTIME ERROR: Expected 'delay' value in configuration at",
-		},
-		{
-			`deluge("Some name", "200ms", {
-				"myScenario": {
-					"concurrent": "100",
-					"delay": "100ms"
-				}
-			});`,
-			"RUNTIME ERROR: Expected 'concurrent' value to be an integer in configuration at",
-		},
-		{
-			`deluge("Some name", "200ms", {
-				"myScenario": {
-					"concurrent": 100,
-					"delay": 100
-				}
-			});`,
-			"RUNTIME ERROR: Expected 'delay' value to be a valid duration in configuration at",
-		},
-		{
-			`deluge("Some name", "200ms", {
-				"myScenario": {
-					"concurrent": 100,
-					"delay": "100"
-				}
-			});`,
-			"RUNTIME ERROR: Expected 'delay' value to be a valid duration in configuration at",
-		},
-		{
-			`deluge("Some name", "200ms", {
-				"myScenario": {
-					"concurrent": 100,
-					"delay": "100ms",
-					"args": "foobar"
-				}
-			});`,
-			"RUNTIME ERROR: Expected 'args' to be an object at",
-		},
-		{
-			`deluge("Some name", "200ms", {}); deluge("Some other name", "200ms", {});`,
-			"RUNTIME ERROR: Expected only one deluge definition at",
-		},
-	}
-
-	for _, tt := range tests {
-		clearScenarioRepo()
-		_, err := NewRunnableDeluge("foo", tt.input)
-		require.Error(t, err)
-		assert.Contains(t, err.Error(), tt.expected)
-	}
 }
 
 func BenchmarkNewDeluge(b *testing.B) {
@@ -382,14 +283,16 @@ scenario("myScenario", "My scenario", function () {
 
 });`)
 
-	for i := 0; i < b.N; i++ {
-		_, err := NewRunnableDeluge("foo", `
-		deluge("Some name", "200ms", {
+	compileDeluge(b, `
+		deluge("foo", "Some name", "200ms", {
 			"myScenario": {
 				"concurrent": 100,
 				"delay": "100ms"
 			}
 		});`)
+
+	for i := 0; i < b.N; i++ {
+		_, err := NewRunnableDeluge("foo")
 
 		if err != nil {
 			b.Fatal(err)
@@ -402,13 +305,9 @@ func compileDeluge(t testing.TB, script string) *CompiledDeluge {
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = repov2.Instance.SaveScenario((*repov2.PersistedDeluge)(compiled.GetDelugeDefinition()))
+	err = repov2.Instance.SaveDeluge(compiled.MapToPersistedDeluge())
 	if err != nil {
 		t.Fatal(err)
 	}
 	return compiled
-}
-
-func clearDelugeRepo() {
-	repov2.DelugeDefinitions = repov2.NewDelugeDefinitionsRepository()
 }

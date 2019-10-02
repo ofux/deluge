@@ -38,7 +38,7 @@ func TestCompileScenario_With_Scenario_Errors(t *testing.T) {
 		{
 			`
 			scenario(1, "My scenario", function () {})`,
-			"RUNTIME ERROR: Expected 1st argument to be a string at",
+			"RUNTIME ERROR: Expected 1st argument to be a string with at least 3 characters at",
 		},
 		{
 			`

@@ -3,6 +3,7 @@ package core
 import (
 	"github.com/ofux/deluge/core/recording"
 	"github.com/ofux/deluge/core/recording/recordingtest"
+	"github.com/ofux/deluge/core/status"
 	"github.com/ofux/deluge/dsl/object"
 	"github.com/ofux/deluge/repov2"
 	"github.com/ofux/docilemonkey/docilemonkey"
@@ -174,7 +175,7 @@ scenario("sc1", "Some scenario", function (args) {
 		scenario := newRunnableScenario(compiledScenario, 50, 50*time.Millisecond, scriptArgs, logTest)
 		scenario.run(200*time.Millisecond, nil)
 
-		assert.Equal(t, ScenarioDoneError, scenario.Status)
+		assert.Equal(t, status.ScenarioDoneError, scenario.Status)
 		assert.Len(t, scenario.Errors, 50)
 		assert.Equal(t, "hash is immutable, you cannot modify it", scenario.Errors[0].Message)
 	})
