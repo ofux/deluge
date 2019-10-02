@@ -93,7 +93,13 @@ func (r *Recorder) processRecords(processRecord func(RecordEntry), processSnapsh
 }
 
 func createHistogram() *hdr.Histogram {
-	return hdr.New(0, 3600000000, 3)
+	// Max value represents one hour. Min value represents 1ms.
+	return hdr.New(0, 3600*1000, 3)
+}
+
+func NanosecondToHistogramTime(nano int64) int64 {
+	const nanoToHisto = 1000 * 1000 // Converts nanoseconds to milliseconds
+	return nano / nanoToHisto
 }
 
 func mergeHistograms(h1, h2 *hdr.Histogram) *hdr.Histogram {
