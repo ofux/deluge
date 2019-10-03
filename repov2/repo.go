@@ -1,9 +1,9 @@
 package repov2
 
 import (
-	hdr "github.com/codahale/hdrhistogram"
 	"github.com/ofux/deluge/core/status"
 	"github.com/ofux/deluge/dsl/object"
+	hdr "github.com/ofux/hdrhistogram"
 	"time"
 )
 

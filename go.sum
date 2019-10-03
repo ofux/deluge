@@ -1,7 +1,5 @@
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/armon/consul-api v0.0.0-20180202201655-eb2c6b5be1b6/go.mod h1:grANhF5doyWs3UAsr3K4I6qtAmlQcZDesFNEHPZAzj8=
-github.com/codahale/hdrhistogram v0.0.0-20161010025455-3a0bb77429bd h1:qMd81Ts1T2OTKmB4acZcyKaMtRnY5Y44NuXGX2GFJ1w=
-github.com/codahale/hdrhistogram v0.0.0-20161010025455-3a0bb77429bd/go.mod h1:sE/e/2PUdi/liOCUjSTXgM1o87ZssimdTWN964YiIeI=
 github.com/coreos/etcd v3.3.10+incompatible/go.mod h1:uF7uidLiAD3TWHmW31ZFd/JWoc32PjwdhPthX9715RE=
 github.com/coreos/go-etcd v2.0.0+incompatible/go.mod h1:Jez6KQU2B/sWsbdaef3ED8NzMklzPG4d5KIOhIy30Tk=
 github.com/coreos/go-semver v0.2.0/go.mod h1:nnelYz7RCh+5ahJtPPxZlU+153eP4D4r3EedlOD2RNk=
@@ -25,6 +23,8 @@ github.com/ofux/docilemonkey v0.0.0-20190920152726-5c0f670246ca h1:tL8+iCj0SX+F6
 github.com/ofux/docilemonkey v0.0.0-20190920152726-5c0f670246ca/go.mod h1:9n04lOna5fzEk6aTUFbxVrzDBBXyHuAJMCR9wr/g4IQ=
 github.com/ofux/floa v0.0.0-20170708090307-9b9e96298d3e h1:CtSYUYTxy4EWaM0WR4ZfwKBm3QmH/OyfN/2rKCiYaqQ=
 github.com/ofux/floa v0.0.0-20170708090307-9b9e96298d3e/go.mod h1:kGd51rnek+P8CVmL94SettpFDoGh/iSWUgFHRGlvbok=
+github.com/ofux/hdrhistogram v0.0.0-20191003092942-a5789aa31519 h1:0yYJq+p3eDhHmqR+B2RtrE9xRWnxMg4oyWCvvGeSq+I=
+github.com/ofux/hdrhistogram v0.0.0-20191003092942-a5789aa31519/go.mod h1:gFjulgNH2Me9z58tcfLoJ3BoAbJ9kIOcPWg+/SoVexw=
 github.com/pelletier/go-toml v1.2.0/go.mod h1:5z9KED0ma1S8pY6P1sdut58dfprrGBbd/94hg7ilaic=
 github.com/pkg/errors v0.8.1 h1:iURUrRGxPUNPdy5/HRSm+Yj6okJ6UtLINN0Q9M4+h3I=
 github.com/pkg/errors v0.8.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=

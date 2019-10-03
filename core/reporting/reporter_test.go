@@ -1,7 +1,7 @@
 package reporting
 
 import (
-	hdr "github.com/codahale/hdrhistogram"
+	hdr "github.com/ofux/hdrhistogram"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )

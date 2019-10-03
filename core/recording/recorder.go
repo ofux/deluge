@@ -1,8 +1,8 @@
 package recording
 
 import (
-	hdr "github.com/codahale/hdrhistogram"
 	"github.com/ofux/deluge/repov2"
+	hdr "github.com/ofux/hdrhistogram"
 	"sync"
 )
 

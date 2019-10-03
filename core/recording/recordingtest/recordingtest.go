@@ -1,8 +1,8 @@
 package recordingtest
 
 import (
-	hdr "github.com/codahale/hdrhistogram"
 	"github.com/ofux/deluge/core/recording"
+	hdr "github.com/ofux/hdrhistogram"
 	"testing"
 )
 

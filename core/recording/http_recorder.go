@@ -2,8 +2,8 @@ package recording
 
 import (
 	"errors"
-	hdr "github.com/codahale/hdrhistogram"
 	"github.com/ofux/deluge/repov2"
+	hdr "github.com/ofux/hdrhistogram"
 )
 
 const (

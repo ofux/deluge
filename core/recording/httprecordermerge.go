@@ -1,7 +1,7 @@
 package recording
 
 import (
-	hdr "github.com/codahale/hdrhistogram"
+	hdr "github.com/ofux/hdrhistogram"
 )
 
 func MergeHTTPRecordsOverTime(rec1, rec2 *HTTPRecordsOverTime) *HTTPRecordsOverTime {

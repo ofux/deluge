@@ -1,8 +1,7 @@
 package recording
 
 import (
-	"github.com/codahale/hdrhistogram"
-	hdr "github.com/codahale/hdrhistogram"
+	hdr "github.com/ofux/hdrhistogram"
 	"github.com/stretchr/testify/require"
 	"reflect"
 	"testing"
@@ -41,32 +40,32 @@ func TestMergeHTTPRecordsOverTime(t *testing.T) {
 					Global: &HTTPRecord{
 						HTTPRequestRecord: HTTPRequestRecord{
 							Global: newFakeHistogram(t, 200, 300),
-							PerStatus: map[int]*hdrhistogram.Histogram{
+							PerStatus: map[int]*hdr.Histogram{
 								200: newFakeHistogram(t, 200, 300),
 								404: newFakeHistogram(t, 200, 400),
 							},
-							PerOkKo: map[OkKo]*hdrhistogram.Histogram{
+							PerOkKo: map[OkKo]*hdr.Histogram{
 								Ok: newFakeHistogram(t, 200, 300),
 								Ko: newFakeHistogram(t, 200, 400),
 							},
 						},
 						PerRequests: map[string]*HTTPRequestRecord{
-							"req1": &HTTPRequestRecord{
+							"req1": {
 								Global: newFakeHistogram(t, 200, 300),
-								PerStatus: map[int]*hdrhistogram.Histogram{
+								PerStatus: map[int]*hdr.Histogram{
 									200: newFakeHistogram(t, 200, 300),
 								},
-								PerOkKo: map[OkKo]*hdrhistogram.Histogram{
+								PerOkKo: map[OkKo]*hdr.Histogram{
 									Ok: newFakeHistogram(t, 200, 300),
 								},
 							},
-							"req2": &HTTPRequestRecord{
+							"req2": {
 								Global: newFakeHistogram(t, 200, 300),
-								PerStatus: map[int]*hdrhistogram.Histogram{
+								PerStatus: map[int]*hdr.Histogram{
 									200: newFakeHistogram(t, 200, 300),
 									404: newFakeHistogram(t, 200, 400),
 								},
-								PerOkKo: map[OkKo]*hdrhistogram.Histogram{
+								PerOkKo: map[OkKo]*hdr.Histogram{
 									Ok: newFakeHistogram(t, 200, 300),
 									Ko: newFakeHistogram(t, 200, 400),
 								},
@@ -74,60 +73,60 @@ func TestMergeHTTPRecordsOverTime(t *testing.T) {
 						},
 					},
 					OverTime: []*HTTPRecord{
-						&HTTPRecord{
+						{
 							HTTPRequestRecord: HTTPRequestRecord{
 								Global: newFakeHistogram(t, 200, 300),
-								PerStatus: map[int]*hdrhistogram.Histogram{
+								PerStatus: map[int]*hdr.Histogram{
 									200: newFakeHistogram(t, 200, 300),
 								},
-								PerOkKo: map[OkKo]*hdrhistogram.Histogram{
+								PerOkKo: map[OkKo]*hdr.Histogram{
 									Ok: newFakeHistogram(t, 200, 300),
 								},
 							},
 							PerRequests: map[string]*HTTPRequestRecord{
-								"req1": &HTTPRequestRecord{
+								"req1": {
 									Global: newFakeHistogram(t, 200, 300),
-									PerStatus: map[int]*hdrhistogram.Histogram{
+									PerStatus: map[int]*hdr.Histogram{
 										200: newFakeHistogram(t, 200, 300),
 									},
-									PerOkKo: map[OkKo]*hdrhistogram.Histogram{
+									PerOkKo: map[OkKo]*hdr.Histogram{
 										Ok: newFakeHistogram(t, 200, 300),
 									},
 								},
-								"req2": &HTTPRequestRecord{
+								"req2": {
 									Global: newFakeHistogram(t, 200, 300),
-									PerStatus: map[int]*hdrhistogram.Histogram{
+									PerStatus: map[int]*hdr.Histogram{
 										200: newFakeHistogram(t, 200, 300),
 									},
-									PerOkKo: map[OkKo]*hdrhistogram.Histogram{
+									PerOkKo: map[OkKo]*hdr.Histogram{
 										Ok: newFakeHistogram(t, 200, 300),
 									},
 								},
 							},
-						}, &HTTPRecord{
+						}, {
 							HTTPRequestRecord: HTTPRequestRecord{
 								Global: newFakeHistogram(t, 200, 300),
-								PerStatus: map[int]*hdrhistogram.Histogram{
+								PerStatus: map[int]*hdr.Histogram{
 									200: newFakeHistogram(t, 200, 300),
 									404: newFakeHistogram(t, 200, 400),
 								},
-								PerOkKo: map[OkKo]*hdrhistogram.Histogram{
+								PerOkKo: map[OkKo]*hdr.Histogram{
 									Ok: newFakeHistogram(t, 200, 300),
 									Ko: newFakeHistogram(t, 200, 400),
 								},
 							},
 							PerRequests: map[string]*HTTPRequestRecord{
-								"req1": &HTTPRequestRecord{
+								"req1": {
 									Global:    newFakeHistogram(t, 200, 300),
-									PerStatus: map[int]*hdrhistogram.Histogram{},
-									PerOkKo:   map[OkKo]*hdrhistogram.Histogram{},
+									PerStatus: map[int]*hdr.Histogram{},
+									PerOkKo:   map[OkKo]*hdr.Histogram{},
 								},
-								"req2": &HTTPRequestRecord{
+								"req2": {
 									Global: newFakeHistogram(t, 200, 300),
-									PerStatus: map[int]*hdrhistogram.Histogram{
+									PerStatus: map[int]*hdr.Histogram{
 										404: newFakeHistogram(t, 200, 400),
 									},
-									PerOkKo: map[OkKo]*hdrhistogram.Histogram{
+									PerOkKo: map[OkKo]*hdr.Histogram{
 										Ko: newFakeHistogram(t, 200, 400),
 									},
 								},
@@ -139,32 +138,32 @@ func TestMergeHTTPRecordsOverTime(t *testing.T) {
 					Global: &HTTPRecord{
 						HTTPRequestRecord: HTTPRequestRecord{
 							Global: newFakeHistogram(t, 500, 600),
-							PerStatus: map[int]*hdrhistogram.Histogram{
+							PerStatus: map[int]*hdr.Histogram{
 								200: newFakeHistogram(t, 500, 600),
 								404: newFakeHistogram(t, 200, 400),
 							},
-							PerOkKo: map[OkKo]*hdrhistogram.Histogram{
+							PerOkKo: map[OkKo]*hdr.Histogram{
 								Ok: newFakeHistogram(t, 500, 600),
 								Ko: newFakeHistogram(t, 200, 400),
 							},
 						},
 						PerRequests: map[string]*HTTPRequestRecord{
-							"req1": &HTTPRequestRecord{
+							"req1": {
 								Global: newFakeHistogram(t, 500, 600),
-								PerStatus: map[int]*hdrhistogram.Histogram{
+								PerStatus: map[int]*hdr.Histogram{
 									200: newFakeHistogram(t, 500, 600),
 								},
-								PerOkKo: map[OkKo]*hdrhistogram.Histogram{
+								PerOkKo: map[OkKo]*hdr.Histogram{
 									Ok: newFakeHistogram(t, 500, 600),
 								},
 							},
-							"req3": &HTTPRequestRecord{
+							"req3": {
 								Global: newFakeHistogram(t, 500, 600),
-								PerStatus: map[int]*hdrhistogram.Histogram{
+								PerStatus: map[int]*hdr.Histogram{
 									200: newFakeHistogram(t, 500, 600),
 									404: newFakeHistogram(t, 200, 400),
 								},
-								PerOkKo: map[OkKo]*hdrhistogram.Histogram{
+								PerOkKo: map[OkKo]*hdr.Histogram{
 									Ok: newFakeHistogram(t, 500, 600),
 									Ko: newFakeHistogram(t, 200, 400),
 								},
@@ -172,60 +171,60 @@ func TestMergeHTTPRecordsOverTime(t *testing.T) {
 						},
 					},
 					OverTime: []*HTTPRecord{
-						&HTTPRecord{
+						{
 							HTTPRequestRecord: HTTPRequestRecord{
 								Global: newFakeHistogram(t, 500, 600),
-								PerStatus: map[int]*hdrhistogram.Histogram{
+								PerStatus: map[int]*hdr.Histogram{
 									200: newFakeHistogram(t, 500, 600),
 								},
-								PerOkKo: map[OkKo]*hdrhistogram.Histogram{
+								PerOkKo: map[OkKo]*hdr.Histogram{
 									Ok: newFakeHistogram(t, 500, 600),
 								},
 							},
 							PerRequests: map[string]*HTTPRequestRecord{
-								"req1": &HTTPRequestRecord{
+								"req1": {
 									Global: newFakeHistogram(t, 500, 600),
-									PerStatus: map[int]*hdrhistogram.Histogram{
+									PerStatus: map[int]*hdr.Histogram{
 										200: newFakeHistogram(t, 500, 600),
 									},
-									PerOkKo: map[OkKo]*hdrhistogram.Histogram{
+									PerOkKo: map[OkKo]*hdr.Histogram{
 										Ok: newFakeHistogram(t, 500, 600),
 									},
 								},
-								"req3": &HTTPRequestRecord{
+								"req3": {
 									Global: newFakeHistogram(t, 500, 600),
-									PerStatus: map[int]*hdrhistogram.Histogram{
+									PerStatus: map[int]*hdr.Histogram{
 										200: newFakeHistogram(t, 500, 600),
 									},
-									PerOkKo: map[OkKo]*hdrhistogram.Histogram{
+									PerOkKo: map[OkKo]*hdr.Histogram{
 										Ok: newFakeHistogram(t, 500, 600),
 									},
 								},
 							},
-						}, &HTTPRecord{
+						}, {
 							HTTPRequestRecord: HTTPRequestRecord{
 								Global: newFakeHistogram(t, 500, 600),
-								PerStatus: map[int]*hdrhistogram.Histogram{
+								PerStatus: map[int]*hdr.Histogram{
 									200: newFakeHistogram(t, 500, 600),
 									404: newFakeHistogram(t, 200, 400),
 								},
-								PerOkKo: map[OkKo]*hdrhistogram.Histogram{
+								PerOkKo: map[OkKo]*hdr.Histogram{
 									Ok: newFakeHistogram(t, 500, 600),
 									Ko: newFakeHistogram(t, 200, 400),
 								},
 							},
 							PerRequests: map[string]*HTTPRequestRecord{
-								"req1": &HTTPRequestRecord{
+								"req1": {
 									Global:    newFakeHistogram(t, 500, 600),
-									PerStatus: map[int]*hdrhistogram.Histogram{},
-									PerOkKo:   map[OkKo]*hdrhistogram.Histogram{},
+									PerStatus: map[int]*hdr.Histogram{},
+									PerOkKo:   map[OkKo]*hdr.Histogram{},
 								},
-								"req3": &HTTPRequestRecord{
+								"req3": {
 									Global: newFakeHistogram(t, 500, 600),
-									PerStatus: map[int]*hdrhistogram.Histogram{
+									PerStatus: map[int]*hdr.Histogram{
 										404: newFakeHistogram(t, 200, 400),
 									},
-									PerOkKo: map[OkKo]*hdrhistogram.Histogram{
+									PerOkKo: map[OkKo]*hdr.Histogram{
 										Ko: newFakeHistogram(t, 200, 400),
 									},
 								},
@@ -239,43 +238,43 @@ func TestMergeHTTPRecordsOverTime(t *testing.T) {
 				Global: &HTTPRecord{
 					HTTPRequestRecord: HTTPRequestRecord{
 						Global: newFakeHistogram(t, 200, 300, 500, 600),
-						PerStatus: map[int]*hdrhistogram.Histogram{
+						PerStatus: map[int]*hdr.Histogram{
 							200: newFakeHistogram(t, 200, 300, 500, 600),
 							404: newFakeHistogram(t, 200, 400, 200, 400),
 						},
-						PerOkKo: map[OkKo]*hdrhistogram.Histogram{
+						PerOkKo: map[OkKo]*hdr.Histogram{
 							Ok: newFakeHistogram(t, 200, 300, 500, 600),
 							Ko: newFakeHistogram(t, 200, 400, 200, 400),
 						},
 					},
 					PerRequests: map[string]*HTTPRequestRecord{
-						"req1": &HTTPRequestRecord{
+						"req1": {
 							Global: newFakeHistogram(t, 200, 300, 500, 600),
-							PerStatus: map[int]*hdrhistogram.Histogram{
+							PerStatus: map[int]*hdr.Histogram{
 								200: newFakeHistogram(t, 200, 300, 500, 600),
 							},
-							PerOkKo: map[OkKo]*hdrhistogram.Histogram{
+							PerOkKo: map[OkKo]*hdr.Histogram{
 								Ok: newFakeHistogram(t, 200, 300, 500, 600),
 							},
 						},
-						"req2": &HTTPRequestRecord{
+						"req2": {
 							Global: newFakeHistogram(t, 200, 300),
-							PerStatus: map[int]*hdrhistogram.Histogram{
+							PerStatus: map[int]*hdr.Histogram{
 								200: newFakeHistogram(t, 200, 300),
 								404: newFakeHistogram(t, 200, 400),
 							},
-							PerOkKo: map[OkKo]*hdrhistogram.Histogram{
+							PerOkKo: map[OkKo]*hdr.Histogram{
 								Ok: newFakeHistogram(t, 200, 300),
 								Ko: newFakeHistogram(t, 200, 400),
 							},
 						},
-						"req3": &HTTPRequestRecord{
+						"req3": {
 							Global: newFakeHistogram(t, 500, 600),
-							PerStatus: map[int]*hdrhistogram.Histogram{
+							PerStatus: map[int]*hdr.Histogram{
 								200: newFakeHistogram(t, 500, 600),
 								404: newFakeHistogram(t, 200, 400),
 							},
-							PerOkKo: map[OkKo]*hdrhistogram.Histogram{
+							PerOkKo: map[OkKo]*hdr.Histogram{
 								Ok: newFakeHistogram(t, 500, 600),
 								Ko: newFakeHistogram(t, 200, 400),
 							},
@@ -283,78 +282,78 @@ func TestMergeHTTPRecordsOverTime(t *testing.T) {
 					},
 				},
 				OverTime: []*HTTPRecord{
-					&HTTPRecord{
+					{
 						HTTPRequestRecord: HTTPRequestRecord{
 							Global: newFakeHistogram(t, 200, 300, 500, 600),
-							PerStatus: map[int]*hdrhistogram.Histogram{
+							PerStatus: map[int]*hdr.Histogram{
 								200: newFakeHistogram(t, 200, 300, 500, 600),
 							},
-							PerOkKo: map[OkKo]*hdrhistogram.Histogram{
+							PerOkKo: map[OkKo]*hdr.Histogram{
 								Ok: newFakeHistogram(t, 200, 300, 500, 600),
 							},
 						},
 						PerRequests: map[string]*HTTPRequestRecord{
-							"req1": &HTTPRequestRecord{
+							"req1": {
 								Global: newFakeHistogram(t, 200, 300, 500, 600),
-								PerStatus: map[int]*hdrhistogram.Histogram{
+								PerStatus: map[int]*hdr.Histogram{
 									200: newFakeHistogram(t, 200, 300, 500, 600),
 								},
-								PerOkKo: map[OkKo]*hdrhistogram.Histogram{
+								PerOkKo: map[OkKo]*hdr.Histogram{
 									Ok: newFakeHistogram(t, 200, 300, 500, 600),
 								},
 							},
-							"req2": &HTTPRequestRecord{
+							"req2": {
 								Global: newFakeHistogram(t, 200, 300),
-								PerStatus: map[int]*hdrhistogram.Histogram{
+								PerStatus: map[int]*hdr.Histogram{
 									200: newFakeHistogram(t, 200, 300),
 								},
-								PerOkKo: map[OkKo]*hdrhistogram.Histogram{
+								PerOkKo: map[OkKo]*hdr.Histogram{
 									Ok: newFakeHistogram(t, 200, 300),
 								},
 							},
-							"req3": &HTTPRequestRecord{
+							"req3": {
 								Global: newFakeHistogram(t, 500, 600),
-								PerStatus: map[int]*hdrhistogram.Histogram{
+								PerStatus: map[int]*hdr.Histogram{
 									200: newFakeHistogram(t, 500, 600),
 								},
-								PerOkKo: map[OkKo]*hdrhistogram.Histogram{
+								PerOkKo: map[OkKo]*hdr.Histogram{
 									Ok: newFakeHistogram(t, 500, 600),
 								},
 							},
 						},
-					}, &HTTPRecord{
+					}, {
 						HTTPRequestRecord: HTTPRequestRecord{
 							Global: newFakeHistogram(t, 200, 300, 500, 600),
-							PerStatus: map[int]*hdrhistogram.Histogram{
+							PerStatus: map[int]*hdr.Histogram{
 								200: newFakeHistogram(t, 200, 300, 500, 600),
 								404: newFakeHistogram(t, 200, 400, 200, 400),
 							},
-							PerOkKo: map[OkKo]*hdrhistogram.Histogram{
+							PerOkKo: map[OkKo]*hdr.Histogram{
 								Ok: newFakeHistogram(t, 200, 300, 500, 600),
 								Ko: newFakeHistogram(t, 200, 400, 200, 400),
 							},
 						},
 						PerRequests: map[string]*HTTPRequestRecord{
-							"req1": &HTTPRequestRecord{
+							"req1": {
 								Global:    newFakeHistogram(t, 200, 300, 500, 600),
-								PerStatus: map[int]*hdrhistogram.Histogram{},
-								PerOkKo:   map[OkKo]*hdrhistogram.Histogram{},
+								PerStatus: map[int]*hdr.Histogram{},
+								PerOkKo:   map[OkKo]*hdr.Histogram{},
 							},
-							"req2": &HTTPRequestRecord{
+							"req2": {
 								Global: newFakeHistogram(t, 200, 300),
-								PerStatus: map[int]*hdrhistogram.Histogram{
+								PerStatus: map[int]*hdr.Histogram{
 									404: newFakeHistogram(t, 200, 400),
 								},
-								PerOkKo: map[OkKo]*hdrhistogram.Histogram{
+								PerOkKo: map[OkKo]*hdr.Histogram{
 									Ko: newFakeHistogram(t, 200, 400),
 								},
 							},
-							"req3": &HTTPRequestRecord{
+							"req3": {
 								Global: newFakeHistogram(t, 500, 600),
-								PerStatus: map[int]*hdrhistogram.Histogram{
+								PerStatus: map[int]*hdr.Histogram{
 									404: newFakeHistogram(t, 200, 400),
 								},
-								PerOkKo: map[OkKo]*hdrhistogram.Histogram{
+								PerOkKo: map[OkKo]*hdr.Histogram{
 									Ko: newFakeHistogram(t, 200, 400),
 								},
 							},
@@ -371,32 +370,32 @@ func TestMergeHTTPRecordsOverTime(t *testing.T) {
 					Global: &HTTPRecord{
 						HTTPRequestRecord: HTTPRequestRecord{
 							Global: newFakeHistogram(t, 200, 300),
-							PerStatus: map[int]*hdrhistogram.Histogram{
+							PerStatus: map[int]*hdr.Histogram{
 								200: newFakeHistogram(t, 200, 300),
 								404: newFakeHistogram(t, 200, 400),
 							},
-							PerOkKo: map[OkKo]*hdrhistogram.Histogram{
+							PerOkKo: map[OkKo]*hdr.Histogram{
 								Ok: newFakeHistogram(t, 200, 300),
 								Ko: newFakeHistogram(t, 200, 400),
 							},
 						},
 						PerRequests: map[string]*HTTPRequestRecord{
-							"req1": &HTTPRequestRecord{
+							"req1": {
 								Global: newFakeHistogram(t, 200, 300),
-								PerStatus: map[int]*hdrhistogram.Histogram{
+								PerStatus: map[int]*hdr.Histogram{
 									200: newFakeHistogram(t, 200, 300),
 								},
-								PerOkKo: map[OkKo]*hdrhistogram.Histogram{
+								PerOkKo: map[OkKo]*hdr.Histogram{
 									Ok: newFakeHistogram(t, 200, 300),
 								},
 							},
-							"req2": &HTTPRequestRecord{
+							"req2": {
 								Global: newFakeHistogram(t, 200, 300),
-								PerStatus: map[int]*hdrhistogram.Histogram{
+								PerStatus: map[int]*hdr.Histogram{
 									200: newFakeHistogram(t, 200, 300),
 									404: newFakeHistogram(t, 200, 400),
 								},
-								PerOkKo: map[OkKo]*hdrhistogram.Histogram{
+								PerOkKo: map[OkKo]*hdr.Histogram{
 									Ok: newFakeHistogram(t, 200, 300),
 									Ko: newFakeHistogram(t, 200, 400),
 								},
@@ -404,60 +403,60 @@ func TestMergeHTTPRecordsOverTime(t *testing.T) {
 						},
 					},
 					OverTime: []*HTTPRecord{
-						&HTTPRecord{
+						{
 							HTTPRequestRecord: HTTPRequestRecord{
 								Global: newFakeHistogram(t, 200, 300),
-								PerStatus: map[int]*hdrhistogram.Histogram{
+								PerStatus: map[int]*hdr.Histogram{
 									200: newFakeHistogram(t, 200, 300),
 								},
-								PerOkKo: map[OkKo]*hdrhistogram.Histogram{
+								PerOkKo: map[OkKo]*hdr.Histogram{
 									Ok: newFakeHistogram(t, 200, 300),
 								},
 							},
 							PerRequests: map[string]*HTTPRequestRecord{
-								"req1": &HTTPRequestRecord{
+								"req1": {
 									Global: newFakeHistogram(t, 200, 300),
-									PerStatus: map[int]*hdrhistogram.Histogram{
+									PerStatus: map[int]*hdr.Histogram{
 										200: newFakeHistogram(t, 200, 300),
 									},
-									PerOkKo: map[OkKo]*hdrhistogram.Histogram{
+									PerOkKo: map[OkKo]*hdr.Histogram{
 										Ok: newFakeHistogram(t, 200, 300),
 									},
 								},
-								"req2": &HTTPRequestRecord{
+								"req2": {
 									Global: newFakeHistogram(t, 200, 300),
-									PerStatus: map[int]*hdrhistogram.Histogram{
+									PerStatus: map[int]*hdr.Histogram{
 										200: newFakeHistogram(t, 200, 300),
 									},
-									PerOkKo: map[OkKo]*hdrhistogram.Histogram{
+									PerOkKo: map[OkKo]*hdr.Histogram{
 										Ok: newFakeHistogram(t, 200, 300),
 									},
 								},
 							},
-						}, &HTTPRecord{
+						}, {
 							HTTPRequestRecord: HTTPRequestRecord{
 								Global: newFakeHistogram(t, 200, 300),
-								PerStatus: map[int]*hdrhistogram.Histogram{
+								PerStatus: map[int]*hdr.Histogram{
 									200: newFakeHistogram(t, 200, 300),
 									404: newFakeHistogram(t, 200, 400),
 								},
-								PerOkKo: map[OkKo]*hdrhistogram.Histogram{
+								PerOkKo: map[OkKo]*hdr.Histogram{
 									Ok: newFakeHistogram(t, 200, 300),
 									Ko: newFakeHistogram(t, 200, 400),
 								},
 							},
 							PerRequests: map[string]*HTTPRequestRecord{
-								"req1": &HTTPRequestRecord{
+								"req1": {
 									Global:    newFakeHistogram(t, 200, 300),
-									PerStatus: map[int]*hdrhistogram.Histogram{},
-									PerOkKo:   map[OkKo]*hdrhistogram.Histogram{},
+									PerStatus: map[int]*hdr.Histogram{},
+									PerOkKo:   map[OkKo]*hdr.Histogram{},
 								},
-								"req2": &HTTPRequestRecord{
+								"req2": {
 									Global: newFakeHistogram(t, 200, 300),
-									PerStatus: map[int]*hdrhistogram.Histogram{
+									PerStatus: map[int]*hdr.Histogram{
 										404: newFakeHistogram(t, 200, 400),
 									},
-									PerOkKo: map[OkKo]*hdrhistogram.Histogram{
+									PerOkKo: map[OkKo]*hdr.Histogram{
 										Ko: newFakeHistogram(t, 200, 400),
 									},
 								},
@@ -469,32 +468,32 @@ func TestMergeHTTPRecordsOverTime(t *testing.T) {
 					Global: &HTTPRecord{
 						HTTPRequestRecord: HTTPRequestRecord{
 							Global: newFakeHistogram(t, 500, 600),
-							PerStatus: map[int]*hdrhistogram.Histogram{
+							PerStatus: map[int]*hdr.Histogram{
 								200: newFakeHistogram(t, 500, 600),
 								404: newFakeHistogram(t, 200, 400),
 							},
-							PerOkKo: map[OkKo]*hdrhistogram.Histogram{
+							PerOkKo: map[OkKo]*hdr.Histogram{
 								Ok: newFakeHistogram(t, 500, 600),
 								Ko: newFakeHistogram(t, 200, 400),
 							},
 						},
 						PerRequests: map[string]*HTTPRequestRecord{
-							"req1": &HTTPRequestRecord{
+							"req1": {
 								Global: newFakeHistogram(t, 500, 600),
-								PerStatus: map[int]*hdrhistogram.Histogram{
+								PerStatus: map[int]*hdr.Histogram{
 									200: newFakeHistogram(t, 500, 600),
 								},
-								PerOkKo: map[OkKo]*hdrhistogram.Histogram{
+								PerOkKo: map[OkKo]*hdr.Histogram{
 									Ok: newFakeHistogram(t, 500, 600),
 								},
 							},
-							"req3": &HTTPRequestRecord{
+							"req3": {
 								Global: newFakeHistogram(t, 500, 600),
-								PerStatus: map[int]*hdrhistogram.Histogram{
+								PerStatus: map[int]*hdr.Histogram{
 									200: newFakeHistogram(t, 500, 600),
 									404: newFakeHistogram(t, 200, 400),
 								},
-								PerOkKo: map[OkKo]*hdrhistogram.Histogram{
+								PerOkKo: map[OkKo]*hdr.Histogram{
 									Ok: newFakeHistogram(t, 500, 600),
 									Ko: newFakeHistogram(t, 200, 400),
 								},
@@ -502,88 +501,88 @@ func TestMergeHTTPRecordsOverTime(t *testing.T) {
 						},
 					},
 					OverTime: []*HTTPRecord{
-						&HTTPRecord{
+						{
 							HTTPRequestRecord: HTTPRequestRecord{
 								Global: newFakeHistogram(t, 500, 600),
-								PerStatus: map[int]*hdrhistogram.Histogram{
+								PerStatus: map[int]*hdr.Histogram{
 									200: newFakeHistogram(t, 500, 600),
 								},
-								PerOkKo: map[OkKo]*hdrhistogram.Histogram{
+								PerOkKo: map[OkKo]*hdr.Histogram{
 									Ok: newFakeHistogram(t, 500, 600),
 								},
 							},
 							PerRequests: map[string]*HTTPRequestRecord{
-								"req1": &HTTPRequestRecord{
+								"req1": {
 									Global: newFakeHistogram(t, 500, 600),
-									PerStatus: map[int]*hdrhistogram.Histogram{
+									PerStatus: map[int]*hdr.Histogram{
 										200: newFakeHistogram(t, 500, 600),
 									},
-									PerOkKo: map[OkKo]*hdrhistogram.Histogram{
+									PerOkKo: map[OkKo]*hdr.Histogram{
 										Ok: newFakeHistogram(t, 500, 600),
 									},
 								},
-								"req3": &HTTPRequestRecord{
+								"req3": {
 									Global: newFakeHistogram(t, 500, 600),
-									PerStatus: map[int]*hdrhistogram.Histogram{
+									PerStatus: map[int]*hdr.Histogram{
 										200: newFakeHistogram(t, 500, 600),
 									},
-									PerOkKo: map[OkKo]*hdrhistogram.Histogram{
+									PerOkKo: map[OkKo]*hdr.Histogram{
 										Ok: newFakeHistogram(t, 500, 600),
 									},
 								},
 							},
-						}, &HTTPRecord{
+						}, {
 							HTTPRequestRecord: HTTPRequestRecord{
 								Global: newFakeHistogram(t, 500, 600),
-								PerStatus: map[int]*hdrhistogram.Histogram{
+								PerStatus: map[int]*hdr.Histogram{
 									200: newFakeHistogram(t, 500, 600),
 									404: newFakeHistogram(t, 200, 400),
 								},
-								PerOkKo: map[OkKo]*hdrhistogram.Histogram{
+								PerOkKo: map[OkKo]*hdr.Histogram{
 									Ok: newFakeHistogram(t, 500, 600),
 									Ko: newFakeHistogram(t, 200, 400),
 								},
 							},
 							PerRequests: map[string]*HTTPRequestRecord{
-								"req1": &HTTPRequestRecord{
+								"req1": {
 									Global:    newFakeHistogram(t, 500, 600),
-									PerStatus: map[int]*hdrhistogram.Histogram{},
-									PerOkKo:   map[OkKo]*hdrhistogram.Histogram{},
+									PerStatus: map[int]*hdr.Histogram{},
+									PerOkKo:   map[OkKo]*hdr.Histogram{},
 								},
-								"req3": &HTTPRequestRecord{
+								"req3": {
 									Global: newFakeHistogram(t, 500, 600),
-									PerStatus: map[int]*hdrhistogram.Histogram{
+									PerStatus: map[int]*hdr.Histogram{
 										404: newFakeHistogram(t, 200, 400),
 									},
-									PerOkKo: map[OkKo]*hdrhistogram.Histogram{
+									PerOkKo: map[OkKo]*hdr.Histogram{
 										Ko: newFakeHistogram(t, 200, 400),
 									},
 								},
 							},
-						}, &HTTPRecord{
+						}, {
 							HTTPRequestRecord: HTTPRequestRecord{
 								Global: newFakeHistogram(t, 500, 600),
-								PerStatus: map[int]*hdrhistogram.Histogram{
+								PerStatus: map[int]*hdr.Histogram{
 									200: newFakeHistogram(t, 500, 600),
 									404: newFakeHistogram(t, 200, 400),
 								},
-								PerOkKo: map[OkKo]*hdrhistogram.Histogram{
+								PerOkKo: map[OkKo]*hdr.Histogram{
 									Ok: newFakeHistogram(t, 500, 600),
 									Ko: newFakeHistogram(t, 200, 400),
 								},
 							},
 							PerRequests: map[string]*HTTPRequestRecord{
-								"req1": &HTTPRequestRecord{
+								"req1": {
 									Global:    newFakeHistogram(t, 500, 600),
-									PerStatus: map[int]*hdrhistogram.Histogram{},
-									PerOkKo:   map[OkKo]*hdrhistogram.Histogram{},
+									PerStatus: map[int]*hdr.Histogram{},
+									PerOkKo:   map[OkKo]*hdr.Histogram{},
 								},
-								"req3": &HTTPRequestRecord{
+								"req3": {
 									Global: newFakeHistogram(t, 500, 600),
-									PerStatus: map[int]*hdrhistogram.Histogram{
+									PerStatus: map[int]*hdr.Histogram{
 										404: newFakeHistogram(t, 200, 400),
 									},
-									PerOkKo: map[OkKo]*hdrhistogram.Histogram{
+									PerOkKo: map[OkKo]*hdr.Histogram{
 										Ko: newFakeHistogram(t, 200, 400),
 									},
 								},
@@ -597,43 +596,43 @@ func TestMergeHTTPRecordsOverTime(t *testing.T) {
 				Global: &HTTPRecord{
 					HTTPRequestRecord: HTTPRequestRecord{
 						Global: newFakeHistogram(t, 200, 300, 500, 600),
-						PerStatus: map[int]*hdrhistogram.Histogram{
+						PerStatus: map[int]*hdr.Histogram{
 							200: newFakeHistogram(t, 200, 300, 500, 600),
 							404: newFakeHistogram(t, 200, 400, 200, 400),
 						},
-						PerOkKo: map[OkKo]*hdrhistogram.Histogram{
+						PerOkKo: map[OkKo]*hdr.Histogram{
 							Ok: newFakeHistogram(t, 200, 300, 500, 600),
 							Ko: newFakeHistogram(t, 200, 400, 200, 400),
 						},
 					},
 					PerRequests: map[string]*HTTPRequestRecord{
-						"req1": &HTTPRequestRecord{
+						"req1": {
 							Global: newFakeHistogram(t, 200, 300, 500, 600),
-							PerStatus: map[int]*hdrhistogram.Histogram{
+							PerStatus: map[int]*hdr.Histogram{
 								200: newFakeHistogram(t, 200, 300, 500, 600),
 							},
-							PerOkKo: map[OkKo]*hdrhistogram.Histogram{
+							PerOkKo: map[OkKo]*hdr.Histogram{
 								Ok: newFakeHistogram(t, 200, 300, 500, 600),
 							},
 						},
-						"req2": &HTTPRequestRecord{
+						"req2": {
 							Global: newFakeHistogram(t, 200, 300),
-							PerStatus: map[int]*hdrhistogram.Histogram{
+							PerStatus: map[int]*hdr.Histogram{
 								200: newFakeHistogram(t, 200, 300),
 								404: newFakeHistogram(t, 200, 400),
 							},
-							PerOkKo: map[OkKo]*hdrhistogram.Histogram{
+							PerOkKo: map[OkKo]*hdr.Histogram{
 								Ok: newFakeHistogram(t, 200, 300),
 								Ko: newFakeHistogram(t, 200, 400),
 							},
 						},
-						"req3": &HTTPRequestRecord{
+						"req3": {
 							Global: newFakeHistogram(t, 500, 600),
-							PerStatus: map[int]*hdrhistogram.Histogram{
+							PerStatus: map[int]*hdr.Histogram{
 								200: newFakeHistogram(t, 500, 600),
 								404: newFakeHistogram(t, 200, 400),
 							},
-							PerOkKo: map[OkKo]*hdrhistogram.Histogram{
+							PerOkKo: map[OkKo]*hdr.Histogram{
 								Ok: newFakeHistogram(t, 500, 600),
 								Ko: newFakeHistogram(t, 200, 400),
 							},
@@ -641,106 +640,106 @@ func TestMergeHTTPRecordsOverTime(t *testing.T) {
 					},
 				},
 				OverTime: []*HTTPRecord{
-					&HTTPRecord{
+					{
 						HTTPRequestRecord: HTTPRequestRecord{
 							Global: newFakeHistogram(t, 200, 300, 500, 600),
-							PerStatus: map[int]*hdrhistogram.Histogram{
+							PerStatus: map[int]*hdr.Histogram{
 								200: newFakeHistogram(t, 200, 300, 500, 600),
 							},
-							PerOkKo: map[OkKo]*hdrhistogram.Histogram{
+							PerOkKo: map[OkKo]*hdr.Histogram{
 								Ok: newFakeHistogram(t, 200, 300, 500, 600),
 							},
 						},
 						PerRequests: map[string]*HTTPRequestRecord{
-							"req1": &HTTPRequestRecord{
+							"req1": {
 								Global: newFakeHistogram(t, 200, 300, 500, 600),
-								PerStatus: map[int]*hdrhistogram.Histogram{
+								PerStatus: map[int]*hdr.Histogram{
 									200: newFakeHistogram(t, 200, 300, 500, 600),
 								},
-								PerOkKo: map[OkKo]*hdrhistogram.Histogram{
+								PerOkKo: map[OkKo]*hdr.Histogram{
 									Ok: newFakeHistogram(t, 200, 300, 500, 600),
 								},
 							},
-							"req2": &HTTPRequestRecord{
+							"req2": {
 								Global: newFakeHistogram(t, 200, 300),
-								PerStatus: map[int]*hdrhistogram.Histogram{
+								PerStatus: map[int]*hdr.Histogram{
 									200: newFakeHistogram(t, 200, 300),
 								},
-								PerOkKo: map[OkKo]*hdrhistogram.Histogram{
+								PerOkKo: map[OkKo]*hdr.Histogram{
 									Ok: newFakeHistogram(t, 200, 300),
 								},
 							},
-							"req3": &HTTPRequestRecord{
+							"req3": {
 								Global: newFakeHistogram(t, 500, 600),
-								PerStatus: map[int]*hdrhistogram.Histogram{
+								PerStatus: map[int]*hdr.Histogram{
 									200: newFakeHistogram(t, 500, 600),
 								},
-								PerOkKo: map[OkKo]*hdrhistogram.Histogram{
+								PerOkKo: map[OkKo]*hdr.Histogram{
 									Ok: newFakeHistogram(t, 500, 600),
 								},
 							},
 						},
-					}, &HTTPRecord{
+					}, {
 						HTTPRequestRecord: HTTPRequestRecord{
 							Global: newFakeHistogram(t, 200, 300, 500, 600),
-							PerStatus: map[int]*hdrhistogram.Histogram{
+							PerStatus: map[int]*hdr.Histogram{
 								200: newFakeHistogram(t, 200, 300, 500, 600),
 								404: newFakeHistogram(t, 200, 400, 200, 400),
 							},
-							PerOkKo: map[OkKo]*hdrhistogram.Histogram{
+							PerOkKo: map[OkKo]*hdr.Histogram{
 								Ok: newFakeHistogram(t, 200, 300, 500, 600),
 								Ko: newFakeHistogram(t, 200, 400, 200, 400),
 							},
 						},
 						PerRequests: map[string]*HTTPRequestRecord{
-							"req1": &HTTPRequestRecord{
+							"req1": {
 								Global:    newFakeHistogram(t, 200, 300, 500, 600),
-								PerStatus: map[int]*hdrhistogram.Histogram{},
-								PerOkKo:   map[OkKo]*hdrhistogram.Histogram{},
+								PerStatus: map[int]*hdr.Histogram{},
+								PerOkKo:   map[OkKo]*hdr.Histogram{},
 							},
-							"req2": &HTTPRequestRecord{
+							"req2": {
 								Global: newFakeHistogram(t, 200, 300),
-								PerStatus: map[int]*hdrhistogram.Histogram{
+								PerStatus: map[int]*hdr.Histogram{
 									404: newFakeHistogram(t, 200, 400),
 								},
-								PerOkKo: map[OkKo]*hdrhistogram.Histogram{
+								PerOkKo: map[OkKo]*hdr.Histogram{
 									Ko: newFakeHistogram(t, 200, 400),
 								},
 							},
-							"req3": &HTTPRequestRecord{
+							"req3": {
 								Global: newFakeHistogram(t, 500, 600),
-								PerStatus: map[int]*hdrhistogram.Histogram{
+								PerStatus: map[int]*hdr.Histogram{
 									404: newFakeHistogram(t, 200, 400),
 								},
-								PerOkKo: map[OkKo]*hdrhistogram.Histogram{
+								PerOkKo: map[OkKo]*hdr.Histogram{
 									Ko: newFakeHistogram(t, 200, 400),
 								},
 							},
 						},
-					}, &HTTPRecord{
+					}, {
 						HTTPRequestRecord: HTTPRequestRecord{
 							Global: newFakeHistogram(t, 500, 600),
-							PerStatus: map[int]*hdrhistogram.Histogram{
+							PerStatus: map[int]*hdr.Histogram{
 								200: newFakeHistogram(t, 500, 600),
 								404: newFakeHistogram(t, 200, 400),
 							},
-							PerOkKo: map[OkKo]*hdrhistogram.Histogram{
+							PerOkKo: map[OkKo]*hdr.Histogram{
 								Ok: newFakeHistogram(t, 500, 600),
 								Ko: newFakeHistogram(t, 200, 400),
 							},
 						},
 						PerRequests: map[string]*HTTPRequestRecord{
-							"req1": &HTTPRequestRecord{
+							"req1": {
 								Global:    newFakeHistogram(t, 500, 600),
-								PerStatus: map[int]*hdrhistogram.Histogram{},
-								PerOkKo:   map[OkKo]*hdrhistogram.Histogram{},
+								PerStatus: map[int]*hdr.Histogram{},
+								PerOkKo:   map[OkKo]*hdr.Histogram{},
 							},
-							"req3": &HTTPRequestRecord{
+							"req3": {
 								Global: newFakeHistogram(t, 500, 600),
-								PerStatus: map[int]*hdrhistogram.Histogram{
+								PerStatus: map[int]*hdr.Histogram{
 									404: newFakeHistogram(t, 200, 400),
 								},
-								PerOkKo: map[OkKo]*hdrhistogram.Histogram{
+								PerOkKo: map[OkKo]*hdr.Histogram{
 									Ko: newFakeHistogram(t, 200, 400),
 								},
 							},
