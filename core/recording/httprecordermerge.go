@@ -68,12 +68,12 @@ func mergeHTTPRequestRecords(rec1, rec2 *HTTPRequestRecord) *HTTPRequestRecord {
 		if h2, ok := rec2.PerStatus[k]; ok {
 			merged.PerStatus[k] = mergeHistograms(h1, h2)
 		} else {
-			merged.PerStatus[k] = copyHistogram(h1)
+			merged.PerStatus[k] = h1.Copy()
 		}
 	}
 	for k, h2 := range rec2.PerStatus {
 		if _, ok := merged.PerStatus[k]; !ok {
-			merged.PerStatus[k] = copyHistogram(h2)
+			merged.PerStatus[k] = h2.Copy()
 		}
 	}
 
@@ -81,12 +81,12 @@ func mergeHTTPRequestRecords(rec1, rec2 *HTTPRequestRecord) *HTTPRequestRecord {
 		if h2, ok := rec2.PerOkKo[k]; ok {
 			merged.PerOkKo[k] = mergeHistograms(h1, h2)
 		} else {
-			merged.PerOkKo[k] = copyHistogram(h1)
+			merged.PerOkKo[k] = h1.Copy()
 		}
 	}
 	for k, h2 := range rec2.PerOkKo {
 		if _, ok := merged.PerOkKo[k]; !ok {
-			merged.PerOkKo[k] = copyHistogram(h2)
+			merged.PerOkKo[k] = h2.Copy()
 		}
 	}
 

@@ -25,6 +25,8 @@ github.com/ofux/floa v0.0.0-20170708090307-9b9e96298d3e h1:CtSYUYTxy4EWaM0WR4Zfw
 github.com/ofux/floa v0.0.0-20170708090307-9b9e96298d3e/go.mod h1:kGd51rnek+P8CVmL94SettpFDoGh/iSWUgFHRGlvbok=
 github.com/ofux/hdrhistogram v0.0.0-20191003092942-a5789aa31519 h1:0yYJq+p3eDhHmqR+B2RtrE9xRWnxMg4oyWCvvGeSq+I=
 github.com/ofux/hdrhistogram v0.0.0-20191003092942-a5789aa31519/go.mod h1:gFjulgNH2Me9z58tcfLoJ3BoAbJ9kIOcPWg+/SoVexw=
+github.com/ofux/hdrhistogram v0.0.0-20191003164212-d96ee4e9cf46 h1:aCQdTVKXddLX4D5OzUit4EFMfqFeTy3f/ut1v82JB3w=
+github.com/ofux/hdrhistogram v0.0.0-20191003164212-d96ee4e9cf46/go.mod h1:88FksYQPkNbBfVlrZdXfC+GpBiBI44pM71MVc+LSsIU=
 github.com/pelletier/go-toml v1.2.0/go.mod h1:5z9KED0ma1S8pY6P1sdut58dfprrGBbd/94hg7ilaic=
 github.com/pkg/errors v0.8.1 h1:iURUrRGxPUNPdy5/HRSm+Yj6okJ6UtLINN0Q9M4+h3I=
 github.com/pkg/errors v0.8.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=

@@ -59,7 +59,10 @@ func mapDeluge(job *repov2.PersistedJobShell, deluge *repov2.PersistedDeluge, sc
 			scenariosStatus[scenarioID] = status.MergeScenarioStatuses(scenariosStatus[scenarioID], scenario.Status)
 			scenariosErrors[scenarioID] = append(scenariosErrors[scenarioID], scenario.Errors...)
 			scenariosIterationDurations[scenarioID] = scenario.IterationDuration
-			rec := recording.MapPersistedHTTPRecords(scenario.Records)
+			rec, err := recording.MapPersistedHTTPRecords(scenario.Records)
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to map scenario %s of worker %s of job %s", scenarioID, wr.WorkerID, wr.JobID)
+			}
 			scenariosRecords[scenarioID] = recording.MergeHTTPRecordsOverTime(scenariosRecords[scenarioID], rec)
 		}
 	}

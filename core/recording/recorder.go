@@ -27,16 +27,21 @@ type RecordEntry interface{}
 type Recorder struct {
 	recording             RecordingState
 	recordsQueue          chan RecordEntry
-	askForRecordsSnapshot chan chan<- *repov2.PersistedHTTPRecordsOverTime
+	askForRecordsSnapshot chan chan<- RecordSnapshot
 	recordingWaitGroup    *sync.WaitGroup
 	processingWaitGroup   *sync.WaitGroup
+}
+
+type RecordSnapshot struct {
+	HTTPRecordsOverTime *repov2.PersistedHTTPRecordsOverTime
+	Err                 error
 }
 
 func NewRecorder(concurrent int) *Recorder {
 	return &Recorder{
 		recording:             READY,
 		recordsQueue:          make(chan RecordEntry, concurrent),
-		askForRecordsSnapshot: make(chan chan<- *repov2.PersistedHTTPRecordsOverTime),
+		askForRecordsSnapshot: make(chan chan<- RecordSnapshot),
 		recordingWaitGroup:    new(sync.WaitGroup),
 		processingWaitGroup:   new(sync.WaitGroup),
 	}
@@ -68,7 +73,7 @@ func (r *Recorder) Close() {
 	}
 }
 
-func (r *Recorder) processRecords(processRecord func(RecordEntry), processSnapshotRequest func(chan<- *repov2.PersistedHTTPRecordsOverTime)) {
+func (r *Recorder) processRecords(processRecord func(RecordEntry), processSnapshotRequest func(chan<- RecordSnapshot)) {
 	r.recording = RECORDING
 	r.processingWaitGroup.Add(1)
 
@@ -103,11 +108,7 @@ func NanosecondToHistogramTime(nano int64) int64 {
 }
 
 func mergeHistograms(h1, h2 *hdr.Histogram) *hdr.Histogram {
-	h := hdr.Import(h1.Export())
+	h := h1.Copy()
 	h.Merge(h2)
 	return h
-}
-
-func copyHistogram(h *hdr.Histogram) *hdr.Histogram {
-	return hdr.Import(h.Export())
 }

@@ -173,7 +173,8 @@ func TestHTTPRecorder(t *testing.T) {
 			snapshotChan, err := recorder.GetRecordsSnapshot()
 			require.NoError(t, err)
 			snapshot := <-snapshotChan
-			if len(snapshot.OverTime) < j {
+			require.NoError(t, snapshot.Err)
+			if len(snapshot.HTTPRecordsOverTime.OverTime) < j {
 				t.Errorf("There should be more iterations in the latest snapshot")
 			}
 			time.Sleep(sleepDurationPerIterationForSnapshotReaders)

@@ -8,7 +8,7 @@ require (
 	github.com/meatballhat/negroni-logrus v0.0.0-20170801195057-31067281800f
 	github.com/ofux/docilemonkey v0.0.0-20190920152726-5c0f670246ca
 	github.com/ofux/floa v0.0.0-20170708090307-9b9e96298d3e
-	github.com/ofux/hdrhistogram v0.0.0-20191003092942-a5789aa31519
+	github.com/ofux/hdrhistogram v0.0.0-20191003164212-d96ee4e9cf46
 	github.com/pkg/errors v0.8.1
 	github.com/satori/go.uuid v1.2.0
 	github.com/sirupsen/logrus v1.4.2

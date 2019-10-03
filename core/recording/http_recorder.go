@@ -2,7 +2,6 @@ package recording
 
 import (
 	"errors"
-	"github.com/ofux/deluge/repov2"
 	hdr "github.com/ofux/hdrhistogram"
 )
 
@@ -72,17 +71,21 @@ func (r *HTTPRecorder) GetRecords() (*HTTPRecordsOverTime, error) {
 }
 
 // GetRecordsSnapshot returns a channel where a copy of current records will be sent.
-func (r *HTTPRecorder) GetRecordsSnapshot() (<-chan *repov2.PersistedHTTPRecordsOverTime, error) {
+func (r *HTTPRecorder) GetRecordsSnapshot() (<-chan RecordSnapshot, error) {
 	if r.recording != RECORDING {
 		return nil, errors.New("GetRecordsSnapshot should be used while recording. Used GetRecords instead")
 	}
-	newChan := make(chan *repov2.PersistedHTTPRecordsOverTime, 1)
+	newChan := make(chan RecordSnapshot, 1)
 	r.askForRecordsSnapshot <- newChan
 	return newChan, nil
 }
 
-func (r *HTTPRecorder) processRecordsSnapshotRequest(snapshotChan chan<- *repov2.PersistedHTTPRecordsOverTime) {
-	snapshotChan <- MapHTTPRecords(r.records)
+func (r *HTTPRecorder) processRecordsSnapshotRequest(snapshotChan chan<- RecordSnapshot) {
+	snap, err := MapHTTPRecords(r.records)
+	snapshotChan <- RecordSnapshot{
+		HTTPRecordsOverTime: snap,
+		Err:                 err,
+	}
 }
 
 func (r *HTTPRecorder) processHTTPEntry(record RecordEntry) {

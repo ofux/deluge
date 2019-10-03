@@ -42,7 +42,13 @@ func (m *inMemoryManager) start(jobShell *JobShell) error {
 				if scenario.Records == nil {
 					continue
 				}
-				records := recording.MapHTTPRecords(scenario.Records)
+
+				records, err := recording.MapHTTPRecords(scenario.Records)
+				if err != nil {
+					logrus.WithError(err).Errorf("Failed to map records of worker %s for scenario %s", m.globalWorkerID, scenarioID)
+					continue
+				}
+
 				report.Scenarios[scenarioID] = &repov2.PersistedWorkerScenarioReport{
 					Status:            scenario.Status,
 					Errors:            scenario.Errors,
