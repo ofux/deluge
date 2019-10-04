@@ -10,7 +10,7 @@ func TestMapHTTPRecords(t *testing.T) {
 }
 
 func BenchmarkMapHTTPRecords(b *testing.B) {
-	records := buildHTTPRecordsOverTimeForBenchmarks(10000, MaxOverTimeCount)
+	records := buildHTTPRecordsOverTimeForBenchmarks(1000, MaxOverTimeCount)
 
 	for i := 0; i < b.N; i++ {
 		_, err := MapHTTPRecords(records)
