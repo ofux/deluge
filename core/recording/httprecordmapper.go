@@ -12,7 +12,7 @@ func MapHTTPRecords(records *HTTPRecordsOverTime) (*repov2.PersistedHTTPRecordsO
 	}
 	report := &repov2.PersistedHTTPRecordsOverTime{
 		Global:   p,
-		OverTime: make([]*repov2.PersistedHTTPRecord, 0, 16),
+		OverTime: make([]*repov2.PersistedHTTPRecord, 0, len(records.OverTime)),
 	}
 	for _, v := range records.OverTime {
 		p, err := mapHTTPRecord(v)

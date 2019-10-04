@@ -3,6 +3,7 @@ package recording_test
 import (
 	"github.com/ofux/deluge/core/recording"
 	"github.com/ofux/deluge/core/recording/recordingtest"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"sync"
 	"testing"
@@ -174,7 +175,7 @@ func TestHTTPRecorder(t *testing.T) {
 			require.NoError(t, err)
 			snapshot := <-snapshotChan
 			require.NoError(t, snapshot.Err)
-			if len(snapshot.HTTPRecordsOverTime.OverTime) < j {
+			if len(snapshot.HTTPRecordsOverTimeSnapshot.OverTime) < j {
 				t.Errorf("There should be more iterations in the latest snapshot")
 			}
 			time.Sleep(sleepDurationPerIterationForSnapshotReaders)
@@ -246,12 +247,23 @@ func TestHTTPRecorderErrors(t *testing.T) {
 		})
 
 		_, err := recorder.GetRecords()
-		if err == nil {
-			t.Error("Excpected non-nil error")
-		}
-		const expectedError = "Cannot get records while recording. Did you forget to call the 'Close()' method?"
-		if err.Error() != expectedError {
-			t.Errorf("Excpected error message to be '%s', got '%s'", expectedError, err.Error())
-		}
+		assert.Error(t, err)
+		assert.Equal(t, "GetRecords can only be called after recording ended properly and after the 'Close()' method has been called", err.Error())
+	})
+
+	t.Run("Get records snapshot on a finished httpRecorder", func(t *testing.T) {
+		recorder := recording.NewHTTPRecorder(1, 1)
+
+		recorder.Record(&recording.HTTPRecordEntry{
+			Iteration:  0,
+			Name:       "foo",
+			Value:      1000,
+			StatusCode: 200,
+		})
+
+		recorder.Close()
+		_, err := recorder.GetRecordsSnapshot()
+		assert.Error(t, err)
+		assert.Equal(t, "GetRecordsSnapshot can only be called while recording. Use GetRecords instead", err.Error())
 	})
 }

@@ -1,7 +1,6 @@
 package recording
 
 import (
-	"github.com/ofux/deluge/repov2"
 	hdr "github.com/ofux/hdrhistogram"
 	"sync"
 )
@@ -33,8 +32,8 @@ type Recorder struct {
 }
 
 type RecordSnapshot struct {
-	HTTPRecordsOverTime *repov2.PersistedHTTPRecordsOverTime
-	Err                 error
+	HTTPRecordsOverTimeSnapshot *HTTPRecordsOverTimeSnapshot
+	Err                         error
 }
 
 func NewRecorder(concurrent int) *Recorder {
