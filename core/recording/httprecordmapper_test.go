@@ -2,11 +2,33 @@ package recording
 
 import (
 	hdr "github.com/ofux/hdrhistogram"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"math/rand"
 	"testing"
 )
 
 func TestMapHTTPRecords(t *testing.T) {
+	rec := buildHTTPRecordsOverTimeForTests(10, 20)
+	mappedRec, err := MapHTTPRecords(rec)
+	require.NoError(t, err)
+
+	reMappedRec, err := MapPersistedHTTPRecords(mappedRec)
+	require.NoError(t, err)
+
+	assert.Equal(t, rec, reMappedRec)
+}
+
+func buildHTTPRecordsOverTimeForTests(concurrent, iterationCount int) *HTTPRecordsOverTime {
+	records := &HTTPRecordsOverTime{
+		Global:   buildHTTPRecordsForTests(concurrent),
+		OverTime: make([]*HTTPRecord, 0, iterationCount),
+	}
+
+	for iter := 0; iter < iterationCount; iter++ {
+		records.OverTime = append(records.OverTime, buildHTTPRecordsForTests(concurrent))
+	}
+	return records
 }
 
 func BenchmarkMapHTTPRecords(b *testing.B) {

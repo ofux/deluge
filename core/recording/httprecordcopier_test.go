@@ -7,7 +7,7 @@ import (
 )
 
 func Test_copyHTTPRecord(t *testing.T) {
-	record := buildHTTPRecordsOverTimeForTests(100)
+	record := buildHTTPRecordsForTests(100)
 	recordCopy := copyHTTPRecord(record)
 	if !reflect.DeepEqual(recordCopy, record) {
 		t.Errorf("copyHTTPRecord() = %v, want %v", recordCopy, record)
@@ -15,14 +15,14 @@ func Test_copyHTTPRecord(t *testing.T) {
 }
 
 func Benchmark_copyHTTPRecord(b *testing.B) {
-	record := buildHTTPRecordsOverTimeForTests(100)
+	record := buildHTTPRecordsForTests(100)
 
 	for i := 0; i < b.N; i++ {
 		copyHTTPRecord(record)
 	}
 }
 
-func buildHTTPRecordsOverTimeForTests(concurrent int) *HTTPRecord {
+func buildHTTPRecordsForTests(concurrent int) *HTTPRecord {
 	records := &HTTPRecord{
 		HTTPRequestRecord: HTTPRequestRecord{
 			Global:    createHistogram(),
