@@ -69,6 +69,15 @@ func (sc *RunnableScenario) GetScenarioDefinition() ScenarioDefinition {
 	return *sc.compiledScenario.scenario
 }
 
+func (sc *RunnableScenario) GetRecordsSnapshot() (*recording.RecordSnapshot, error) {
+	snap, err := sc.httpRecorder.GetRecordsSnapshot()
+	if err != nil {
+		return nil, err
+	}
+	rec := <-snap
+	return &rec, nil
+}
+
 func (sc *RunnableScenario) run(interrupt chan struct{}) {
 	var waitg sync.WaitGroup
 

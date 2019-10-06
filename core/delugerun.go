@@ -1,6 +1,7 @@
 package core
 
 import (
+	"github.com/ofux/deluge/core/recording"
 	"github.com/ofux/deluge/core/status"
 	"github.com/ofux/deluge/repov2"
 	"github.com/pkg/errors"
@@ -30,6 +31,18 @@ func (d *RunnableDeluge) GetGlobalDuration() time.Duration {
 
 func (d *RunnableDeluge) OnStatusChangeChan() <-chan status.DelugeStatus {
 	return d.statusChange
+}
+
+func (d *RunnableDeluge) GetRecordsSnapshot() (map[string]*recording.RecordSnapshot, error) {
+	res := make(map[string]*recording.RecordSnapshot)
+	for scenarioID, scenario := range d.Scenarios {
+		snap, err := scenario.GetRecordsSnapshot()
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get snapshot of records of scenario %s", scenarioID)
+		}
+		res[scenarioID] = snap
+	}
+	return res, nil
 }
 
 func NewRunnableDeluge(delugeID string) (*RunnableDeluge, error) {
