@@ -33,6 +33,12 @@ func (d *RunnableDeluge) OnStatusChangeChan() <-chan status.DelugeStatus {
 	return d.statusChange
 }
 
+func (d *RunnableDeluge) GetStatus() status.DelugeStatus {
+	d.runStatusMutex.Lock()
+	defer d.runStatusMutex.Unlock()
+	return d.runStatus
+}
+
 func (d *RunnableDeluge) GetRecordsSnapshot() (map[string]*recording.RecordSnapshot, error) {
 	res := make(map[string]*recording.RecordSnapshot)
 	for scenarioID, scenario := range d.Scenarios {
