@@ -1,23 +1,33 @@
 package worker
 
 import (
+	"github.com/pkg/errors"
 	uuid "github.com/satori/go.uuid"
 )
 
 type inMemoryManager struct {
-	globalWorker *worker
+	workers []*worker
 }
 
 func (m *inMemoryManager) CreateAll(jobShell *JobShell) error {
-	m.globalWorker = NewWorker(uuid.NewV4().String(), jobShell)
+	for i := range m.workers {
+		m.workers[i] = newWorker(uuid.NewV4().String(), jobShell)
+	}
 	return nil
 }
 
 func (m *inMemoryManager) StartAll(jobShell *JobShell) error {
-	return m.globalWorker.start()
+	for _, w := range m.workers {
+		if err := w.start(); err != nil {
+			return errors.Wrapf(err, "failed to start worker %s", w.ID)
+		}
+	}
+	return nil
 }
 
 func (m *inMemoryManager) InterruptAll(jobShellID string) error {
-	m.globalWorker.interrupt()
+	for _, w := range m.workers {
+		w.interrupt()
+	}
 	return nil
 }
