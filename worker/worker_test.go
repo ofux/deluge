@@ -6,7 +6,6 @@ import (
 	"github.com/ofux/deluge/core/status"
 	"github.com/ofux/deluge/repov2"
 	"github.com/ofux/docilemonkey/docilemonkey"
-	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"sync/atomic"
@@ -61,7 +60,6 @@ func Test_worker_start(t *testing.T) {
 
 		rep.SaveWorkerReportImpl = func(workerReport *repov2.PersistedWorkerReport) error {
 			rep.IncSaveWorkerReportCall()
-			logrus.Warnf("call %d, status %s", rep.GetSaveWorkerReportCall(), workerReport.Status)
 			assert.Equal(t, "job-id", workerReport.JobID)
 			assert.Equal(t, "worker-id", workerReport.WorkerID)
 			switch rep.GetSaveWorkerReportCall() {

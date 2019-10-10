@@ -12,7 +12,7 @@ import (
 	"testing"
 )
 
-func NewSimUserTest(t *testing.T, js string) *simUser {
+func NewSimUserTest(t testing.TB, js string) *simUser {
 	l := lexer.New(js)
 	p := parser.New(l)
 
@@ -80,4 +80,14 @@ func checkRecords(t *testing.T, rec *recording.HTTPRecorder, recName string, rec
 	}
 	record := records.OverTime[0]
 	recordingtest.CheckHTTPRecord(t, record, recName, recCount, 200, recording.Ok)
+}
+
+func Benchmark_simUser_run(b *testing.B) {
+	su := NewSimUserTest(b, `
+		assert(1+1 == 2)
+		`)
+
+	for i := 0; i < b.N; i++ {
+		su.run(0)
+	}
 }
