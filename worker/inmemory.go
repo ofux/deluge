@@ -1,6 +1,7 @@
 package worker
 
 import (
+	"github.com/ofux/deluge/repov2"
 	"github.com/pkg/errors"
 	uuid "github.com/satori/go.uuid"
 )
@@ -11,7 +12,7 @@ type inMemoryManager struct {
 
 func (m *inMemoryManager) CreateAll(jobShell *JobShell) error {
 	for i := range m.workers {
-		m.workers[i] = newWorker(uuid.NewV4().String(), jobShell)
+		m.workers[i] = newWorker(uuid.NewV4().String(), jobShell, repov2.Instance)
 	}
 	return nil
 }

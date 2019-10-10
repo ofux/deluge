@@ -8,15 +8,13 @@ import (
 	"github.com/ofux/docilemonkey/docilemonkey"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"net/http"
-	"net/http/httptest"
 	"testing"
 	"time"
 )
 
 func TestDeluge_NewRunnableDeluge(t *testing.T) {
 	t.Run("Create runnable deluge", func(t *testing.T) {
-		clearScenarioRepo()
+		clearRepo()
 
 		compileScenario(t, `
 		scenario("myScenario1", "My scenario with args", function (args) {
@@ -47,7 +45,7 @@ func TestDeluge_NewRunnableDeluge(t *testing.T) {
 	})
 
 	t.Run("Create runnable deluge with unknown scenario", func(t *testing.T) {
-		clearScenarioRepo()
+		clearRepo()
 
 		compileScenario(t, `
 		scenario("myScenario1", "My scenario with args", function (args) {
@@ -71,7 +69,7 @@ func TestDeluge_NewRunnableDeluge(t *testing.T) {
 	})
 
 	t.Run("Create runnable deluge with bad scenario", func(t *testing.T) {
-		clearScenarioRepo()
+		clearRepo()
 
 		err := repov2.Instance.SaveScenario(&repov2.PersistedScenario{
 			ID:     "myScenario1",
@@ -94,7 +92,7 @@ func TestDeluge_NewRunnableDeluge(t *testing.T) {
 	})
 
 	t.Run("Create runnable deluge with bad ID", func(t *testing.T) {
-		clearScenarioRepo()
+		clearRepo()
 
 		_, err := NewRunnableDeluge("foo")
 		assert.Error(t, err)
@@ -102,7 +100,7 @@ func TestDeluge_NewRunnableDeluge(t *testing.T) {
 	})
 
 	t.Run("Create runnable deluge with bad deluge script", func(t *testing.T) {
-		clearScenarioRepo()
+		clearRepo()
 
 		compileScenario(t, `
 		scenario("myScenario1", "My scenario with args", function (args) {
@@ -125,9 +123,9 @@ func TestDeluge_NewRunnableDeluge(t *testing.T) {
 func TestDeluge_Run(t *testing.T) {
 
 	t.Run("Run deluge with HTTP requests", func(t *testing.T) {
-		srv := httptest.NewServer(http.HandlerFunc(docilemonkey.Handler))
+		srv := docilemonkey.NewTestServer()
 		defer srv.Close()
-		clearScenarioRepo()
+		clearRepo()
 
 		const reqName = "My request"
 		compileScenario(t, `
@@ -166,9 +164,9 @@ func TestDeluge_Run(t *testing.T) {
 	})
 
 	t.Run("Run and interrupt a deluge", func(t *testing.T) {
-		srv := httptest.NewServer(http.HandlerFunc(docilemonkey.Handler))
+		srv := docilemonkey.NewTestServer()
 		defer srv.Close()
-		clearScenarioRepo()
+		clearRepo()
 
 		const reqName = "My request"
 		compileScenario(t, `
@@ -216,7 +214,7 @@ func TestDeluge_Run(t *testing.T) {
 	})
 
 	t.Run("Run deluge with args", func(t *testing.T) {
-		clearScenarioRepo()
+		clearRepo()
 
 		compileScenario(t, `
 		scenario("myScenario", "My scenario with args", function (args) {
@@ -250,7 +248,7 @@ func TestDeluge_Run(t *testing.T) {
 	})
 
 	t.Run("Run deluge with args and session", func(t *testing.T) {
-		clearScenarioRepo()
+		clearRepo()
 
 		compileScenario(t, `
 		scenario("myScenario", "My scenario", function (args, session) {
@@ -294,7 +292,7 @@ func TestDeluge_Run(t *testing.T) {
 func TestDeluge_Run_With_Errors(t *testing.T) {
 
 	t.Run("Missing scenario", func(t *testing.T) {
-		clearScenarioRepo()
+		clearRepo()
 
 		compileDeluge(t, `
 		deluge("foo", "Some name", "100ms", {
@@ -310,7 +308,7 @@ func TestDeluge_Run_With_Errors(t *testing.T) {
 	})
 
 	t.Run("Run same deluge twice", func(t *testing.T) {
-		clearScenarioRepo()
+		clearRepo()
 		compileScenario(t, `
 		scenario("myScenario", "My scenario", function () {
 		});`)
@@ -339,7 +337,7 @@ func TestDeluge_Run_With_Errors(t *testing.T) {
 	})
 
 	t.Run("Assert fails", func(t *testing.T) {
-		clearScenarioRepo()
+		clearRepo()
 		compileScenario(t, `
 		scenario("myScenario", "My scenario", function () {
 			assert(false);
@@ -366,7 +364,7 @@ func TestDeluge_Run_With_Errors(t *testing.T) {
 	})
 
 	t.Run("Error trying to modify args hash", func(t *testing.T) {
-		clearScenarioRepo()
+		clearRepo()
 		compileScenario(t, `
 		scenario("sc1", "My scenario 1", function (args) {
 			args["hello"] = "world";
@@ -419,7 +417,7 @@ func TestDeluge_Run_With_Errors(t *testing.T) {
 }
 
 func BenchmarkNewDeluge(b *testing.B) {
-	clearScenarioRepo()
+	clearRepo()
 
 	compileScenario(b, `
 scenario("myScenario", "My scenario", function () {

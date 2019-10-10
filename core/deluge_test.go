@@ -126,7 +126,7 @@ func TestCompileDeluge(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		clearScenarioRepo()
+		clearRepo()
 		compileScenario(t, `
 scenario("myScenario", "My scenario", function () {
 

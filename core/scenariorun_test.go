@@ -10,8 +10,6 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"io/ioutil"
-	"net/http"
-	"net/http/httptest"
 	"testing"
 	"time"
 )
@@ -25,9 +23,9 @@ func TestScenario_Run(t *testing.T) {
 
 	t.Run("Run simple scenario with HTTP request", func(t *testing.T) {
 
-		srv := httptest.NewServer(http.HandlerFunc(docilemonkey.Handler))
+		srv := docilemonkey.NewTestServer()
 		defer srv.Close()
-		clearScenarioRepo()
+		clearRepo()
 
 		const reqName = "My request"
 		compiledScenario := compileScenario(t, `
@@ -65,9 +63,9 @@ scenario("sc1", "Some scenario", function () {
 
 	t.Run("Run scenario with session", func(t *testing.T) {
 
-		srv := httptest.NewServer(http.HandlerFunc(docilemonkey.Handler))
+		srv := docilemonkey.NewTestServer()
 		defer srv.Close()
-		clearScenarioRepo()
+		clearRepo()
 
 		compiledScenario := compileScenario(t, `
 scenario("sc1", "Some scenario", function (args, session) {
@@ -91,9 +89,9 @@ scenario("sc1", "Some scenario", function (args, session) {
 
 	t.Run("Run scenario without error, with too short iterations", func(t *testing.T) {
 
-		srv := httptest.NewServer(http.HandlerFunc(docilemonkey.Handler))
+		srv := docilemonkey.NewTestServer()
 		defer srv.Close()
-		clearScenarioRepo()
+		clearRepo()
 
 		compiledScenario := compileScenario(t, `
 scenario("sc1", "Some scenario", function () {
@@ -112,9 +110,9 @@ scenario("sc1", "Some scenario", function () {
 
 	t.Run("Run scenario with args", func(t *testing.T) {
 
-		srv := httptest.NewServer(http.HandlerFunc(docilemonkey.Handler))
+		srv := docilemonkey.NewTestServer()
 		defer srv.Close()
-		clearScenarioRepo()
+		clearRepo()
 
 		const reqName = "My request"
 		compiledScenario := compileScenario(t, `
@@ -159,7 +157,7 @@ scenario("sc1", "Some scenario", function (args) {
 	})
 
 	t.Run("Run scenario with args and try to modify it", func(t *testing.T) {
-		clearScenarioRepo()
+		clearRepo()
 		compiledScenario := compileScenario(t, `
 scenario("sc1", "Some scenario", function (args) {
 		args["method"] = "foobar"
@@ -182,9 +180,9 @@ scenario("sc1", "Some scenario", function (args) {
 
 	t.Run("Run scenario with error", func(t *testing.T) {
 
-		srv := httptest.NewServer(http.HandlerFunc(docilemonkey.Handler))
+		srv := docilemonkey.NewTestServer()
 		defer srv.Close()
-		clearScenarioRepo()
+		clearRepo()
 
 		compiledScenario := compileScenario(t, `
 scenario("sc1", "Some scenario", function () {
@@ -221,6 +219,6 @@ func compileScenario(t testing.TB, script string) *CompiledScenario {
 	return compiled
 }
 
-func clearScenarioRepo() {
+func clearRepo() {
 	repov2.Instance = repov2.NewInMemoryRepository()
 }

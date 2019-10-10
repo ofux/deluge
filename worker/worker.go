@@ -3,6 +3,7 @@ package worker
 import (
 	"github.com/ofux/deluge/core"
 	"github.com/ofux/deluge/core/recording"
+	"github.com/ofux/deluge/core/status"
 	"github.com/ofux/deluge/repov2"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -32,12 +33,26 @@ type worker struct {
 	ID            string
 	jobShell      *JobShell
 	runningDeluge *core.RunnableDeluge
+	repository    repov2.Repository
+
+	regularReportFrequency time.Duration
+	finalReportRetryCount  int
+	finalReportRetryDelay  time.Duration
+
+	logger *logrus.Entry
 }
 
-func newWorker(ID string, jobShell *JobShell) *worker {
+func newWorker(ID string, jobShell *JobShell, repository repov2.Repository) *worker {
 	return &worker{
-		ID:       ID,
-		jobShell: jobShell,
+		ID:         ID,
+		jobShell:   jobShell,
+		repository: repository,
+
+		regularReportFrequency: 20 * time.Second,
+		finalReportRetryCount:  3,
+		finalReportRetryDelay:  10 * time.Second,
+
+		logger: logrus.WithField("workerId", ID).WithField("jobId", jobShell.ID).WithField("delugeId", jobShell.DelugeID),
 	}
 }
 
@@ -67,40 +82,70 @@ func (w *worker) start() error {
 
 func (w *worker) listenToStatusChanges() {
 	for newStatus := range w.runningDeluge.OnStatusChangeChan() {
+		w.logger.Debugf("Received status %s", newStatus)
+
 		report := &repov2.PersistedWorkerReport{
 			WorkerID:  w.ID,
 			JobID:     w.jobShell.ID,
 			Status:    newStatus,
 			Scenarios: make(map[string]*repov2.PersistedWorkerScenarioReport),
 		}
-		for scenarioID, scenario := range w.runningDeluge.Scenarios {
-			if scenario.Records == nil {
-				continue
-			}
+		if newStatus == status.DelugeDoneSuccess || newStatus == status.DelugeDoneError || newStatus == status.DelugeInterrupted {
+			for scenarioID, scenario := range w.runningDeluge.Scenarios {
+				if scenario.Records == nil {
+					continue
+				}
 
-			records, err := recording.MapHTTPRecords(scenario.Records)
-			if err != nil {
-				logrus.WithError(err).Errorf("Failed to map records of worker %s for scenario %s", w.ID, scenarioID)
-				continue
-			}
+				logger := w.logger.WithField("scenarioId", scenarioID)
+				logger.Debug("Adding records of scenario")
 
-			report.Scenarios[scenarioID] = &repov2.PersistedWorkerScenarioReport{
-				Status:            scenario.Status,
-				Errors:            scenario.Errors,
-				IterationDuration: scenario.IterationDuration,
-				Records:           records,
+				records, err := recording.MapHTTPRecords(scenario.Records)
+				if err != nil {
+					logger.WithError(err).Error("Failed to map records of worker for scenario")
+					continue
+				}
+
+				report.Scenarios[scenarioID] = &repov2.PersistedWorkerScenarioReport{
+					Status:            scenario.Status,
+					Errors:            scenario.Errors,
+					IterationDuration: scenario.IterationDuration,
+					Records:           records,
+				}
+				logger.Debug("Added records of scenario")
 			}
-		}
-		err := repov2.Instance.SaveWorkerReport(report)
-		if err != nil {
-			logrus.WithError(err).Errorf("Failed to save records of worker %s", w.ID)
+			w.saveWorkerReportWithRetry(report)
+		} else {
+			w.saveWorkerReport(report)
 		}
 		//TODO: tell orchestrator that this worker is done
 	}
 }
 
+func (w *worker) saveWorkerReport(report *repov2.PersistedWorkerReport) {
+	err := w.repository.SaveWorkerReport(report)
+	if err != nil {
+		w.logger.WithError(err).Error("Failed to save records of worker")
+	}
+	w.logger.Debug("Successfully saved records of worker")
+}
+
+func (w *worker) saveWorkerReportWithRetry(report *repov2.PersistedWorkerReport) {
+	err := w.repository.SaveWorkerReport(report)
+
+	const retryDelayMultiply = 3
+
+	delay := w.finalReportRetryDelay
+	for retry := 1; err != nil && retry <= w.finalReportRetryCount; retry++ {
+		w.logger.WithError(err).Errorf("Failed to save records of worker. Retrying in %s", delay)
+		time.Sleep(delay)
+		err = w.repository.SaveWorkerReport(report)
+		delay *= retryDelayMultiply
+	}
+	w.logger.Debug("Successfully saved records of worker")
+}
+
 func (w *worker) reportRecordsRegularly() {
-	ticker := time.NewTicker(20 * time.Second)
+	ticker := time.NewTicker(w.regularReportFrequency)
 
 	allRecords := make(map[string]*recording.HTTPRecordsOverTime)
 
@@ -138,9 +183,11 @@ func (w *worker) reportRecordsRegularly() {
 				continue
 			}
 
+			logger := w.logger.WithField("scenarioId", scenarioID)
+
 			records, err := recording.MapHTTPRecords(records)
 			if err != nil {
-				logrus.WithError(err).Errorf("Failed to map records of worker %s for scenario %s", w.ID, scenarioID)
+				logger.WithError(err).Error("Failed to map records of worker for scenario")
 				continue
 			}
 
@@ -148,9 +195,6 @@ func (w *worker) reportRecordsRegularly() {
 				Records: records,
 			}
 		}
-		err = repov2.Instance.SaveWorkerReport(report)
-		if err != nil {
-			logrus.WithError(err).Errorf("Failed to save records of worker %s", w.ID)
-		}
+		w.saveWorkerReport(report)
 	}
 }
