@@ -1,123 +1,89 @@
 package api
 
 import (
-	"errors"
-	"fmt"
-	"github.com/ofux/deluge/core"
+	"github.com/ofux/deluge/core/recording"
 	"github.com/ofux/deluge/core/reporting"
+	"github.com/ofux/deluge/core/status"
 	"github.com/ofux/deluge/dsl/object"
+	"github.com/ofux/deluge/repov2"
+	"github.com/pkg/errors"
 	"time"
 )
 
-type DelugeStatus string
-
-const (
-	DelugeVirgin      DelugeStatus = "Virgin"
-	DelugeInProgress  DelugeStatus = "InProgress"
-	DelugeDoneSuccess DelugeStatus = "DoneSuccess"
-	DelugeDoneError   DelugeStatus = "DoneError"
-	DelugeInterrupted DelugeStatus = "Interrupted"
-)
-
-type ScenarioStatus string
-
-const (
-	ScenarioVirgin      ScenarioStatus = "Virgin"
-	ScenarioInProgress  ScenarioStatus = "InProgress"
-	ScenarioDoneSuccess ScenarioStatus = "DoneSuccess"
-	ScenarioDoneError   ScenarioStatus = "DoneError"
-	ScenarioInterrupted ScenarioStatus = "Interrupted"
-)
-
-type Deluge struct {
-	ID             string
-	Name           string
-	Status         DelugeStatus
-	GlobalDuration time.Duration
-	Scenarios      map[string]*Scenario
+type JobCreation struct {
+	DelugeID string `json:"delugeId"`
+	Webhook  string `json:"webhook"`
 }
 
-type DelugeLite struct {
-	ID     string
-	Name   string
-	Status DelugeStatus
+type Job struct {
+	ID             string                  `json:"id"`
+	DelugeID       string                  `json:"delugeId"`
+	DelugeName     string                  `json:"delugeName"`
+	Status         status.DelugeStatus     `json:"status"`
+	GlobalDuration time.Duration           `json:"globalDuration"`
+	Scenarios      map[string]*JobScenario `json:"scenarios"`
 }
 
-type Scenario struct {
-	Name              string
-	IterationDuration time.Duration
-	Status            ScenarioStatus
-	Errors            []*object.Error
-	Report            reporting.Report
+type JobLite struct {
+	ID string `json:"id"`
 }
 
-func mapDeluge(d *core.Deluge) *Deluge {
-	d.Mutex.Lock()
-	dDTO := &Deluge{
-		ID:             d.ID,
-		Name:           d.Name,
-		GlobalDuration: d.GlobalDuration,
-		Status:         mapDelugeStatus(d.Status),
-		Scenarios:      make(map[string]*Scenario),
+type JobScenario struct {
+	Name              string                `json:"name"`
+	IterationDuration time.Duration         `json:"iterationDuration"`
+	Status            status.ScenarioStatus `json:"status"`
+	Errors            []*object.Error       `json:"errors"`
+	Report            reporting.Report      `json:"report"`
+}
+
+func mapDeluge(job *repov2.PersistedJobShell, deluge *repov2.PersistedDeluge, scenarioDefs map[string]*repov2.PersistedScenario, workerReports []*repov2.PersistedWorkerReport) (*Job, error) {
+
+	dDTO := &Job{
+		ID:             job.ID,
+		DelugeID:       deluge.ID,
+		DelugeName:     deluge.Name,
+		GlobalDuration: deluge.GlobalDuration,
 	}
-	d.Mutex.Unlock()
-	for scID, sc := range d.Scenarios {
-		sc.Mutex.Lock()
-		dDTO.Scenarios[scID] = mapScenario(sc)
-		sc.Mutex.Unlock()
-	}
-	return dDTO
-}
 
-func mapDelugeLite(d *core.Deluge) *DelugeLite {
-	d.Mutex.Lock()
-	dDTO := &DelugeLite{
-		ID:     d.ID,
-		Name:   d.Name,
-		Status: mapDelugeStatus(d.Status),
-	}
-	d.Mutex.Unlock()
-	return dDTO
-}
+	delugeStatus := status.DelugeVirgin
+	scenariosStatus := make(map[string]status.ScenarioStatus)
+	scenariosErrors := make(map[string][]*object.Error)
+	scenariosIterationDurations := make(map[string]time.Duration)
+	scenariosRecords := make(map[string]*recording.HTTPRecordsOverTime)
+	httpReporter := &reporting.HTTPReporter{}
 
-func mapScenario(sc *core.Scenario) *Scenario {
-	return &Scenario{
-		Name:              sc.Name,
-		IterationDuration: sc.IterationDuration,
-		Errors:            sc.Errors,
-		Report:            sc.Report,
-		Status:            mapScenarioStatus(sc.Status),
+	// Merge records
+	for _, wr := range workerReports {
+		delugeStatus = status.MergeDelugeStatuses(delugeStatus, wr.Status)
+		for scenarioID, scenario := range wr.Scenarios {
+			scenariosStatus[scenarioID] = status.MergeScenarioStatuses(scenariosStatus[scenarioID], scenario.Status)
+			scenariosErrors[scenarioID] = append(scenariosErrors[scenarioID], scenario.Errors...)
+			scenariosIterationDurations[scenarioID] = scenario.IterationDuration
+			rec, err := recording.MapPersistedHTTPRecords(scenario.Records)
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to map scenario %s of worker %s of job %s", scenarioID, wr.WorkerID, wr.JobID)
+			}
+			scenariosRecords[scenarioID] = recording.MergeHTTPRecordsOverTime(scenariosRecords[scenarioID], rec)
+		}
 	}
-}
 
-func mapScenarioStatus(st core.ScenarioStatus) ScenarioStatus {
-	switch st {
-	case core.ScenarioVirgin:
-		return ScenarioVirgin
-	case core.ScenarioInProgress:
-		return ScenarioInProgress
-	case core.ScenarioDoneSuccess:
-		return ScenarioDoneSuccess
-	case core.ScenarioDoneError:
-		return ScenarioDoneError
-	case core.ScenarioInterrupted:
-		return ScenarioInterrupted
-	}
-	panic(errors.New(fmt.Sprintf("Invalid scenario status %d", st)))
-}
+	jobScenarios := make(map[string]*JobScenario)
+	for scenarioID, scenarioStatus := range scenariosStatus {
+		scenarioDef, ok := scenarioDefs[scenarioID]
+		if !ok {
+			return nil, errors.Errorf("missing scenario definition with ID '%s'", scenarioID)
+		}
+		jobScenarios[scenarioID] = &JobScenario{
+			Name:              scenarioDef.Name,
+			IterationDuration: scenariosIterationDurations[scenarioID],
+			Status:            scenarioStatus,
+			Errors:            scenariosErrors[scenarioID],
+			Report:            httpReporter.Report(scenariosRecords[scenarioID]),
+		}
 
-func mapDelugeStatus(st core.DelugeStatus) DelugeStatus {
-	switch st {
-	case core.DelugeVirgin:
-		return DelugeVirgin
-	case core.DelugeInProgress:
-		return DelugeInProgress
-	case core.DelugeDoneSuccess:
-		return DelugeDoneSuccess
-	case core.DelugeDoneError:
-		return DelugeDoneError
-	case core.DelugeInterrupted:
-		return DelugeInterrupted
 	}
-	panic(errors.New(fmt.Sprintf("Invalid deluge status %d", st)))
+
+	dDTO.Status = delugeStatus
+	dDTO.Scenarios = jobScenarios
+	return dDTO, nil
 }

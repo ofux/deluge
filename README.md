@@ -169,4 +169,4 @@ scenario("sc1", "Some scenario", function () {
 - [x] [cobra](https://github.com/spf13/cobra) for the CLI
 - [ ] [grpc-go](https://github.com/grpc/grpc-go) for gRPC
 - [ ] [surgemq](https://github.com/influxdata/surgemq) for MQTT
-- [x] [hdrhistogram](https://github.com/codahale/hdrhistogram) for HDR Histogram
+- [x] [hdrhistogram](https://github.com/ofux/hdrhistogram) for HDR Histogram

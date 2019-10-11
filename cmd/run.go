@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/ofux/deluge/api"
+	"github.com/ofux/deluge/core/status"
 	"github.com/spf13/cobra"
 	"io/ioutil"
 	"net"
@@ -62,8 +63,8 @@ Otherwise, a local worker will be silently started on a random port to run the s
 		dlg := postDeluge(fileContent)
 
 		// polling
-		for dlg.Status == api.DelugeVirgin || dlg.Status == api.DelugeInProgress {
-			dlg = getDeluge(dlg.ID)
+		for dlg.Status == status.DelugeVirgin || dlg.Status == status.DelugeInProgress {
+			dlg = getDeluge(dlg.DelugeID)
 			time.Sleep(500 * time.Millisecond)
 		}
 
@@ -89,7 +90,7 @@ func die(err error, code int) {
 	os.Exit(code)
 }
 
-func postDeluge(fileContent []byte) *api.Deluge {
+func postDeluge(fileContent []byte) *api.Job {
 	resp, err := http.Post(runRemoteAddr+"/v1/jobs", "text/plain", bytes.NewReader(fileContent))
 	if err != nil {
 		die(err, 2)
@@ -107,14 +108,14 @@ func postDeluge(fileContent []byte) *api.Deluge {
 		die(fmt.Errorf("Something went wrong. Received code %d from worker with error: %s", resp.StatusCode, dtoErr.Error), 3)
 	}
 
-	dlg := &api.Deluge{}
+	dlg := &api.Job{}
 	if err = json.Unmarshal(body, dlg); err != nil {
 		die(err, 1)
 	}
 	return dlg
 }
 
-func getDeluge(id string) *api.Deluge {
+func getDeluge(id string) *api.Job {
 	resp, err := http.Get(runRemoteAddr + "/v1/jobs/" + id)
 	if err != nil {
 		die(err, 2)
@@ -132,7 +133,7 @@ func getDeluge(id string) *api.Deluge {
 		die(fmt.Errorf("Something went wrong. Received code %d from worker with error: %s", resp.StatusCode, dtoErr.Error), 3)
 	}
 
-	dlg := &api.Deluge{}
+	dlg := &api.Job{}
 	if err = json.Unmarshal(body, dlg); err != nil {
 		die(err, 1)
 	}

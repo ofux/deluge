@@ -12,7 +12,7 @@ import (
 	"testing"
 )
 
-func NewSimUserTest(t *testing.T, js string) *simUser {
+func NewSimUserTest(t testing.TB, js string) *simUser {
 	l := lexer.New(js)
 	p := parser.New(l)
 
@@ -26,10 +26,15 @@ func NewSimUserTest(t *testing.T, js string) *simUser {
 	// discard DSL logs for testing
 	logger.Out = ioutil.Discard
 
-	sc := &Scenario{
-		Name:         "Test scenario",
-		script:       script,
-		httpRecorder: recording.NewHTTPRecorder(),
+	sc := &RunnableScenario{
+		compiledScenario: &CompiledScenario{
+			scenario: &ScenarioDefinition{
+				ID:   "test-scenario",
+				Name: "Test scenario",
+			},
+			script: script,
+		},
+		httpRecorder: recording.NewHTTPRecorder(1, 1),
 		log: logger.WithFields(log.Fields{
 			"scenario": "Test scenario",
 		}),
@@ -73,6 +78,16 @@ func checkRecords(t *testing.T, rec *recording.HTTPRecorder, recName string, rec
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-	record := records.PerIteration[0]
+	record := records.OverTime[0]
 	recordingtest.CheckHTTPRecord(t, record, recName, recCount, 200, recording.Ok)
+}
+
+func Benchmark_simUser_run(b *testing.B) {
+	su := NewSimUserTest(b, `
+		assert(1+1 == 2)
+		`)
+
+	for i := 0; i < b.N; i++ {
+		su.run(0)
+	}
 }

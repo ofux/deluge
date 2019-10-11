@@ -60,6 +60,20 @@ type ParseError struct {
 	Column  int
 }
 
+func (err ParseError) Error() string {
+	return fmt.Sprintf("%s (line %d, col %d)", err.Message, err.Line, err.Column)
+}
+
+type ParseErrors []ParseError
+
+func (p ParseErrors) Error() string {
+	msg := "Syntax error:\n"
+	for _, err := range p {
+		msg += fmt.Sprintf("\t%s\n", err.Error())
+	}
+	return msg
+}
+
 type Parser struct {
 	l      *lexer.Lexer
 	errors []ParseError
@@ -157,7 +171,7 @@ func (p *Parser) expectPeek(t token.TokenType) bool {
 	}
 }
 
-func (p *Parser) Errors() []ParseError {
+func (p *Parser) Errors() ParseErrors {
 	return p.errors
 }
 

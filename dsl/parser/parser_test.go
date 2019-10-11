@@ -26,6 +26,13 @@ func TestParsingErrors(t *testing.T) {
 			},
 		},
 		{
+			`let x#x=2;`,
+			[]ParseError{
+				{Message: "expected next token to be =, got ILLEGAL instead", Line: 1, Column: 6},
+				{Message: "no prefix parse function for ILLEGAL found", Line: 1, Column: 7},
+			},
+		},
+		{
 			`let x==2;`,
 			[]ParseError{
 				{Message: "expected next token to be =, got == instead", Line: 1, Column: 7},

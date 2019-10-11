@@ -1,18 +1,20 @@
 package recordingtest
 
 import (
-	hdr "github.com/codahale/hdrhistogram"
 	"github.com/ofux/deluge/core/recording"
+	hdr "github.com/ofux/hdrhistogram"
 	"testing"
 )
 
 func testHistogram(t *testing.T, histogram *hdr.Histogram, minTotalCount int64) {
+	t.Helper()
 	if histogram.TotalCount() < minTotalCount {
 		t.Errorf("Expected to have TotalCount >= %d, got %d", minTotalCount, histogram.TotalCount())
 	}
 }
 
 func testHistogramPerStatus(t *testing.T, rec *recording.HTTPRequestRecord, status int, minTotalCount int64) {
+	t.Helper()
 	resultPerStatus, ok := rec.PerStatus[status]
 	if !ok {
 		t.Fatalf("Expected to have some records for status %d", status)
@@ -21,6 +23,7 @@ func testHistogramPerStatus(t *testing.T, rec *recording.HTTPRequestRecord, stat
 }
 
 func testHistogramPerOkKo(t *testing.T, rec *recording.HTTPRequestRecord, okKo recording.OkKo, minTotalCount int64) {
+	t.Helper()
 	resultPerOkKo, ok := rec.PerOkKo[okKo]
 	if !ok {
 		t.Fatalf("Expected to have some records for OK/KO %s", okKo)
@@ -29,6 +32,7 @@ func testHistogramPerOkKo(t *testing.T, rec *recording.HTTPRequestRecord, okKo r
 }
 
 func testHistogramPerRequest(t *testing.T, rec *recording.HTTPRecord, reqName string, minTotalCount int64, status int, okKo recording.OkKo) {
+	t.Helper()
 	resultPerRequest, ok := rec.PerRequests[reqName]
 	if !ok {
 		t.Fatalf("Expected to have some records for request '%s'", reqName)
@@ -39,6 +43,7 @@ func testHistogramPerRequest(t *testing.T, rec *recording.HTTPRecord, reqName st
 }
 
 func CheckHTTPRecord(t *testing.T, rec *recording.HTTPRecord, reqName string, minTotalCount int64, status int, okKo recording.OkKo) {
+	t.Helper()
 	testHistogram(t, rec.Global, minTotalCount)
 	testHistogramPerOkKo(t, &rec.HTTPRequestRecord, okKo, minTotalCount)
 	testHistogramPerStatus(t, &rec.HTTPRequestRecord, status, minTotalCount)
