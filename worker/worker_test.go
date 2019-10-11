@@ -13,7 +13,7 @@ import (
 	"time"
 )
 
-func Test_worker_start(t *testing.T) {
+func TestIntegration_worker_start(t *testing.T) {
 	t.Run("Run worker without error", func(t *testing.T) {
 		rep := &repoMock{
 			InMemoryRepository: *repov2.NewInMemoryRepository(),

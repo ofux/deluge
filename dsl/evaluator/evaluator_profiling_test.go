@@ -84,10 +84,6 @@ func fib(n int) int {
 func fibIter(n int) int {
 	x, y := 0, 1
 	for i := 0; i < n; i++ {
-		m := make(map[string]*object.Object)
-		m["toot"] = nil
-		//a := make([]*object.Object, 1)
-		//a[0] = nil
 		x, y = x+y, x
 	}
 	return x
