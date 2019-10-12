@@ -92,12 +92,13 @@ func (w *worker) listenToStatusChanges() {
 		}
 		if newStatus == status.DelugeDoneSuccess || newStatus == status.DelugeDoneError || newStatus == status.DelugeInterrupted {
 			for scenarioID, scenario := range w.runningDeluge.Scenarios {
-				if scenario.Records == nil {
-					continue
-				}
-
 				logger := w.logger.WithField("scenarioId", scenarioID)
 				logger.Debug("Adding records of scenario")
+
+				if scenario.Records == nil {
+					logger.Debug("Scenario has no record")
+					continue
+				}
 
 				records, err := recording.MapHTTPRecords(scenario.Records)
 				if err != nil {
@@ -125,8 +126,9 @@ func (w *worker) saveWorkerReport(report *repov2.PersistedWorkerReport) {
 	err := w.repository.SaveWorkerReport(report)
 	if err != nil {
 		w.logger.WithError(err).Error("Failed to save records of worker")
+	} else {
+		w.logger.Debug("Successfully saved records of worker")
 	}
-	w.logger.Debug("Successfully saved records of worker")
 }
 
 func (w *worker) saveWorkerReportWithRetry(report *repov2.PersistedWorkerReport) {
@@ -141,7 +143,12 @@ func (w *worker) saveWorkerReportWithRetry(report *repov2.PersistedWorkerReport)
 		err = w.repository.SaveWorkerReport(report)
 		delay *= retryDelayMultiply
 	}
-	w.logger.Debug("Successfully saved records of worker")
+
+	if err != nil {
+		w.logger.WithError(err).Error("Failed to save records of worker")
+	} else {
+		w.logger.Debug("Successfully saved records of worker")
+	}
 }
 
 func (w *worker) reportRecordsRegularly() {
@@ -161,7 +168,7 @@ func (w *worker) reportRecordsRegularly() {
 				scenarioRecords = &recording.HTTPRecordsOverTime{}
 				allRecords[scenarioID] = scenarioRecords
 			}
-			if scenarioSnapshot.Err != nil {
+			if scenarioSnapshot.Err != nil || scenarioSnapshot.HTTPRecordsOverTimeSnapshot == nil {
 				continue
 			}
 			scenarioRecords.Global = scenarioSnapshot.HTTPRecordsOverTimeSnapshot.Global
