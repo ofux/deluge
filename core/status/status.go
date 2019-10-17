@@ -35,6 +35,10 @@ func (s DelugeStatus) String() string {
 	}
 }
 
+func (s DelugeStatus) IsEnd() bool {
+	return s == DelugeDoneSuccess || s == DelugeInterrupted || s == DelugeDoneError
+}
+
 func (s DelugeStatus) MarshalJSON() ([]byte, error) {
 	stamp := fmt.Sprintf("\"%s\"", s)
 	return []byte(stamp), nil
@@ -93,6 +97,10 @@ func (s ScenarioStatus) String() string {
 	default:
 		return "unknown"
 	}
+}
+
+func (s ScenarioStatus) IsEnd() bool {
+	return s == ScenarioDoneSuccess || s == ScenarioInterrupted || s == ScenarioDoneError
 }
 
 func (s ScenarioStatus) MarshalJSON() ([]byte, error) {

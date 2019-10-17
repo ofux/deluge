@@ -3,7 +3,6 @@ package worker
 import (
 	"github.com/ofux/deluge/core"
 	"github.com/ofux/deluge/core/recording"
-	"github.com/ofux/deluge/core/status"
 	"github.com/ofux/deluge/repov2"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -90,7 +89,7 @@ func (w *worker) listenToStatusChanges() {
 			Status:    newStatus,
 			Scenarios: make(map[string]*repov2.PersistedWorkerScenarioReport),
 		}
-		if newStatus == status.DelugeDoneSuccess || newStatus == status.DelugeDoneError || newStatus == status.DelugeInterrupted {
+		if newStatus.IsEnd() {
 			for scenarioID, scenario := range w.runningDeluge.Scenarios {
 				logger := w.logger.WithField("scenarioId", scenarioID)
 				logger.Debug("Adding records of scenario")

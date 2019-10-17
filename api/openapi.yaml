@@ -32,7 +32,7 @@ paths:
     get:
       tags:
         - deluge
-      summary: Get all your deluges
+      summary: Get all your deluges metadata
       description: Returns metadata of all your deluges
       operationId: getAllDeluges
       responses:
@@ -50,7 +50,7 @@ paths:
       summary: Update an existing deluge
       operationId: updateDeluge
       requestBody:
-        description: Deluge that needs to be updated
+        description: Deluge script written in DelugeDSL that needs to be updated
         content:
           text/plain:
             schema:
@@ -72,7 +72,7 @@ paths:
       summary: Add a new deluge
       operationId: addDeluge
       requestBody:
-        description: Deluge that needs to be added
+        description: Deluge script written in DelugeDSL that needs to be added
         content:
           text/plain:
             schema:
@@ -83,7 +83,7 @@ paths:
           description: successful operation
           content: {}
         400:
-          description: Invalid seluge (fails to compile)
+          description: Invalid deluge (fails to compile)
           content: {}
         409:
           description: Supplied ID already exists
@@ -138,7 +138,7 @@ paths:
     get:
       tags:
         - scenario
-      summary: Get all your scenarios
+      summary: Get all your scenarios metadata
       description: Returns metadata of all your scenarios
       operationId: getAllScenarios
       responses:
@@ -156,7 +156,7 @@ paths:
       summary: Update an existing scenario
       operationId: updateScenario
       requestBody:
-        description: Scenario that needs to be updated
+        description: Scenario script written in DelugeDSL that needs to be updated
         content:
           text/plain:
             schema:
@@ -178,7 +178,7 @@ paths:
       summary: Add a new scenario
       operationId: addScenario
       requestBody:
-        description: Scenario that needs to be added
+        description: Scenario script written in DelugeDSL that needs to be added
         content:
           text/plain:
             schema:
@@ -244,7 +244,7 @@ paths:
     get:
       tags:
         - job
-      summary: Get all your jobs
+      summary: Get all your jobs metadata
       description: Returns metadata of all your jobs
       operationId: getAllJobs
       responses:
@@ -264,7 +264,7 @@ paths:
       requestBody:
         description: Job description
         content:
-          text/plain:
+          application/json:
             schema:
               $ref: '#/components/schemas/JobCreation'
         required: true
@@ -294,15 +294,15 @@ paths:
             type: string
       responses:
         200:
-          description: Job report successfully retrieved
+          description: Job report was successfully and fully retrieved
           content:
-            text/plain:
+            application/json:
               schema:
                 $ref: '#/components/schemas/JobReport'
         206:
-          description: Job report partially retrieved. This may happen if job's associated deluge and/or scenarios have been deleted
+          description: Job report was successfully retrieved but is partial. This happens if job is still running, or if job's associated deluge and/or scenarios have been deleted.
           content:
-            text/plain:
+            application/json:
               schema:
                 $ref: '#/components/schemas/JobReport'
         404:
@@ -333,7 +333,7 @@ components:
   schemas:
     Deluge:
       type: string
-      description: Deluge script written in Deluge DSL
+      description: Deluge script written in DelugeDSL
       format: Deluge DSL
       example: |
         deluge("delugeId", "Deluge name", "20s", {
@@ -355,7 +355,7 @@ components:
           type: string
     Scenario:
       type: string
-      description: Scenario script written in Deluge DSL
+      description: Scenario script written in DelugeDSL
       format: Deluge DSL
       example: |
         scenario("scenarioId", "Scenario name", function () {
@@ -456,7 +456,7 @@ components:
       type: string
       example: "100ms"
   securitySchemes:
-    api_key:
+    apikey:
       type: apiKey
       name: apikey
       in: header

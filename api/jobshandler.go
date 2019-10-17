@@ -162,6 +162,9 @@ func (d *JobsHandler) GetJob(w http.ResponseWriter, r *http.Request) {
 		SendJSONError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	if !jobReport.Status.IsEnd() {
+		partialContent = true
+	}
 
 	if partialContent {
 		SendJSONWithHTTPCode(w, jobReport, http.StatusPartialContent)
