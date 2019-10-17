@@ -65,7 +65,7 @@ func TestScenarioHandler_Create(t *testing.T) {
 		r := httptest.NewRequest("POST", "http://example.com/v1/scenarios", strings.NewReader(script2))
 		router.ServeHTTP(w, r)
 
-		assert.Equal(t, w.Code, http.StatusBadRequest)
+		assert.Equal(t, http.StatusConflict, w.Code)
 		scenario, ok := repov2.Instance.GetScenario(scenarioKey)
 		require.True(t, ok)
 		require.NotNil(t, scenario)

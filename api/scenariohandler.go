@@ -82,7 +82,7 @@ func (d *ScenarioHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 	_, exists := repov2.Instance.GetScenario(compiledScenario.GetScenarioDefinition().ID)
 	if exists {
-		SendJSONError(w, fmt.Sprintf("Scenario with ID %s already exists", compiledScenario.GetScenarioDefinition().ID), http.StatusBadRequest)
+		SendJSONError(w, fmt.Sprintf("Scenario with ID %s already exists", compiledScenario.GetScenarioDefinition().ID), http.StatusConflict)
 		return
 	}
 
@@ -109,7 +109,7 @@ func (d *ScenarioHandler) Update(w http.ResponseWriter, r *http.Request) {
 
 	_, exists := repov2.Instance.GetScenario(compiledScenario.GetScenarioDefinition().ID)
 	if !exists {
-		SendJSONError(w, fmt.Sprintf("Scenario with ID %s does not exist", compiledScenario.GetScenarioDefinition().ID), http.StatusBadRequest)
+		SendJSONError(w, fmt.Sprintf("Scenario with ID %s does not exist", compiledScenario.GetScenarioDefinition().ID), http.StatusNotFound)
 		return
 	}
 
@@ -134,16 +134,16 @@ func (d *ScenarioHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	SendRawStringHTTPCode(w, scenDef.Script, http.StatusOK)
 }
 
-type ScenarioLite struct {
+type ScenarioMetadata struct {
 	ID   string `json:"id"`
 	Name string `json:"name"`
 }
 
 func (d *ScenarioHandler) GetAll(w http.ResponseWriter, r *http.Request) {
 	scenDefs := repov2.Instance.GetAllScenarios()
-	scenDefsDTO := make([]ScenarioLite, 0, len(scenDefs))
+	scenDefsDTO := make([]ScenarioMetadata, 0, len(scenDefs))
 	for _, def := range scenDefs {
-		scenDefsDTO = append(scenDefsDTO, ScenarioLite{
+		scenDefsDTO = append(scenDefsDTO, ScenarioMetadata{
 			ID:   def.ID,
 			Name: def.Name,
 		})

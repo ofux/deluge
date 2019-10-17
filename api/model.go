@@ -15,6 +15,12 @@ type JobCreation struct {
 	Webhook  string `json:"webhook"`
 }
 
+type JobMetadata struct {
+	ID       string `json:"id"`
+	DelugeID string `json:"delugeId"`
+	Webhook  string `json:"webhook"`
+}
+
 type Job struct {
 	ID             string                  `json:"id"`
 	DelugeID       string                  `json:"delugeId"`
@@ -24,11 +30,8 @@ type Job struct {
 	Scenarios      map[string]*JobScenario `json:"scenarios"`
 }
 
-type JobLite struct {
-	ID string `json:"id"`
-}
-
 type JobScenario struct {
+	ID                string                `json:"scenarioId"`
 	Name              string                `json:"name"`
 	IterationDuration time.Duration         `json:"iterationDuration"`
 	Status            status.ScenarioStatus `json:"status"`
@@ -39,10 +42,14 @@ type JobScenario struct {
 func mapDeluge(job *repov2.PersistedJobShell, deluge *repov2.PersistedDeluge, scenarioDefs map[string]*repov2.PersistedScenario, workerReports []*repov2.PersistedWorkerReport) (*Job, error) {
 
 	dDTO := &Job{
-		ID:             job.ID,
-		DelugeID:       deluge.ID,
-		DelugeName:     deluge.Name,
-		GlobalDuration: deluge.GlobalDuration,
+		ID:         job.ID,
+		DelugeID:   job.DelugeID,
+		DelugeName: "not found",
+	}
+
+	if deluge != nil {
+		dDTO.DelugeName = deluge.Name
+		dDTO.GlobalDuration = deluge.GlobalDuration
 	}
 
 	delugeStatus := status.DelugeVirgin
@@ -69,18 +76,18 @@ func mapDeluge(job *repov2.PersistedJobShell, deluge *repov2.PersistedDeluge, sc
 
 	jobScenarios := make(map[string]*JobScenario)
 	for scenarioID, scenarioStatus := range scenariosStatus {
-		scenarioDef, ok := scenarioDefs[scenarioID]
-		if !ok {
-			return nil, errors.Errorf("missing scenario definition with ID '%s'", scenarioID)
-		}
-		jobScenarios[scenarioID] = &JobScenario{
-			Name:              scenarioDef.Name,
+		jobScenario := &JobScenario{
 			IterationDuration: scenariosIterationDurations[scenarioID],
 			Status:            scenarioStatus,
 			Errors:            scenariosErrors[scenarioID],
 			Report:            httpReporter.Report(scenariosRecords[scenarioID]),
 		}
-
+		if scenarioDefs != nil {
+			if scenarioDef, ok := scenarioDefs[scenarioID]; ok {
+				jobScenario.Name = scenarioDef.Name
+			}
+		}
+		jobScenarios[scenarioID] = jobScenario
 	}
 
 	dDTO.Status = delugeStatus

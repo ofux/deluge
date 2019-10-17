@@ -82,7 +82,7 @@ func (d *DelugeHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 	_, exists := repov2.Instance.GetDeluge(compiledDeluge.GetDelugeDefinition().ID)
 	if exists {
-		SendJSONError(w, fmt.Sprintf("Deluge with ID %s already exists", compiledDeluge.GetDelugeDefinition().ID), http.StatusBadRequest)
+		SendJSONError(w, fmt.Sprintf("Deluge with ID %s already exists", compiledDeluge.GetDelugeDefinition().ID), http.StatusConflict)
 		return
 	}
 
@@ -109,7 +109,7 @@ func (d *DelugeHandler) Update(w http.ResponseWriter, r *http.Request) {
 
 	_, exists := repov2.Instance.GetDeluge(compiledDeluge.GetDelugeDefinition().ID)
 	if !exists {
-		SendJSONError(w, fmt.Sprintf("Deluge with ID %s does not exist", compiledDeluge.GetDelugeDefinition().ID), http.StatusBadRequest)
+		SendJSONError(w, fmt.Sprintf("Deluge with ID %s does not exist", compiledDeluge.GetDelugeDefinition().ID), http.StatusNotFound)
 		return
 	}
 
@@ -134,16 +134,16 @@ func (d *DelugeHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	SendRawStringHTTPCode(w, delugeDef.Script, http.StatusOK)
 }
 
-type DelugeLitey struct {
+type DelugeMetadata struct {
 	ID   string `json:"id"`
 	Name string `json:"name"`
 }
 
 func (d *DelugeHandler) GetAll(w http.ResponseWriter, r *http.Request) {
 	delugeDef := repov2.Instance.GetAllDeluges()
-	delugeDefsDTO := make([]DelugeLitey, 0, len(delugeDef))
+	delugeDefsDTO := make([]DelugeMetadata, 0, len(delugeDef))
 	for _, def := range delugeDef {
-		delugeDefsDTO = append(delugeDefsDTO, DelugeLitey{
+		delugeDefsDTO = append(delugeDefsDTO, DelugeMetadata{
 			ID:   def.ID,
 			Name: def.Name,
 		})

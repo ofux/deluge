@@ -31,7 +31,7 @@ func NewJobsWorkerHandler() *JobsHandler {
 	routes := []Route{}
 	// Create a Job
 	routes = append(routes, Route{
-		Name:        "Creates and runs a job",
+		Name:        "Create and run a job",
 		Method:      http.MethodPost,
 		Pattern:     "",
 		HandlerFunc: jobsHandler.CreateJob,
@@ -49,13 +49,6 @@ func NewJobsWorkerHandler() *JobsHandler {
 		Method:      http.MethodGet,
 		Pattern:     "",
 		HandlerFunc: jobsHandler.GetAllJobs,
-	})
-	// Start a Job
-	routes = append(routes, Route{
-		Name:        "Interrupt a job",
-		Method:      http.MethodPut,
-		Pattern:     "/start/{id}",
-		HandlerFunc: jobsHandler.StartJob,
 	})
 	// Interrupt a Job
 	routes = append(routes, Route{
@@ -78,7 +71,7 @@ func (d *JobsHandler) CreateJob(w http.ResponseWriter, r *http.Request) {
 
 	_, exists := repov2.Instance.GetDeluge(job.DelugeID)
 	if !exists {
-		SendJSONError(w, fmt.Sprintf("Deluge with ID '%s' does not exist.", job.DelugeID), http.StatusBadRequest)
+		SendJSONError(w, fmt.Sprintf("Deluge with ID '%s' does not exist.", job.DelugeID), http.StatusNotFound)
 		return
 	}
 
@@ -97,21 +90,45 @@ func (d *JobsHandler) CreateJob(w http.ResponseWriter, r *http.Request) {
 		webhook = wURL.String()
 	}
 
-	err := repov2.Instance.SaveJobShell(&repov2.PersistedJobShell{
+	jobShell := &repov2.PersistedJobShell{
 		ID:       jobID,
 		DelugeID: job.DelugeID,
 		Webhook:  webhook,
-	})
+	}
+	err := repov2.Instance.SaveJobShell(jobShell)
 	if err != nil {
 		SendJSONError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	respDTO := &JobLite{
-		ID: jobID,
+	err = startJob(jobShell)
+	if err != nil {
+		SendJSONError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	respDTO := &JobMetadata{
+		ID:       jobShell.ID,
+		DelugeID: jobShell.DelugeID,
+		Webhook:  jobShell.Webhook,
 	}
 
 	SendJSONWithHTTPCode(w, respDTO, http.StatusAccepted)
+}
+
+func startJob(jobShell *repov2.PersistedJobShell) error {
+	err := worker.GetManager().CreateAll(&worker.JobShell{
+		ID:       jobShell.ID,
+		DelugeID: jobShell.DelugeID,
+	})
+	if err != nil {
+		return err
+	}
+
+	return worker.GetManager().StartAll(&worker.JobShell{
+		ID:       jobShell.ID,
+		DelugeID: jobShell.DelugeID,
+	})
 }
 
 func (d *JobsHandler) GetJob(w http.ResponseWriter, r *http.Request) {
@@ -123,13 +140,16 @@ func (d *JobsHandler) GetJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	partialContent := false
 	deluge, ok := repov2.Instance.GetDeluge(job.DelugeID)
 	if !ok {
-		w.WriteHeader(http.StatusNotFound)
-		return
+		partialContent = true
 	}
 
 	scenarios := repov2.Instance.GetDelugeScenarios(deluge.ScenarioIDs)
+	if len(scenarios) == 0 {
+		partialContent = true
+	}
 
 	reports := repov2.Instance.GetJobWorkerReports(id)
 	if len(reports) == 0 {
@@ -143,47 +163,25 @@ func (d *JobsHandler) GetJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	SendJSONWithHTTPCode(w, jobReport, http.StatusOK)
+	if partialContent {
+		SendJSONWithHTTPCode(w, jobReport, http.StatusPartialContent)
+	} else {
+		SendJSONWithHTTPCode(w, jobReport, http.StatusOK)
+	}
 }
 
 func (d *JobsHandler) GetAllJobs(w http.ResponseWriter, r *http.Request) {
 	jobs := repov2.Instance.GetAllJobShell()
-	dlgsDTO := make([]JobLite, 0, len(jobs))
+	dlgsDTO := make([]JobMetadata, 0, len(jobs))
 	for _, job := range jobs {
-		dlgsDTO = append(dlgsDTO, JobLite{ID: job.ID})
+		dlgsDTO = append(dlgsDTO, JobMetadata{
+			ID:       job.ID,
+			DelugeID: job.DelugeID,
+			Webhook:  job.Webhook,
+		})
 	}
 
 	SendJSONWithHTTPCode(w, dlgsDTO, http.StatusOK)
-}
-
-func (d *JobsHandler) StartJob(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	id := vars["id"]
-	jobShell, ok := repov2.Instance.GetJobShell(id)
-	if !ok {
-		w.WriteHeader(http.StatusNotFound)
-		return
-	}
-
-	err := worker.GetManager().CreateAll(&worker.JobShell{
-		ID:       jobShell.ID,
-		DelugeID: jobShell.DelugeID,
-	})
-	if err != nil {
-		SendJSONError(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	err = worker.GetManager().StartAll(&worker.JobShell{
-		ID:       jobShell.ID,
-		DelugeID: jobShell.DelugeID,
-	})
-	if err != nil {
-		SendJSONError(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	w.WriteHeader(http.StatusAccepted)
 }
 
 func (d *JobsHandler) InterruptJob(w http.ResponseWriter, r *http.Request) {

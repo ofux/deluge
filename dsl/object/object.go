@@ -98,8 +98,8 @@ func (rv *ReturnValue) Equals(other Object) bool {
 }
 
 type Error struct {
-	Message    string
-	StackToken []token.Token
+	Message    string        `json:"message"`
+	StackToken []token.Token `json:"stacktrace"`
 }
 
 func (e *Error) Type() ObjectType { return ERROR_OBJ }

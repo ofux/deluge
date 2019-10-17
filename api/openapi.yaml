@@ -1,7 +1,7 @@
 openapi: 3.0.1
 info:
   title: Deluge API
-  description: 'Deluge API lets you upload load test scenarios and deluge definitions, and lets you launch load tests.
+  description: 'Deluge API lets you create, configure and launch load tests.
     You can find out more about Deluge
     at [https://github.com/ofux/deluge](https://github.com/ofux/deluge).'
   #termsOfService: http://swagger.io/terms/
@@ -12,710 +12,451 @@ info:
     url: https://www.gnu.org/licenses/agpl-3.0.html
   version: 1.0.0
 externalDocs:
-  description: Find out more about Swagger
-  url: http://swagger.io
-servers:
-  - url: https://petstore.swagger.io/v2
-  - url: http://petstore.swagger.io/v2
+  description: Github
+  url: https://github.com/ofux/deluge
+#servers:
+#  - url: https://petstore.swagger.io/v2
+#  - url: http://petstore.swagger.io/v2
 tags:
-  - name: pet
-    description: Everything about your Pets
-    externalDocs:
-      description: Find out more
-      url: http://swagger.io
-  - name: store
-    description: Access to Petstore orders
-  - name: user
-    description: Operations about user
-    externalDocs:
-      description: Find out more about our store
-      url: http://swagger.io
+  - name: job
+    description: A job is a run/running deluge
+  - name: deluge
+    description: A deluge defines which scenario(s) to execute and their respective configuration
+  - name: scenario
+    description: A scenario defines the script to execute from each virtual user
+
+
+
 paths:
-  /pet:
+  /deluges:
+    get:
+      tags:
+        - deluge
+      summary: Get all your deluges
+      description: Returns metadata of all your deluges
+      operationId: getAllDeluges
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DelugeMetadata'
     put:
       tags:
-        - pet
-      summary: Update an existing pet
-      operationId: updatePet
+        - deluge
+      summary: Update an existing deluge
+      operationId: updateDeluge
       requestBody:
-        description: Pet object that needs to be added to the store
+        description: Deluge that needs to be updated
         content:
-          application/json:
+          text/plain:
             schema:
-              $ref: '#/components/schemas/Pet'
-          application/xml:
-            schema:
-              $ref: '#/components/schemas/Pet'
+              $ref: '#/components/schemas/Deluge'
         required: true
       responses:
+        200:
+          description: successful operation
+          content: {}
         400:
-          description: Invalid ID supplied
+          description: Invalid deluge (fails to compile)
           content: {}
         404:
-          description: Pet not found
+          description: Invalid ID supplied
           content: {}
-        405:
-          description: Validation exception
-          content: {}
-      security:
-        - petstore_auth:
-            - write:pets
-            - read:pets
     post:
       tags:
-        - pet
-      summary: Add a new pet to the store
-      operationId: addPet
+        - deluge
+      summary: Add a new deluge
+      operationId: addDeluge
       requestBody:
-        description: Pet object that needs to be added to the store
+        description: Deluge that needs to be added
         content:
-          application/json:
+          text/plain:
             schema:
-              $ref: '#/components/schemas/Pet'
-          application/xml:
-            schema:
-              $ref: '#/components/schemas/Pet'
+              $ref: '#/components/schemas/Deluge'
         required: true
       responses:
-        405:
-          description: Invalid input
-          content: {}
-      security:
-        - petstore_auth:
-            - write:pets
-            - read:pets
-  /pet/findByStatus:
-    get:
-      tags:
-        - pet
-      summary: Finds Pets by status
-      description: Multiple status values can be provided with comma separated strings
-      operationId: findPetsByStatus
-      parameters:
-        - name: status
-          in: query
-          description: Status values that need to be considered for filter
-          required: true
-          style: form
-          explode: true
-          schema:
-            type: array
-            items:
-              type: string
-              default: available
-              enum:
-                - available
-                - pending
-                - sold
-      responses:
-        200:
+        201:
           description: successful operation
-          content:
-            application/xml:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Pet'
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Pet'
-        400:
-          description: Invalid status value
           content: {}
-      security:
-        - petstore_auth:
-            - write:pets
-            - read:pets
-  /pet/findByTags:
+        400:
+          description: Invalid seluge (fails to compile)
+          content: {}
+        409:
+          description: Supplied ID already exists
+          content: {}
+  /deluges/{delugeId}:
     get:
       tags:
-        - pet
-      summary: Finds Pets by tags
-      description: Muliple tags can be provided with comma separated strings. Use         tag1,
-        tag2, tag3 for testing.
-      operationId: findPetsByTags
+        - deluge
+      summary: Find deluge by ID
+      description: Returns a single deluge
+      operationId: getDelugeById
       parameters:
-        - name: tags
-          in: query
-          description: Tags to filter by
-          required: true
-          style: form
-          explode: true
-          schema:
-            type: array
-            items:
-              type: string
-      responses:
-        200:
-          description: successful operation
-          content:
-            application/xml:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Pet'
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Pet'
-        400:
-          description: Invalid tag value
-          content: {}
-      deprecated: true
-      security:
-        - petstore_auth:
-            - write:pets
-            - read:pets
-  /pet/{petId}:
-    get:
-      tags:
-        - pet
-      summary: Find pet by ID
-      description: Returns a single pet
-      operationId: getPetById
-      parameters:
-        - name: petId
+        - name: delugeId
           in: path
-          description: ID of pet to return
+          description: ID of deluge to return
           required: true
-          schema:
-            type: integer
-            format: int64
-      responses:
-        200:
-          description: successful operation
-          content:
-            application/xml:
-              schema:
-                $ref: '#/components/schemas/Pet'
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Pet'
-        400:
-          description: Invalid ID supplied
-          content: {}
-        404:
-          description: Pet not found
-          content: {}
-      security:
-        - api_key: []
-    post:
-      tags:
-        - pet
-      summary: Updates a pet in the store with form data
-      operationId: updatePetWithForm
-      parameters:
-        - name: petId
-          in: path
-          description: ID of pet that needs to be updated
-          required: true
-          schema:
-            type: integer
-            format: int64
-      requestBody:
-        content:
-          application/x-www-form-urlencoded:
-            schema:
-              properties:
-                name:
-                  type: string
-                  description: Updated name of the pet
-                status:
-                  type: string
-                  description: Updated status of the pet
-      responses:
-        405:
-          description: Invalid input
-          content: {}
-      security:
-        - petstore_auth:
-            - write:pets
-            - read:pets
-    delete:
-      tags:
-        - pet
-      summary: Deletes a pet
-      operationId: deletePet
-      parameters:
-        - name: api_key
-          in: header
           schema:
             type: string
-        - name: petId
-          in: path
-          description: Pet id to delete
-          required: true
-          schema:
-            type: integer
-            format: int64
       responses:
-        400:
-          description: Invalid ID supplied
-          content: {}
+        200:
+          description: successful operation
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/Deluge'
         404:
-          description: Pet not found
-          content: {}
-      security:
-        - petstore_auth:
-            - write:pets
-            - read:pets
-  /pet/{petId}/uploadImage:
-    post:
-      tags:
-        - pet
-      summary: uploads an image
-      operationId: uploadFile
-      parameters:
-        - name: petId
-          in: path
-          description: ID of pet to update
-          required: true
-          schema:
-            type: integer
-            format: int64
-      requestBody:
-        content:
-          multipart/form-data:
-            schema:
-              properties:
-                additionalMetadata:
-                  type: string
-                  description: Additional data to pass to server
-                file:
-                  type: string
-                  description: file to upload
-                  format: binary
-      responses:
-        200:
-          description: successful operation
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ApiResponse'
-      security:
-        - petstore_auth:
-            - write:pets
-            - read:pets
-  /store/inventory:
-    get:
-      tags:
-        - store
-      summary: Returns pet inventories by status
-      description: Returns a map of status codes to quantities
-      operationId: getInventory
-      responses:
-        200:
-          description: successful operation
-          content:
-            application/json:
-              schema:
-                type: object
-                additionalProperties:
-                  type: integer
-                  format: int32
-      security:
-        - api_key: []
-  /store/order:
-    post:
-      tags:
-        - store
-      summary: Place an order for a pet
-      operationId: placeOrder
-      requestBody:
-        description: order placed for purchasing the pet
-        content:
-          '*/*':
-            schema:
-              $ref: '#/components/schemas/Order'
-        required: true
-      responses:
-        200:
-          description: successful operation
-          content:
-            application/xml:
-              schema:
-                $ref: '#/components/schemas/Order'
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Order'
-        400:
-          description: Invalid Order
-          content: {}
-  /store/order/{orderId}:
-    get:
-      tags:
-        - store
-      summary: Find purchase order by ID
-      description: For valid response try integer IDs with value >= 1 and <= 10.         Other
-        values will generated exceptions
-      operationId: getOrderById
-      parameters:
-        - name: orderId
-          in: path
-          description: ID of pet that needs to be fetched
-          required: true
-          schema:
-            maximum: 10.0
-            minimum: 1.0
-            type: integer
-            format: int64
-      responses:
-        200:
-          description: successful operation
-          content:
-            application/xml:
-              schema:
-                $ref: '#/components/schemas/Order'
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Order'
-        400:
-          description: Invalid ID supplied
-          content: {}
-        404:
-          description: Order not found
+          description: Deluge not found
           content: {}
     delete:
       tags:
-        - store
-      summary: Delete purchase order by ID
-      description: For valid response try integer IDs with positive integer value.         Negative
-        or non-integer values will generate API errors
-      operationId: deleteOrder
+        - deluge
+      summary: Delete deluge by ID
+      description: Deletes a single deluge
+      operationId: deleteDelugeById
       parameters:
-        - name: orderId
+        - name: delugeId
           in: path
-          description: ID of the order that needs to be deleted
-          required: true
-          schema:
-            minimum: 1.0
-            type: integer
-            format: int64
-      responses:
-        400:
-          description: Invalid ID supplied
-          content: {}
-        404:
-          description: Order not found
-          content: {}
-  /user:
-    post:
-      tags:
-        - user
-      summary: Create user
-      description: This can only be done by the logged in user.
-      operationId: createUser
-      requestBody:
-        description: Created user object
-        content:
-          '*/*':
-            schema:
-              $ref: '#/components/schemas/User'
-        required: true
-      responses:
-        default:
-          description: successful operation
-          content: {}
-  /user/createWithArray:
-    post:
-      tags:
-        - user
-      summary: Creates list of users with given input array
-      operationId: createUsersWithArrayInput
-      requestBody:
-        description: List of user object
-        content:
-          '*/*':
-            schema:
-              type: array
-              items:
-                $ref: '#/components/schemas/User'
-        required: true
-      responses:
-        default:
-          description: successful operation
-          content: {}
-  /user/createWithList:
-    post:
-      tags:
-        - user
-      summary: Creates list of users with given input array
-      operationId: createUsersWithListInput
-      requestBody:
-        description: List of user object
-        content:
-          '*/*':
-            schema:
-              type: array
-              items:
-                $ref: '#/components/schemas/User'
-        required: true
-      responses:
-        default:
-          description: successful operation
-          content: {}
-  /user/login:
-    get:
-      tags:
-        - user
-      summary: Logs user into the system
-      operationId: loginUser
-      parameters:
-        - name: username
-          in: query
-          description: The user name for login
-          required: true
-          schema:
-            type: string
-        - name: password
-          in: query
-          description: The password for login in clear text
+          description: ID of deluge to delete
           required: true
           schema:
             type: string
       responses:
         200:
           description: successful operation
-          headers:
-            X-Rate-Limit:
-              description: calls per hour allowed by the user
-              schema:
-                type: integer
-                format: int32
-            X-Expires-After:
-              description: date in UTC when token expires
-              schema:
-                type: string
-                format: date-time
-          content:
-            application/xml:
-              schema:
-                type: string
-            application/json:
-              schema:
-                type: string
-        400:
-          description: Invalid username/password supplied
           content: {}
-  /user/logout:
+        404:
+          description: Deluge not found
+          content: {}
+
+
+  /scenarios:
     get:
       tags:
-        - user
-      summary: Logs out current logged in user session
-      operationId: logoutUser
-      responses:
-        default:
-          description: successful operation
-          content: {}
-  /user/{username}:
-    get:
-      tags:
-        - user
-      summary: Get user by user name
-      operationId: getUserByName
-      parameters:
-        - name: username
-          in: path
-          description: 'The name that needs to be fetched. Use user1 for testing. '
-          required: true
-          schema:
-            type: string
+        - scenario
+      summary: Get all your scenarios
+      description: Returns metadata of all your scenarios
+      operationId: getAllScenarios
       responses:
         200:
           description: successful operation
           content:
-            application/xml:
-              schema:
-                $ref: '#/components/schemas/User'
             application/json:
               schema:
-                $ref: '#/components/schemas/User'
-        400:
-          description: Invalid username supplied
-          content: {}
-        404:
-          description: User not found
-          content: {}
+                type: array
+                items:
+                  $ref: '#/components/schemas/ScenarioMetadata'
     put:
       tags:
-        - user
-      summary: Updated user
-      description: This can only be done by the logged in user.
-      operationId: updateUser
+        - scenario
+      summary: Update an existing scenario
+      operationId: updateScenario
+      requestBody:
+        description: Scenario that needs to be updated
+        content:
+          text/plain:
+            schema:
+              $ref: '#/components/schemas/Scenario'
+        required: true
+      responses:
+        200:
+          description: successful operation
+          content: {}
+        400:
+          description: Invalid scenario (fails to compile)
+          content: {}
+        404:
+          description: Invalid ID supplied
+          content: {}
+    post:
+      tags:
+        - scenario
+      summary: Add a new scenario
+      operationId: addScenario
+      requestBody:
+        description: Scenario that needs to be added
+        content:
+          text/plain:
+            schema:
+              $ref: '#/components/schemas/Scenario'
+        required: true
+      responses:
+        201:
+          description: successful operation
+          content: {}
+        400:
+          description: Invalid scenario (fails to compile)
+          content: {}
+        409:
+          description: Supplied ID already exists
+          content: {}
+  /scenarios/{scenarioId}:
+    get:
+      tags:
+        - scenario
+      summary: Find scenario by ID
+      description: Returns a single scenario
+      operationId: getScenarioById
       parameters:
-        - name: username
+        - name: scenarioId
           in: path
-          description: name that need to be updated
+          description: ID of scenario to return
           required: true
           schema:
             type: string
-      requestBody:
-        description: Updated user object
-        content:
-          '*/*':
-            schema:
-              $ref: '#/components/schemas/User'
-        required: true
       responses:
-        400:
-          description: Invalid user supplied
-          content: {}
+        200:
+          description: successful operation
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/Scenario'
         404:
-          description: User not found
+          description: Scenario not found
           content: {}
     delete:
       tags:
-        - user
-      summary: Delete user
-      description: This can only be done by the logged in user.
-      operationId: deleteUser
+        - scenario
+      summary: Delete scenario by ID
+      description: Deletes a single scenario
+      operationId: deleteScenarioById
       parameters:
-        - name: username
+        - name: scenarioId
           in: path
-          description: The name that needs to be deleted
+          description: ID of scenario to delete
           required: true
           schema:
             type: string
       responses:
-        400:
-          description: Invalid username supplied
+        200:
+          description: successful operation
           content: {}
         404:
-          description: User not found
+          description: Scenario not found
           content: {}
+
+
+  /jobs:
+    get:
+      tags:
+        - job
+      summary: Get all your jobs
+      description: Returns metadata of all your jobs
+      operationId: getAllJobs
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/JobMetadata'
+    post:
+      tags:
+        - job
+      summary: Start a new job
+      operationId: startJob
+      requestBody:
+        description: Job description
+        content:
+          text/plain:
+            schema:
+              $ref: '#/components/schemas/JobCreation'
+        required: true
+      responses:
+        202:
+          description: job started
+          $ref: '#/components/schemas/JobMetadata'
+        400:
+          description: Invalid job
+          content: {}
+        404:
+          description: Job's deluge not found
+          content: {}
+  /jobs/{jobId}:
+    get:
+      tags:
+        - job
+      summary: Get job report
+      description: Returns a single job report
+      operationId: getJobById
+      parameters:
+        - name: jobId
+          in: path
+          description: ID of job to return
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Job report successfully retrieved
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/JobReport'
+        206:
+          description: Job report partially retrieved. This may happen if job's associated deluge and/or scenarios have been deleted
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/JobReport'
+        404:
+          description: Job not found or no report was created yet
+          content: {}
+  /jobs/interrupt/{jobId}:
+    put:
+      tags:
+        - job
+      summary: Interrupt Job by ID
+      description: Interrupts a Job
+      operationId: interruptJobById
+      parameters:
+        - name: jobId
+          in: path
+          description: ID of job to interrupt
+          required: true
+          schema:
+            type: string
+      responses:
+        202:
+          description: job is being interrupted
+          content: {}
+
+
+
 components:
   schemas:
-    Order:
+    Deluge:
+      type: string
+      description: Deluge script written in Deluge DSL
+      format: Deluge DSL
+      example: |
+        deluge("delugeId", "Deluge name", "20s", {
+          "scenario1Id": {
+           "concurrent": 100,
+           "delay": "100ms"
+          },
+          "scenario2Id": {
+           "concurrent": 20,
+           "delay": "1000ms"
+          }
+        });
+    DelugeMetadata:
       type: object
       properties:
         id:
-          type: integer
-          format: int64
-        petId:
-          type: integer
-          format: int64
-        quantity:
-          type: integer
-          format: int32
-        shipDate:
           type: string
-          format: date-time
+        name:
+          type: string
+    Scenario:
+      type: string
+      description: Scenario script written in Deluge DSL
+      format: Deluge DSL
+      example: |
+        scenario("scenarioId", "Scenario name", function () {
+          http("My request", {
+            "url": "http://localhost:8080/hello/foo"
+          });
+        });
+    ScenarioMetadata:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+    JobCreation:
+      type: object
+      properties:
+        delugeId:
+          type: string
+        webhook:
+          type: string
+    JobMetadata:
+      type: object
+      properties:
+        id:
+          type: string
+        delugeId:
+          type: string
+        webhook:
+          type: string
+    JobReport:
+      type: object
+      properties:
+        id:
+          type: string
+        delugeId:
+          type: string
+        delugeName:
+          type: string
         status:
-          type: string
-          description: Order Status
-          enum:
-            - placed
-            - approved
-            - delivered
-        complete:
-          type: boolean
-          default: false
-      xml:
-        name: Order
-    Category:
+          $ref: '#/components/schemas/DelugeStatus'
+        globalDuration:
+          $ref: '#/components/schemas/Duration'
+        scenarios:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/JobScenarioReport'
+    JobScenarioReport:
       type: object
       properties:
-        id:
-          type: integer
-          format: int64
+        scenarioId:
+          type: string
         name:
           type: string
-      xml:
-        name: Category
-    User:
-      type: object
-      properties:
-        id:
-          type: integer
-          format: int64
-        username:
-          type: string
-        firstName:
-          type: string
-        lastName:
-          type: string
-        email:
-          type: string
-        password:
-          type: string
-        phone:
-          type: string
-        userStatus:
-          type: integer
-          description: User Status
-          format: int32
-      xml:
-        name: User
-    Tag:
-      type: object
-      properties:
-        id:
-          type: integer
-          format: int64
-        name:
-          type: string
-      xml:
-        name: Tag
-    Pet:
-      required:
-        - name
-        - photoUrls
-      type: object
-      properties:
-        id:
-          type: integer
-          format: int64
-        category:
-          $ref: '#/components/schemas/Category'
-        name:
-          type: string
-          example: doggie
-        photoUrls:
-          type: array
-          xml:
-            name: photoUrl
-            wrapped: true
-          items:
-            type: string
-        tags:
-          type: array
-          xml:
-            name: tag
-            wrapped: true
-          items:
-            $ref: '#/components/schemas/Tag'
         status:
-          type: string
-          description: pet status in the store
-          enum:
-            - available
-            - pending
-            - sold
-      xml:
-        name: Pet
-    ApiResponse:
-      type: object
-      properties:
-        code:
-          type: integer
-          format: int32
-        type:
-          type: string
-        message:
-          type: string
+          $ref: '#/components/schemas/ScenarioStatus'
+        iterationDuration:
+          $ref: '#/components/schemas/Duration'
+        report:
+          type: object
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              message:
+                type: string
+              stacktrace:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    Type:
+                      type: string
+                    Line:
+                      type: integer
+                    Column:
+                      type: integer
+                    Literal:
+                      type: string
+    DelugeStatus:
+      type: string
+      enum:
+        - "notStarted"
+        - "inProgress"
+        - "doneSuccess"
+        - "interrupted"
+        - "doneError"
+    ScenarioStatus:
+      type: string
+      enum:
+        - "notStarted"
+        - "inProgress"
+        - "doneSuccess"
+        - "interrupted"
+        - "doneError"
+    Duration:
+      type: string
+      example: "100ms"
   securitySchemes:
-    petstore_auth:
-      type: oauth2
-      flows:
-        implicit:
-          authorizationUrl: http://petstore.swagger.io/oauth/dialog
-          scopes:
-            write:pets: modify pets in your account
-            read:pets: read your pets
     api_key:
       type: apiKey
-      name: api_key
+      name: apikey
       in: header
