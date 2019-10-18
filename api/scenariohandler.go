@@ -149,7 +149,7 @@ func (d *ScenarioHandler) GetAll(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	SendJSONWithHTTPCode(w, scenDefsDTO, http.StatusOK)
+	SendJSONWithHTTPCode(w, ListOf(scenDefsDTO), http.StatusOK)
 }
 
 func (d *ScenarioHandler) DeleteByID(w http.ResponseWriter, r *http.Request) {

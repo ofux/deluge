@@ -2,15 +2,29 @@ package api
 
 import (
 	"encoding/json"
+	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"net/http"
+	"reflect"
 )
 
 const (
 	HeaderContentTypeKey      = "Content-Type"
 	HeaderContentTypeJsonUTF8 = "application/json; charset=UTF-8"
 )
+
+type List struct {
+	Elements interface{} `json:"elements"`
+}
+
+func ListOf(elements interface{}) List {
+	switch reflect.TypeOf(elements).Kind() {
+	case reflect.Slice:
+		return List{Elements: elements}
+	}
+	panic(errors.Errorf("ListOf is expecting a slice but got %+v", elements))
+}
 
 // SendJSONWithHTTPCode outputs JSON with an HTTP code
 func SendJSONWithHTTPCode(w http.ResponseWriter, d interface{}, code int) {
