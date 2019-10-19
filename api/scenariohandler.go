@@ -6,6 +6,7 @@ import (
 	"github.com/ofux/deluge/core"
 	"github.com/ofux/deluge/repov2"
 	"net/http"
+	"sort"
 )
 
 // ScenarioHandler handles requests for 'scenarios' resource
@@ -148,6 +149,10 @@ func (d *ScenarioHandler) GetAll(w http.ResponseWriter, r *http.Request) {
 			Name: def.Name,
 		})
 	}
+
+	sort.Slice(scenDefsDTO, func(i, j int) bool {
+		return scenDefsDTO[i].ID < scenDefsDTO[j].ID
+	})
 
 	SendJSONWithHTTPCode(w, ListOf(scenDefsDTO), http.StatusOK)
 }
