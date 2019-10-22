@@ -204,7 +204,7 @@ func TestScenarioHandler_GetByID(t *testing.T) {
 		repov2.Instance = repov2.NewInMemoryRepository()
 		w := httptest.NewRecorder()
 
-		createScenario(t, scenarioKey, scenarioName)
+		script := createScenario(t, scenarioKey, scenarioName)
 
 		r := httptest.NewRequest(http.MethodGet, "http://example.com/v1/scenarios/"+scenarioKey, nil)
 		router.ServeHTTP(w, r)
@@ -213,7 +213,7 @@ func TestScenarioHandler_GetByID(t *testing.T) {
 		bbody, err := ioutil.ReadAll(w.Body)
 		require.NoError(t, err)
 		body := string(bbody)
-		assert.Equal(t, `scenario("myScenario", "My scenario", function () { });`, body)
+		assert.Equal(t, script, body)
 	})
 
 	t.Run("Get a non-existing scenario", func(t *testing.T) {
@@ -323,6 +323,7 @@ type repoMock struct {
 	repov2.InMemoryRepository
 
 	SaveScenarioImpl func(scenario *repov2.PersistedScenario) error
+	SaveDelugeImpl   func(deluge *repov2.PersistedDeluge) error
 }
 
 func (r *repoMock) SaveScenario(scenario *repov2.PersistedScenario) error {

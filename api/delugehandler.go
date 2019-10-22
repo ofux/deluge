@@ -6,6 +6,7 @@ import (
 	"github.com/ofux/deluge/core"
 	"github.com/ofux/deluge/repov2"
 	"net/http"
+	"sort"
 )
 
 // DelugeHandler handles requests for 'deluges' resource
@@ -149,7 +150,11 @@ func (d *DelugeHandler) GetAll(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	SendJSONWithHTTPCode(w, delugeDefsDTO, http.StatusOK)
+	sort.Slice(delugeDefsDTO, func(i, j int) bool {
+		return delugeDefsDTO[i].ID < delugeDefsDTO[j].ID
+	})
+
+	SendJSONWithHTTPCode(w, ListOf(delugeDefsDTO), http.StatusOK)
 }
 
 func (d *DelugeHandler) DeleteByID(w http.ResponseWriter, r *http.Request) {
