@@ -43,94 +43,124 @@ $ deluge start worker --port=8080 --orchestrator=187.32.87.353:9090
 
 ## REST API
 
-### /v1/jobs GET-POST-PUT-DELETE
-
-#### GET /v1/jobs
-
-Returns the list of all jobs without their details. Useful to find out the different jobs, their ID, and their status.
-
-#### GET /v1/jobs/{id}
-
-Returns the job for the given ID with full details, potentially including reports and/or errors.
-
-#### POST /v1/jobs
-
-Creates a new job with the Deluge script given in the request body and launches the execution of the simulation asynchronously. This returns immediatly with HTTP status code 202 (accepted) if the simulation could be started without error.
-
-#### PUT /v1/jobs/interrupt/{id}
-
-Interrupts the execution of the job with the given ID. The job will remain retrievable through GET requests.
-
-#### DELETE /v1/jobs/{id}
-
-Interrupts and deletes the job with the given ID.
-
-#### A few examples
-
-POST request body example *(text/plain)*:
-
-```js
-// The request body contains the script (written in deluge-DSL) to run
-deluge("Some name", "10s", {
-    "sc1": {
-        "concurrent": 100,
-        "delay": "2s"
-    }
-});
-
-scenario("sc1", "Some scenario", function () {
-
-    http("Some request", {
-        "url": "http://localhost:8080/hello/toto"
-    });
-
-});
-```
-
-POST/GET response body example of an **unfinished** job *(application/json)*:
-
-```json
-{
-    "ID": "0b0781d9-0cae-47e2-8196-a5cc6e24e086",
-    "Name": "Some name",
-    "Status": "InProgress",
-    "GlobalDuration": 30000000000,
-    "Scenarios": {
-        "sc1": {
-            "Name": "Some scenario",
-            "IterationDuration": 0,
-            "Status": "InProgress",
-            "Errors": [],
-            "Report": null
-        }
-    }
-}
-```
-
-POST/GET response body example of a **finished** job *(application/json)*:
-
-```json
-{
-    "ID": "0b0781d9-0cae-47e2-8196-a5cc6e24e086",
-    "Name": "Some name",
-    "Status": "DoneSuccess",
-    "GlobalDuration": 30000000000,
-    "Scenarios": {
-        "sc1": {
-            "Name": "Some scenario",
-            "IterationDuration": 0,
-            "Status": "DoneSuccess",
-            "Errors": [],
-            "Report": { "...": "..." }
-        }
-    }
-}
-```
+[Swagger documentation](https://app.swaggerhub.com/apis-docs/ofu/deluge-api/0.0.1)
 
 
 ## DSL
 
 The DSL consists of a simple, extremely-easy-to-learn language with native support for emiting requests with different protocols.
+
+### Scenarios
+
+Scenarios are scripts executed at each iteration by each virtual user during the deluge. They are written in DelugeDSL.
+
+Example of scenarios:
+
+Simple scenario performing a single HTTP GET request.
+```js
+scenario("some-id", "Some scenario", function () {
+    http("Some request", {
+        "url": "http://localhost:8080/hello/foo"
+    });
+});
+```
+
+More complex scenario that uses session to store data between iterations.
+```js
+scenario("product", "Test the product entity", function (args, session) {
+
+    let authenticate = function () {
+        let resAuth = http("Authentication", {
+            "url": "http://localhost:8080/oauth/token?log=1&b={\"access_token\":\"foooooooobar\"}",
+            "headers": {
+                "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "body": urlParamsEncode({
+                "username": "admin",
+                "password": "admin",
+                "grant_type": "password"
+                // etc
+            })
+        });
+
+        assert(resAuth["status"] == 200);
+        let access_token = parseJson(resAuth["body"])["access_token"];
+        assert(len(access_token) > 0);
+
+        return access_token;
+    };
+
+
+
+    let baseUrl = "http://127.0.0.1:8080";
+    if (args["baseUrl"]) {
+        baseUrl = args["baseUrl"];
+    }
+
+    let httpCommonHeaders = {
+        "Accept": "application/json",
+        "Accept-Encoding": "gzip, deflate",
+        "Accept-Language": "fr,fr-fr;q=0.8,en-us",
+        "Connection": "keep-alive",
+        "User-Agent": "Mozilla/5.0 etc."
+    };
+
+
+    let res1 = http("First unauthenticated request", {
+        "url": baseUrl + "/api/v1/account?s=401",
+        "headers": httpCommonHeaders
+    });
+
+    assert(res1["status"] == 401);
+
+    pause("100ms");
+
+    let access_token = session["access_token"];
+    if (access_token == null) {
+        access_token = authenticate();
+        session["access_token"] = access_token;
+    }
+
+    pause("100ms");
+
+    let res2 = http("Authenticated request", {
+        "url": baseUrl + "/api/v1/account",
+        "headers": merge(httpCommonHeaders, {
+            "Authorization": "Bearer " + access_token
+        })
+    });
+
+    assert(res2["status"] == 200);
+
+    pause("100ms");
+
+    for (let i=0; i < 2; i++) {
+        let res3 = http("Get all products", {
+            "url": baseUrl + "/api/v1/products",
+            "headers": merge(httpCommonHeaders, {
+                "Authorization": "Bearer " + access_token
+            })
+        });
+
+        assert(res3["status"] == 200);
+
+        let res4 = http("Create new product", {
+            "url": baseUrl + "/api/v1/products?s=201",
+            "method": "POST",
+            "headers": merge(httpCommonHeaders, {
+                "Authorization": "Bearer " + access_token
+            }),
+            "body": toJson({
+                "ref": "SJ5"
+                // etc
+            })
+        });
+
+        assert(res4["status"] == 201);
+    }
+
+});
+```
 
 Supported protocols to make some requests (out of the box) are:
 - [x] HTTP
@@ -138,35 +168,24 @@ Supported protocols to make some requests (out of the box) are:
 - [ ] MQTT
 - [ ] gRPC
 
-Everything has been made so it is extremely easy to perform requests as show in this example:
+### Deluges
+
+Deluges are scripts written in DelugeDSL that describe which scenrio(s) should be run and their respective configuration.
 
 ```js
-deluge("Some name", "5s", {
-    "sc1": {
+deluge("some-deluge-id", "Some name", "5s", {
+    "some-scenario-id": {
         "concurrent": 100,
-        "delay": "2s"
+        "delay": "2s",
+        "args": {
+            "baseUrl": "http://127.0.0.1:8080"
+        }
     }
-});
-
-scenario("sc1", "Some scenario", function () {
-
-    http("Some request", {
-        "url": "http://localhost:8080/hello/foo"
-    });
-
 });
 ```
 
-## Upcoming
+## TODO
 
 - [ ] nice HTML report
-- [ ] ability to distribute concurrent users of a scenario across multiple Deluge instances (possibly cross-datacenter)
+- [ ] ability to distribute concurrent users of a scenario across multiple Deluge instances (ditributed workers)
 - [ ] Docker image
-
-## Some libs we use
-
-- [x] [logrus](https://github.com/sirupsen/logrus) for the logs
-- [x] [cobra](https://github.com/spf13/cobra) for the CLI
-- [ ] [grpc-go](https://github.com/grpc/grpc-go) for gRPC
-- [ ] [surgemq](https://github.com/influxdata/surgemq) for MQTT
-- [x] [hdrhistogram](https://github.com/ofux/hdrhistogram) for HDR Histogram
