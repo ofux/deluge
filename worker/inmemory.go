@@ -10,6 +10,12 @@ type inMemoryManager struct {
 	workers []*worker
 }
 
+func NewInMemoryManager(workerCount int) Manager {
+	return &inMemoryManager{
+		workers: make([]*worker, workerCount),
+	}
+}
+
 func (m *inMemoryManager) CreateAll(jobShell *JobShell) error {
 	for i := range m.workers {
 		m.workers[i] = newWorker(uuid.NewV4().String(), jobShell, repov2.Instance)

@@ -8,6 +8,7 @@ import (
 	uuid "github.com/satori/go.uuid"
 	"net/http"
 	"net/url"
+	"sort"
 )
 
 // JobsHandler handles requests for 'jobs' resource
@@ -23,8 +24,8 @@ func (d *JobsHandler) GetRoutes() []Route {
 	return d.routes
 }
 
-// NewJobsWorkerHandler adds handlers to handle jobs
-func NewJobsWorkerHandler() *JobsHandler {
+// NewJobHandler adds handlers to handle jobs
+func NewJobHandler() *JobsHandler {
 	jobsHandler := &JobsHandler{}
 
 	// build routes
@@ -141,14 +142,15 @@ func (d *JobsHandler) GetJob(w http.ResponseWriter, r *http.Request) {
 	}
 
 	partialContent := false
+	var scenarios map[string]*repov2.PersistedScenario
 	deluge, ok := repov2.Instance.GetDeluge(job.DelugeID)
 	if !ok {
 		partialContent = true
-	}
-
-	scenarios := repov2.Instance.GetDelugeScenarios(deluge.ScenarioIDs)
-	if len(scenarios) == 0 {
-		partialContent = true
+	} else {
+		scenarios = repov2.Instance.GetDelugeScenarios(deluge.ScenarioIDs)
+		if len(scenarios) == 0 {
+			partialContent = true
+		}
 	}
 
 	reports := repov2.Instance.GetJobWorkerReports(id)
@@ -175,16 +177,20 @@ func (d *JobsHandler) GetJob(w http.ResponseWriter, r *http.Request) {
 
 func (d *JobsHandler) GetAllJobs(w http.ResponseWriter, r *http.Request) {
 	jobs := repov2.Instance.GetAllJobShell()
-	dlgsDTO := make([]JobMetadata, 0, len(jobs))
+	jobsDTO := make([]JobMetadata, 0, len(jobs))
 	for _, job := range jobs {
-		dlgsDTO = append(dlgsDTO, JobMetadata{
+		jobsDTO = append(jobsDTO, JobMetadata{
 			ID:       job.ID,
 			DelugeID: job.DelugeID,
 			Webhook:  job.Webhook,
 		})
 	}
 
-	SendJSONWithHTTPCode(w, dlgsDTO, http.StatusOK)
+	sort.Slice(jobsDTO, func(i, j int) bool {
+		return jobsDTO[i].ID < jobsDTO[j].ID
+	})
+
+	SendJSONWithHTTPCode(w, ListOf(jobsDTO), http.StatusOK)
 }
 
 func (d *JobsHandler) InterruptJob(w http.ResponseWriter, r *http.Request) {

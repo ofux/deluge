@@ -324,6 +324,7 @@ type repoMock struct {
 
 	SaveScenarioImpl func(scenario *repov2.PersistedScenario) error
 	SaveDelugeImpl   func(deluge *repov2.PersistedDeluge) error
+	SaveJobShellImpl func(jobShell *repov2.PersistedJobShell) error
 }
 
 func (r *repoMock) SaveScenario(scenario *repov2.PersistedScenario) error {

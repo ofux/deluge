@@ -20,12 +20,10 @@ type JobShell struct {
 	DelugeID string
 }
 
-var managerInstance Manager = &inMemoryManager{
-	workers: make([]*worker, 1),
-}
+var ManagerInstance Manager = NewInMemoryManager(1)
 
 func GetManager() Manager {
-	return managerInstance
+	return ManagerInstance
 }
 
 type worker struct {

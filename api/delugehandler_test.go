@@ -16,7 +16,6 @@ import (
 func TestDelugeHandler_Create(t *testing.T) {
 	const scenarioKey = "myScenario"
 	const scenarioName = "My scenario"
-	createScenario(t, scenarioKey, scenarioName)
 
 	const delugeKey = "myDeluge"
 	const delugeName = "My deluge"
@@ -26,6 +25,7 @@ func TestDelugeHandler_Create(t *testing.T) {
 
 	t.Run("Create a valid deluge", func(t *testing.T) {
 		repov2.Instance = repov2.NewInMemoryRepository()
+		createScenario(t, scenarioKey, scenarioName)
 		w := httptest.NewRecorder()
 
 		var script = `deluge("` + delugeKey + `", "` + delugeName + `", "` + delugeDuration.String() + `", {
@@ -52,6 +52,7 @@ func TestDelugeHandler_Create(t *testing.T) {
 
 	t.Run("Create a valid deluge with undefined scenario", func(t *testing.T) {
 		repov2.Instance = repov2.NewInMemoryRepository()
+		createScenario(t, scenarioKey, scenarioName)
 		w := httptest.NewRecorder()
 
 		var script = `deluge("` + delugeKey + `", "` + delugeName + `", "` + delugeDuration.String() + `", {
@@ -83,6 +84,7 @@ func TestDelugeHandler_Create(t *testing.T) {
 
 	t.Run("Create an invalid deluge", func(t *testing.T) {
 		repov2.Instance = repov2.NewInMemoryRepository()
+		createScenario(t, scenarioKey, scenarioName)
 		w := httptest.NewRecorder()
 
 		// missing scenario
@@ -98,6 +100,7 @@ func TestDelugeHandler_Create(t *testing.T) {
 
 	t.Run("Create an existing deluge", func(t *testing.T) {
 		repov2.Instance = repov2.NewInMemoryRepository()
+		createScenario(t, scenarioKey, scenarioName)
 		w := httptest.NewRecorder()
 
 		script := createDeluge(t, delugeKey, delugeName, scenarioKey)
@@ -130,6 +133,7 @@ func TestDelugeHandler_Create(t *testing.T) {
 				return errors.New("some error")
 			},
 		}
+		createScenario(t, scenarioKey, scenarioName)
 		w := httptest.NewRecorder()
 
 		var script = `deluge("` + delugeKey + `", "` + delugeName + `", "` + delugeDuration.String() + `", {
@@ -148,6 +152,7 @@ func TestDelugeHandler_Create(t *testing.T) {
 		repov2.Instance = &repoMock{
 			InMemoryRepository: *repov2.NewInMemoryRepository(),
 		}
+		createScenario(t, scenarioKey, scenarioName)
 		w := httptest.NewRecorder()
 
 		r := httptest.NewRequest(http.MethodPost, "http://example.com/v1/deluges", nil)
@@ -160,7 +165,6 @@ func TestDelugeHandler_Create(t *testing.T) {
 func TestDelugeHandler_Update(t *testing.T) {
 	const scenarioKey = "myScenario"
 	const scenarioName = "My scenario"
-	createScenario(t, scenarioKey, scenarioName)
 
 	const delugeKey = "myDeluge"
 	const delugeName = "My deluge"
@@ -170,6 +174,7 @@ func TestDelugeHandler_Update(t *testing.T) {
 
 	t.Run("Update an existing deluge", func(t *testing.T) {
 		repov2.Instance = repov2.NewInMemoryRepository()
+		createScenario(t, scenarioKey, scenarioName)
 		w := httptest.NewRecorder()
 
 		script := createDeluge(t, delugeKey, delugeName, scenarioKey)
@@ -198,6 +203,7 @@ func TestDelugeHandler_Update(t *testing.T) {
 
 	t.Run("Update an invalid deluge", func(t *testing.T) {
 		repov2.Instance = repov2.NewInMemoryRepository()
+		createScenario(t, scenarioKey, scenarioName)
 		w := httptest.NewRecorder()
 
 		script := createDeluge(t, delugeKey, delugeName, scenarioKey)
@@ -220,6 +226,7 @@ func TestDelugeHandler_Update(t *testing.T) {
 
 	t.Run("Update a non-existing deluge", func(t *testing.T) {
 		repov2.Instance = repov2.NewInMemoryRepository()
+		createScenario(t, scenarioKey, scenarioName)
 		w := httptest.NewRecorder()
 
 		var script = `deluge("` + delugeKey + `", "` + delugeName + `", "` + delugeDuration.String() + `", {
@@ -242,6 +249,7 @@ func TestDelugeHandler_Update(t *testing.T) {
 			InMemoryRepository: *repov2.NewInMemoryRepository(),
 		}
 		repov2.Instance = rep
+		createScenario(t, scenarioKey, scenarioName)
 		w := httptest.NewRecorder()
 
 		var script = createDeluge(t, delugeKey, delugeName, scenarioKey)
@@ -260,6 +268,7 @@ func TestDelugeHandler_Update(t *testing.T) {
 		repov2.Instance = &repoMock{
 			InMemoryRepository: *repov2.NewInMemoryRepository(),
 		}
+		createScenario(t, scenarioKey, scenarioName)
 		w := httptest.NewRecorder()
 
 		createDeluge(t, delugeKey, delugeName, scenarioKey)
@@ -274,7 +283,6 @@ func TestDelugeHandler_Update(t *testing.T) {
 func TestDelugeHandler_GetByID(t *testing.T) {
 	const scenarioKey = "myScenario"
 	const scenarioName = "My scenario"
-	createScenario(t, scenarioKey, scenarioName)
 
 	const delugeKey = "myDeluge"
 	const delugeName = "My deluge"
@@ -283,6 +291,7 @@ func TestDelugeHandler_GetByID(t *testing.T) {
 
 	t.Run("Get an existing deluge", func(t *testing.T) {
 		repov2.Instance = repov2.NewInMemoryRepository()
+		createScenario(t, scenarioKey, scenarioName)
 		w := httptest.NewRecorder()
 
 		var script = createDeluge(t, delugeKey, delugeName, scenarioKey)
@@ -299,6 +308,7 @@ func TestDelugeHandler_GetByID(t *testing.T) {
 
 	t.Run("Get a non-existing scenario", func(t *testing.T) {
 		repov2.Instance = repov2.NewInMemoryRepository()
+		createScenario(t, scenarioKey, scenarioName)
 		w := httptest.NewRecorder()
 
 		r := httptest.NewRequest(http.MethodGet, "http://example.com/v1/deluges/"+delugeKey, nil)
@@ -311,7 +321,6 @@ func TestDelugeHandler_GetByID(t *testing.T) {
 func TestDelugeHandler_DeleteByID(t *testing.T) {
 	const scenarioKey = "myScenario"
 	const scenarioName = "My scenario"
-	createScenario(t, scenarioKey, scenarioName)
 
 	const delugeKey = "myDeluge"
 	const delugeName = "My deluge"
@@ -320,6 +329,7 @@ func TestDelugeHandler_DeleteByID(t *testing.T) {
 
 	t.Run("Delete an existing deluge", func(t *testing.T) {
 		repov2.Instance = repov2.NewInMemoryRepository()
+		createScenario(t, scenarioKey, scenarioName)
 		w := httptest.NewRecorder()
 
 		createDeluge(t, delugeKey, delugeName, scenarioKey)
@@ -337,6 +347,7 @@ func TestDelugeHandler_DeleteByID(t *testing.T) {
 
 	t.Run("Delete a non-existing deluge", func(t *testing.T) {
 		repov2.Instance = repov2.NewInMemoryRepository()
+		createScenario(t, scenarioKey, scenarioName)
 		w := httptest.NewRecorder()
 
 		r := httptest.NewRequest(http.MethodDelete, "http://example.com/v1/deluges/"+delugeKey, nil)
@@ -349,7 +360,6 @@ func TestDelugeHandler_DeleteByID(t *testing.T) {
 func TestDelugeHandler_GetAll(t *testing.T) {
 	const scenarioKey = "myScenario"
 	const scenarioName = "My scenario"
-	createScenario(t, scenarioKey, scenarioName)
 
 	const delugeKey1 = "myDeluge1"
 	const delugeName1 = "My deluge 1"
@@ -358,8 +368,9 @@ func TestDelugeHandler_GetAll(t *testing.T) {
 
 	var router = NewRouter(NewDelugeHandler())
 
-	t.Run("Get all scenarios", func(t *testing.T) {
+	t.Run("Get all deluges", func(t *testing.T) {
 		repov2.Instance = repov2.NewInMemoryRepository()
+		createScenario(t, scenarioKey, scenarioName)
 		w := httptest.NewRecorder()
 
 		createDeluge(t, delugeKey1, delugeName1, scenarioKey)
@@ -385,6 +396,7 @@ func TestDelugeHandler_GetAll(t *testing.T) {
 
 	t.Run("Get all deluges on empty repository", func(t *testing.T) {
 		repov2.Instance = repov2.NewInMemoryRepository()
+		createScenario(t, scenarioKey, scenarioName)
 		w := httptest.NewRecorder()
 
 		r := httptest.NewRequest(http.MethodGet, "http://example.com/v1/deluges", nil)
