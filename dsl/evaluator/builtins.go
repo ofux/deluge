@@ -4,13 +4,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/ofux/deluge/dsl/ast"
-	"github.com/ofux/deluge/dsl/object"
-	"github.com/ofux/deluge/dsl/token"
 	"net/url"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/ofux/deluge/dsl/ast"
+	"github.com/ofux/deluge/dsl/object"
+	"github.com/ofux/deluge/dsl/token"
 )
 
 const ANY_TYPE object.ObjectType = "ANY"
@@ -25,7 +26,7 @@ func AddGlobalBuiltin(name string, fn object.BuiltinFunction) error {
 
 func AssertArgCount(node ast.Node, args []object.Object, count int) *object.Error {
 	if len(args) != count {
-		return NewError(node, "wrong number of arguments. got=%d, want=%d",
+		return NewErrorf(node, "wrong number of arguments. got=%d, want=%d",
 			len(args), count)
 	}
 	return nil
@@ -33,12 +34,12 @@ func AssertArgCount(node ast.Node, args []object.Object, count int) *object.Erro
 
 func AssertArgsType(node ast.Node, args []object.Object, types ...object.ObjectType) *object.Error {
 	if len(args) != len(types) {
-		return NewError(node, "wrong number of arguments. got=%d, want=%d",
+		return NewErrorf(node, "wrong number of arguments. got=%d, want=%d",
 			len(args), len(types))
 	}
 	for i, t := range types {
 		if t != ANY_TYPE && args[i].Type() != t {
-			return NewError(node, "wrong type of argument n°%d. got=%s, want=%s",
+			return NewErrorf(node, "wrong type of argument n°%d. got=%s, want=%s",
 				i+1, args[i].Type(), t)
 		}
 	}
@@ -99,7 +100,7 @@ var globalBuiltins = map[string]*object.Builtin{
 			case *object.String:
 				return &object.Integer{Value: int64(len(arg.Value))}
 			default:
-				return NewError(node, "wrong type of argument. got=%s, want %s or %s",
+				return NewErrorf(node, "wrong type of argument. got=%s, want %s or %s",
 					args[0].Type(), object.ARRAY_OBJ, object.STRING_OBJ)
 			}
 		},
@@ -198,7 +199,7 @@ var globalBuiltins = map[string]*object.Builtin{
 			for k, v := range hash.Pairs {
 				vStr, ok := v.(*object.String)
 				if !ok {
-					return NewError(node, "cannot url-encode value of type %s", v.Type())
+					return NewErrorf(node, "cannot url-encode value of type %s", v.Type())
 				}
 				data.Add(string(k), vStr.Value)
 			}

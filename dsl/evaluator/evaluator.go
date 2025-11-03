@@ -3,10 +3,11 @@ package evaluator
 import (
 	"errors"
 	"fmt"
+	"strconv"
+
 	"github.com/ofux/deluge/dsl/ast"
 	"github.com/ofux/deluge/dsl/object"
 	"github.com/ofux/deluge/dsl/token"
-	"strconv"
 )
 
 var (
@@ -93,7 +94,7 @@ func (e *Evaluator) eval(node ast.Node, env *object.Environment) object.Object {
 			return val
 		}
 		if !env.Add(node.Name.Value, val) {
-			return NewError(node.Name, "variable %s redeclared in this block", node.Name.Value)
+			return NewErrorf(node.Name, "variable %s redeclared in this block", node.Name.Value)
 		}
 
 	// Expressions
@@ -238,7 +239,7 @@ func (e *Evaluator) evalPrefixExpression(prefixExp *ast.PrefixExpression, right 
 	case "-":
 		return e.evalMinusPrefixOperatorExpression(prefixExp, right)
 	default:
-		return NewError(prefixExp, "unknown operator: %s%s", operator, right.Type())
+		return NewErrorf(prefixExp, "unknown operator: %s%s", operator, right.Type())
 	}
 }
 
@@ -275,10 +276,10 @@ func (e *Evaluator) evalInfixExpression(
 	case operator == "!=":
 		return nativeBoolToBooleanObject(left != right)
 	case left.Type() != right.Type():
-		return NewError(node, "type mismatch: %s %s %s",
+		return NewErrorf(node, "type mismatch: %s %s %s",
 			left.Type(), operator, right.Type())
 	default:
-		return NewError(node, "unknown operator: %s %s %s",
+		return NewErrorf(node, "unknown operator: %s %s %s",
 			left.Type(), operator, right.Type())
 	}
 }
@@ -303,7 +304,7 @@ func (e *Evaluator) evalMinusPrefixOperatorExpression(node ast.Node, right objec
 	case *object.Float:
 		return &object.Float{Value: -right.Value}
 	default:
-		return NewError(node, "unknown operator: -%s", right.Type())
+		return NewErrorf(node, "unknown operator: -%s", right.Type())
 	}
 }
 
@@ -339,7 +340,7 @@ func (e *Evaluator) evalIntegerInfixExpression(
 	case "!=":
 		return nativeBoolToBooleanObject(leftVal != rightVal)
 	default:
-		return NewError(node, "unknown operator: %s %s %s",
+		return NewErrorf(node, "unknown operator: %s %s %s",
 			left.Type(), operator, right.Type())
 	}
 }
@@ -385,7 +386,7 @@ func (e *Evaluator) evalFloatInfixExpression(
 	case "!=":
 		return nativeBoolToBooleanObject(leftVal != rightVal)
 	default:
-		return NewError(node, "unknown operator: %s %s %s",
+		return NewErrorf(node, "unknown operator: %s %s %s",
 			left.Type(), operator, right.Type())
 	}
 }
@@ -418,7 +419,7 @@ func (e *Evaluator) evalStringInfixExpression(
 		}
 		return nativeBoolToBooleanObject(leftStr.Value != rightStr.Value)
 	default:
-		return NewError(node, "unknown operator: %s %s %s",
+		return NewErrorf(node, "unknown operator: %s %s %s",
 			left.Type(), operator, right.Type())
 	}
 }
@@ -435,7 +436,7 @@ func (e *Evaluator) evalBooleanInfixExpression(
 			return left
 		}
 		if left.Type() != object.BOOLEAN_OBJ {
-			return NewError(node, "unknown operator: %s %s %s",
+			return NewErrorf(node, "unknown operator: %s %s %s",
 				left.Type(), operator, object.BOOLEAN_OBJ)
 		}
 		if !left.(*object.Boolean).Value {
@@ -447,7 +448,7 @@ func (e *Evaluator) evalBooleanInfixExpression(
 			return right
 		}
 		if right.Type() != object.BOOLEAN_OBJ {
-			return NewError(node, "unknown operator: %s %s %s",
+			return NewErrorf(node, "unknown operator: %s %s %s",
 				object.BOOLEAN_OBJ, operator, right.Type())
 		}
 		return nativeBoolToBooleanObject(right.(*object.Boolean).Value)
@@ -458,7 +459,7 @@ func (e *Evaluator) evalBooleanInfixExpression(
 			return left
 		}
 		if left.Type() != object.BOOLEAN_OBJ {
-			return NewError(node, "unknown operator: %s %s %s",
+			return NewErrorf(node, "unknown operator: %s %s %s",
 				left.Type(), operator, object.BOOLEAN_OBJ)
 		}
 		if left.(*object.Boolean).Value {
@@ -470,7 +471,7 @@ func (e *Evaluator) evalBooleanInfixExpression(
 			return right
 		}
 		if right.Type() != object.BOOLEAN_OBJ {
-			return NewError(node, "unknown operator: %s %s %s",
+			return NewErrorf(node, "unknown operator: %s %s %s",
 				object.BOOLEAN_OBJ, operator, right.Type())
 		}
 		return nativeBoolToBooleanObject(right.(*object.Boolean).Value)
@@ -503,7 +504,7 @@ func (e *Evaluator) evalAssignmentExpression(
 		}
 		return evalAssignmentIndexExpression(node, left, index, right)
 	default:
-		return NewError(node, "unknown operator: %s %s %s",
+		return NewErrorf(node, "unknown operator: %s %s %s",
 			node.Left.TokenDetails().Type, operator, right.Type())
 	}
 }
@@ -518,13 +519,13 @@ func evalAssignmentIdentifierExpression(
 		func() object.Object {
 			v, ok := env.Get(identifier.Value)
 			if !ok {
-				return NewError(node, "identifier not found: %s", identifier.Value)
+				return NewErrorf(node, "identifier not found: %s", identifier.Value)
 			}
 			return v
 		},
 		func(v object.Object) object.Object {
 			if !env.Set(identifier.Value, v) {
-				return NewError(node, "identifier not found: %s", identifier.Value)
+				return NewErrorf(node, "identifier not found: %s", identifier.Value)
 			}
 			return v
 		},
@@ -538,7 +539,7 @@ func evalAssignmentIndexExpression(node *ast.AssignmentExpression, left, index, 
 	case left.Type() == object.HASH_OBJ:
 		return evalAssignmentHashIndexExpression(node, left, index, value)
 	default:
-		return NewError(node, "index operator not supported: %s", left.Type())
+		return NewErrorf(node, "index operator not supported: %s", left.Type())
 	}
 }
 
@@ -548,7 +549,7 @@ func evalAssignmentArrayIndexExpression(node *ast.AssignmentExpression, array, i
 	max := int64(len(arrayObject.Elements) - 1)
 
 	if idx < 0 || idx > max {
-		return NewError(node, "index %d out of bounds [%d, %d]", idx, 0, max)
+		return NewErrorf(node, "index %d out of bounds [%d, %d]", idx, 0, max)
 	}
 
 	return doAssignment(node, value,
@@ -565,12 +566,12 @@ func evalAssignmentArrayIndexExpression(node *ast.AssignmentExpression, array, i
 func evalAssignmentHashIndexExpression(node *ast.AssignmentExpression, hash, index, value object.Object) object.Object {
 	hashObject := hash.(*object.Hash)
 	if hashObject.IsImmutable {
-		return NewError(node, "hash is immutable, you cannot modify it")
+		return NewErrorf(node, "hash is immutable, you cannot modify it")
 	}
 
 	keyObj, ok := index.(object.Hashable)
 	if !ok {
-		return NewError(node, "unusable as hash key: %s", index.Type())
+		return NewErrorf(node, "unusable as hash key: %s", index.Type())
 	}
 	key := keyObj.HashKey()
 
@@ -578,7 +579,7 @@ func evalAssignmentHashIndexExpression(node *ast.AssignmentExpression, hash, ind
 		func() object.Object {
 			v, ok := hashObject.Pairs[key]
 			if !ok {
-				return NewError(node, "undefined hash key: %s", key)
+				return NewErrorf(node, "undefined hash key: %s", key)
 			}
 			return v
 		},
@@ -619,7 +620,7 @@ func doAssignment(
 			case "/=":
 				return setter(&object.Integer{Value: oldV.Value / newV.Value})
 			default:
-				return NewError(node, "unknown operator %s %s %s", oldV.Type(), operator, newV.Type())
+				return NewErrorf(node, "unknown operator %s %s %s", oldV.Type(), operator, newV.Type())
 			}
 		case *object.Float:
 			switch operator {
@@ -632,7 +633,7 @@ func doAssignment(
 			case "/=":
 				return setter(&object.Float{Value: float64(oldV.Value) / newV.Value})
 			default:
-				return NewError(node, "unknown operator %s %s %s", oldV.Type(), operator, newV.Type())
+				return NewErrorf(node, "unknown operator %s %s %s", oldV.Type(), operator, newV.Type())
 			}
 		}
 	case *object.Float:
@@ -648,7 +649,7 @@ func doAssignment(
 			case "/=":
 				return setter(&object.Float{Value: oldV.Value / float64(newV.Value)})
 			default:
-				return NewError(node, "unknown operator %s %s %s", oldV.Type(), operator, newV.Type())
+				return NewErrorf(node, "unknown operator %s %s %s", oldV.Type(), operator, newV.Type())
 			}
 		case *object.Float:
 			switch operator {
@@ -661,12 +662,12 @@ func doAssignment(
 			case "/=":
 				return setter(&object.Float{Value: oldV.Value / newV.Value})
 			default:
-				return NewError(node, "unknown operator %s %s %s", oldV.Type(), operator, newV.Type())
+				return NewErrorf(node, "unknown operator %s %s %s", oldV.Type(), operator, newV.Type())
 			}
 		}
 	case *object.String:
 		if operator != "+=" {
-			return NewError(node, "unknown operator %s %s %s", oldValue.Type(), operator, value.Type())
+			return NewErrorf(node, "unknown operator %s %s %s", oldValue.Type(), operator, value.Type())
 		}
 		switch newV := value.(type) {
 		case *object.String:
@@ -678,10 +679,10 @@ func doAssignment(
 		case *object.Boolean:
 			return setter(&object.String{Value: oldV.Value + strconv.FormatBool(newV.Value)})
 		default:
-			return NewError(node, "unknown operator %s %s %s", oldV.Type(), operator, newV.Type())
+			return NewErrorf(node, "unknown operator %s %s %s", oldV.Type(), operator, newV.Type())
 		}
 	}
-	return NewError(node, "unknown operator %s %s %s", oldValue.Type(), operator, value.Type())
+	return NewErrorf(node, "unknown operator %s %s %s", oldValue.Type(), operator, value.Type())
 }
 
 func (e *Evaluator) evalPostAssignmentExpression(
@@ -704,7 +705,7 @@ func (e *Evaluator) evalPostAssignmentExpression(
 		}
 		return evalPostAssignmentIndexExpression(node, left, index)
 	default:
-		return NewError(node, "unknown operator: %s %s",
+		return NewErrorf(node, "unknown operator: %s %s",
 			node.Left.TokenDetails().Type, operator)
 	}
 }
@@ -716,7 +717,7 @@ func evalPostAssignmentIdentifierExpression(
 ) object.Object {
 	v, ok := env.Get(identifier.Value)
 	if !ok {
-		return NewError(node, "identifier not found: %s", identifier.Value)
+		return NewErrorf(node, "identifier not found: %s", identifier.Value)
 	}
 	return doPostAssignment(node, v)
 }
@@ -728,7 +729,7 @@ func evalPostAssignmentIndexExpression(node *ast.PostAssignmentExpression, left,
 	case left.Type() == object.HASH_OBJ:
 		return evalPostAssignmentHashIndexExpression(node, left, index)
 	default:
-		return NewError(node, "index operator not supported: %s", left.Type())
+		return NewErrorf(node, "index operator not supported: %s", left.Type())
 	}
 }
 
@@ -738,7 +739,7 @@ func evalPostAssignmentArrayIndexExpression(node *ast.PostAssignmentExpression, 
 	max := int64(len(arrayObject.Elements) - 1)
 
 	if idx < 0 || idx > max {
-		return NewError(node, "index %d out of bounds [%d, %d]", idx, 0, max)
+		return NewErrorf(node, "index %d out of bounds [%d, %d]", idx, 0, max)
 	}
 
 	return doPostAssignment(node, arrayObject.Elements[idx])
@@ -747,18 +748,18 @@ func evalPostAssignmentArrayIndexExpression(node *ast.PostAssignmentExpression, 
 func evalPostAssignmentHashIndexExpression(node *ast.PostAssignmentExpression, hash, index object.Object) object.Object {
 	hashObject := hash.(*object.Hash)
 	if hashObject.IsImmutable {
-		return NewError(node, "hash is immutable, you cannot modify it")
+		return NewErrorf(node, "hash is immutable, you cannot modify it")
 	}
 
 	keyObj, ok := index.(object.Hashable)
 	if !ok {
-		return NewError(node, "unusable as hash key: %s", index.Type())
+		return NewErrorf(node, "unusable as hash key: %s", index.Type())
 	}
 	key := keyObj.HashKey()
 
 	v, ok := hashObject.Pairs[key]
 	if !ok {
-		return NewError(node, "undefined hash key: %s", key)
+		return NewErrorf(node, "undefined hash key: %s", key)
 	}
 
 	return doPostAssignment(node, v)
@@ -770,7 +771,7 @@ func doPostAssignment(
 ) object.Object {
 	vInt, ok := assigned.(*object.Integer)
 	if !ok {
-		return NewError(node, "unknown operator %s %s", assigned.Type(), node.Operator)
+		return NewErrorf(node, "unknown operator %s %s", assigned.Type(), node.Operator)
 	}
 	oldValue := &object.Integer{Value: vInt.Value}
 	switch node.Operator {
@@ -876,7 +877,7 @@ func (e *Evaluator) applyFunction(node ast.Node, fn object.Object, args []object
 
 	case *object.Function:
 		if len(fn.Parameters) != len(args) {
-			return NewError(node, "wrong number of arguments: expected %d, got %d", len(fn.Parameters), len(args))
+			return NewErrorf(node, "wrong number of arguments: expected %d, got %d", len(fn.Parameters), len(args))
 		}
 		extendedEnv, err := extendFunctionEnv(fn, args)
 		if err != nil {
@@ -889,7 +890,7 @@ func (e *Evaluator) applyFunction(node ast.Node, fn object.Object, args []object
 		return fn.Fn(node, args...)
 
 	default:
-		return NewError(node, "not a function: %s", fn.Type())
+		return NewErrorf(node, "not a function: %s", fn.Type())
 	}
 }
 
@@ -900,7 +901,7 @@ func (e *Evaluator) evalIndexExpression(node ast.Node, left, index object.Object
 	case left.Type() == object.HASH_OBJ:
 		return evalHashIndexExpression(node, left, index)
 	default:
-		return NewError(node, "index operator not supported: %s", left.Type())
+		return NewErrorf(node, "index operator not supported: %s", left.Type())
 	}
 }
 
@@ -910,7 +911,7 @@ func evalArrayIndexExpression(node ast.Node, array, index object.Object) object.
 	max := int64(len(arrayObject.Elements) - 1)
 
 	if idx < 0 || idx > max {
-		return NewError(node, "index %d out of bounds [%d, %d]", idx, 0, max)
+		return NewErrorf(node, "index %d out of bounds [%d, %d]", idx, 0, max)
 	}
 
 	return arrayObject.Elements[idx]
@@ -921,7 +922,7 @@ func evalHashIndexExpression(node ast.Node, hash, index object.Object) object.Ob
 
 	key, ok := index.(object.Hashable)
 	if !ok {
-		return NewError(node, "unusable as hash key: %s", index.Type())
+		return NewErrorf(node, "unusable as hash key: %s", index.Type())
 	}
 
 	v, ok := hashObject.Pairs[key.HashKey()]
@@ -946,7 +947,7 @@ func (e *Evaluator) evalHashLiteral(
 
 		hashKey, ok := key.(object.Hashable)
 		if !ok {
-			return NewError(keyNode, "unusable as hash key: %s", key.Type())
+			return NewErrorf(keyNode, "unusable as hash key: %s", key.Type())
 		}
 
 		value := e.eval(valueNode, env)
@@ -974,7 +975,16 @@ func isTruthy(obj object.Object) bool {
 	}
 }
 
-func NewError(node ast.Node, format string, a ...interface{}) *object.Error {
+func NewError(node ast.Node, format string) *object.Error {
+	return &object.Error{
+		Message: format,
+		StackToken: []token.Token{
+			node.TokenDetails(),
+		},
+	}
+}
+
+func NewErrorf(node ast.Node, format string, a ...interface{}) *object.Error {
 	return &object.Error{
 		Message: fmt.Sprintf(format, a...),
 		StackToken: []token.Token{
@@ -995,7 +1005,7 @@ func extendFunctionEnv(
 
 	for paramIdx, param := range fn.Parameters {
 		if !env.Add(param.Value, args[paramIdx]) {
-			return nil, NewError(param, "")
+			return nil, NewErrorf(param, "")
 		}
 	}
 
@@ -1024,7 +1034,7 @@ func convertToString(
 	case *object.String:
 		return obj, nil
 	default:
-		return nil, NewError(node, "cannot convert value of type %s to %s",
+		return nil, NewErrorf(node, "cannot convert value of type %s to %s",
 			obj.Type(), object.STRING_OBJ)
 	}
 }

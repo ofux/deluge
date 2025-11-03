@@ -1,13 +1,14 @@
 package recording_test
 
 import (
+	"sync"
+	"testing"
+	"time"
+
 	"github.com/ofux/deluge/core/recording"
 	"github.com/ofux/deluge/core/recording/recordingtest"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"sync"
-	"testing"
-	"time"
 )
 
 func TestHTTPRecorder(t *testing.T) {
@@ -26,7 +27,7 @@ func TestHTTPRecorder(t *testing.T) {
 
 		results, err := recorder.GetRecords()
 		if err != nil {
-			t.Fatalf(err.Error())
+			t.Fatal(err.Error())
 		}
 
 		result := results.OverTime[0]
@@ -47,7 +48,7 @@ func TestHTTPRecorder(t *testing.T) {
 
 		results, err := recorder.GetRecords()
 		if err != nil {
-			t.Fatalf(err.Error())
+			t.Fatal(err.Error())
 		}
 
 		result := results.OverTime[0]
@@ -77,7 +78,7 @@ func TestHTTPRecorder(t *testing.T) {
 
 		results, err := recorder.GetRecords()
 		if err != nil {
-			t.Fatalf(err.Error())
+			t.Fatal(err.Error())
 		}
 
 		result := results.OverTime[0]
@@ -98,7 +99,7 @@ func TestHTTPRecorder(t *testing.T) {
 
 		results, err := recorder.GetRecords()
 		if err != nil {
-			t.Fatalf(err.Error())
+			t.Fatal(err.Error())
 		}
 
 		result := results.OverTime[42]
@@ -135,7 +136,7 @@ func TestHTTPRecorder(t *testing.T) {
 
 		results, err := recorder.GetRecords()
 		if err != nil {
-			t.Fatalf(err.Error())
+			t.Fatal(err.Error())
 		}
 
 		recordingtest.CheckHTTPRecord(t, results.Global, "foo", iterCount*concurrent, 200, recording.Ok)
@@ -187,7 +188,7 @@ func TestHTTPRecorder(t *testing.T) {
 
 		results, err := recorder.GetRecords()
 		if err != nil {
-			t.Fatalf(err.Error())
+			t.Fatal(err.Error())
 		}
 
 		recordingtest.CheckHTTPRecord(t, results.Global, "foo", iterCount*concurrent, 200, recording.Ok)
@@ -223,7 +224,7 @@ func TestHTTPRecorder(t *testing.T) {
 
 		results, err := recorder.GetRecords()
 		if err != nil {
-			t.Fatalf(err.Error())
+			t.Fatal(err.Error())
 		}
 
 		recordingtest.CheckHTTPRecord(t, results.Global, "foo", int64(iterCount*concurrent), 200, recording.Ok)

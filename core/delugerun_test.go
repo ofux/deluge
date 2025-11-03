@@ -1,6 +1,9 @@
 package core
 
 import (
+	"testing"
+	"time"
+
 	"github.com/ofux/deluge/core/recording"
 	"github.com/ofux/deluge/core/recording/recordingtest"
 	"github.com/ofux/deluge/core/status"
@@ -8,8 +11,6 @@ import (
 	"github.com/ofux/docilemonkey/docilemonkey"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"testing"
-	"time"
 )
 
 func TestDeluge_NewRunnableDeluge(t *testing.T) {
@@ -154,7 +155,7 @@ func TestDeluge_Run(t *testing.T) {
 
 		records, err := dlg.Scenarios["myScenario"].httpRecorder.GetRecords()
 		if err != nil {
-			t.Fatalf(err.Error())
+			t.Fatal(err.Error())
 		}
 
 		if len(records.OverTime) < 1 || len(records.OverTime) > 2 {

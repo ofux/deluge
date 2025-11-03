@@ -2,12 +2,13 @@ package core
 
 import (
 	"errors"
+	"log"
+
 	"github.com/ofux/deluge/dsl/ast"
 	"github.com/ofux/deluge/dsl/evaluator"
 	"github.com/ofux/deluge/dsl/lexer"
 	"github.com/ofux/deluge/dsl/object"
 	"github.com/ofux/deluge/dsl/parser"
-	"log"
 )
 
 type ScenarioDefinition struct {
@@ -67,27 +68,27 @@ type scenarioBuilder struct {
 
 func (d *scenarioBuilder) dslCreateScenario(node ast.Node, args ...object.Object) object.Object {
 	if d.visited {
-		return evaluator.NewError(node, "Expected only one deluge definition at %s\n", ast.PrintLocation(node))
+		return evaluator.NewErrorf(node, "Expected only one deluge definition at %s\n", ast.PrintLocation(node))
 	}
 	d.visited = true
 
 	if len(args) != 3 {
-		return evaluator.NewError(node, "Expected %d arguments at %s\n", 3, ast.PrintLocation(node))
+		return evaluator.NewErrorf(node, "Expected %d arguments at %s\n", 3, ast.PrintLocation(node))
 	}
 
 	scenarioId, ok := args[0].(*object.String)
 	if !ok || len(scenarioId.Value) < 3 {
-		return evaluator.NewError(node, "Expected 1st argument to be a string with at least 3 characters at %s\n", ast.PrintLocation(node))
+		return evaluator.NewErrorf(node, "Expected 1st argument to be a string with at least 3 characters at %s\n", ast.PrintLocation(node))
 	}
 
 	name, ok := args[1].(*object.String)
 	if !ok {
-		return evaluator.NewError(node, "Expected 2nd argument to be a string at %s\n", ast.PrintLocation(node))
+		return evaluator.NewErrorf(node, "Expected 2nd argument to be a string at %s\n", ast.PrintLocation(node))
 	}
 
 	coreFunc, ok := args[2].(*object.Function)
 	if !ok {
-		return evaluator.NewError(node, "Expected 3rd argument to be a function at %s\n", ast.PrintLocation(node))
+		return evaluator.NewErrorf(node, "Expected 3rd argument to be a function at %s\n", ast.PrintLocation(node))
 	}
 
 	d.ID = scenarioId.Value

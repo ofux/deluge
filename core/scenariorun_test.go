@@ -1,6 +1,10 @@
 package core
 
 import (
+	"io/ioutil"
+	"testing"
+	"time"
+
 	"github.com/ofux/deluge/core/recording"
 	"github.com/ofux/deluge/core/recording/recordingtest"
 	"github.com/ofux/deluge/core/status"
@@ -9,9 +13,6 @@ import (
 	"github.com/ofux/docilemonkey/docilemonkey"
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
-	"io/ioutil"
-	"testing"
-	"time"
 )
 
 func TestScenario_Run(t *testing.T) {
@@ -42,7 +43,7 @@ scenario("sc1", "Some scenario", function () {
 
 		records, err := scenario.httpRecorder.GetRecords()
 		if err != nil {
-			t.Fatalf(err.Error())
+			t.Fatal(err.Error())
 		}
 
 		iterCount := len(records.OverTime)
@@ -137,7 +138,7 @@ scenario("sc1", "Some scenario", function (args) {
 
 		records, err := scenario.httpRecorder.GetRecords()
 		if err != nil {
-			t.Fatalf(err.Error())
+			t.Fatal(err.Error())
 		}
 
 		iterCount := len(records.OverTime)

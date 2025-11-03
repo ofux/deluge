@@ -1,15 +1,16 @@
 package core
 
 import (
-	"github.com/ofux/deluge/core/recording"
-	"github.com/ofux/deluge/dsl/ast"
-	"github.com/ofux/deluge/dsl/evaluator"
-	"github.com/ofux/deluge/dsl/object"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/ofux/deluge/core/recording"
+	"github.com/ofux/deluge/dsl/ast"
+	"github.com/ofux/deluge/dsl/evaluator"
+	"github.com/ofux/deluge/dsl/object"
 )
 
 // execHTTPRequest is the implementation of the built-in function 'http' that performs HTTP requests and
@@ -53,14 +54,14 @@ func createRequest(node ast.Node, reqObj *object.Hash) (*http.Request, *object.E
 	// Get URL
 	url, _, err := reqObj.GetAsString("url")
 	if err != nil {
-		return nil, evaluator.NewError(node, "invalid HTTP request: %s", err.Error())
+		return nil, evaluator.NewErrorf(node, "invalid HTTP request: %s", err.Error())
 	}
 
 	// Get Method
 	var method = "GET"
 	if m, ok, err := reqObj.GetAsString("method"); ok {
 		if err != nil {
-			return nil, evaluator.NewError(node, "invalid HTTP request: %s", err.Error())
+			return nil, evaluator.NewErrorf(node, "invalid HTTP request: %s", err.Error())
 		}
 		method = m.Value
 	}
@@ -69,7 +70,7 @@ func createRequest(node ast.Node, reqObj *object.Hash) (*http.Request, *object.E
 	var body io.Reader
 	if b, ok, err := reqObj.GetAsString("body"); ok {
 		if err != nil {
-			return nil, evaluator.NewError(node, "invalid HTTP request: %s", err.Error())
+			return nil, evaluator.NewErrorf(node, "invalid HTTP request: %s", err.Error())
 		}
 		body = strings.NewReader(b.Value)
 	}
@@ -83,12 +84,12 @@ func createRequest(node ast.Node, reqObj *object.Hash) (*http.Request, *object.E
 	// Add Headers
 	if headers, ok, err := reqObj.GetAsHash("headers"); ok {
 		if err != nil {
-			return nil, evaluator.NewError(node, "invalid HTTP request: %s", err.Error())
+			return nil, evaluator.NewErrorf(node, "invalid HTTP request: %s", err.Error())
 		}
 		for headerKey, headerVal := range headers.Pairs {
 			headerValStr, ok := headerVal.(*object.String)
 			if !ok {
-				return nil, evaluator.NewError(node, "invalid HTTP header '%s': should be of type %s but was %s", headerKey, object.STRING_OBJ, headerVal.Type())
+				return nil, evaluator.NewErrorf(node, "invalid HTTP header '%s': should be of type %s but was %s", headerKey, object.STRING_OBJ, headerVal.Type())
 			}
 			req.Header.Add(string(headerKey), headerValStr.Value)
 		}
