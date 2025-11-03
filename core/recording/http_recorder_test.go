@@ -266,4 +266,48 @@ func TestHTTPRecorderErrors(t *testing.T) {
 		assert.Error(t, err)
 		assert.Equal(t, "GetRecordsSnapshot can only be called while recording. Use GetRecords instead", err.Error())
 	})
+
+	t.Run("Records value above maximum trackable value", func(t *testing.T) {
+		recorder := recording.NewHTTPRecorder(1, 1)
+
+		// Record a value above the histogram's max trackable value (3600*1000 = 3,600,000 ms)
+		recorder.Record(&recording.HTTPRecordEntry{
+			Iteration:  0,
+			Name:       "foo",
+			Value:      5000000, // 5,000,000 ms (> 1 hour)
+			StatusCode: 200,
+		})
+
+		recorder.Close()
+
+		results, err := recorder.GetRecords()
+		require.NoError(t, err)
+
+		result := results.OverTime[0]
+		// The value should still be recorded (clamped to max trackable value)
+		assert.Equal(t, int64(1), result.Global.TotalCount(), "Expected 1 value to be recorded")
+		recordingtest.CheckHTTPRecord(t, result, "foo", 1, 200, recording.Ok)
+	})
+
+	t.Run("Records value below minimum trackable value", func(t *testing.T) {
+		recorder := recording.NewHTTPRecorder(1, 1)
+
+		// Record a negative value (below the histogram's min trackable value of 0)
+		recorder.Record(&recording.HTTPRecordEntry{
+			Iteration:  0,
+			Name:       "foo",
+			Value:      -1000,
+			StatusCode: 200,
+		})
+
+		recorder.Close()
+
+		results, err := recorder.GetRecords()
+		require.NoError(t, err)
+
+		result := results.OverTime[0]
+		// The value should still be recorded (clamped to min trackable value)
+		assert.Equal(t, int64(1), result.Global.TotalCount(), "Expected 1 value to be recorded")
+		recordingtest.CheckHTTPRecord(t, result, "foo", 1, 200, recording.Ok)
+	})
 }
