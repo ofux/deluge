@@ -1,14 +1,15 @@
 package evaluator
 
 import (
+	"testing"
+	"time"
+
 	"github.com/ofux/deluge/dsl/ast"
 	"github.com/ofux/deluge/dsl/lexer"
 	"github.com/ofux/deluge/dsl/object"
 	"github.com/ofux/deluge/dsl/parser"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"testing"
-	"time"
 )
 
 func TestAddGlobalBuiltin(t *testing.T) {
@@ -380,7 +381,7 @@ func TestBuiltinPause(t *testing.T) {
 		result, ok := evaluated.(*object.Error)
 
 		require.True(t, ok)
-		assert.Equal(t, "time: missing unit in duration 2", result.Message)
+		assert.Equal(t, "time: missing unit in duration \"2\"", result.Message)
 	})
 
 	t.Run("Pause with no argument", func(t *testing.T) {

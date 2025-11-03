@@ -1,12 +1,13 @@
 package core
 
 import (
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestSimUser_ExecHTTPRequest(t *testing.T) {
@@ -186,7 +187,7 @@ func TestSimUser_ExecHTTPRequest(t *testing.T) {
 				`)
 		su.run(0)
 		checkSimUserStatus(t, su, UserDoneError)
-		checkSimUserError(t, su, "Get foobar: unsupported protocol scheme \"\"")
+		checkSimUserError(t, su, "Get \"foobar\": unsupported protocol scheme \"\"")
 	})
 
 	t.Run("Bad HTTP method", func(t *testing.T) {
