@@ -24,7 +24,7 @@ func NewScenario(name string, concurrent int, duration time.Duration, script ast
 		simUsers: make([]*SimUser, concurrent),
 		duration: duration,
 		script:   script,
-		recorder: NewRecorder(),
+		recorder: NewRecorder(DefaultHistogramConstructor()),
 	}
 
 	for i := 0; i < concurrent; i++ {

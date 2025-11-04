@@ -20,7 +20,7 @@ func NewSimUserTest(t *testing.T, js string) (*SimUser, Recorder) {
 		t.Fatal("Parsing error(s)")
 	}
 
-	recorder := NewRecorder()
+	recorder := NewRecorder(DefaultHistogramConstructor())
 	return NewSimUser("1", program, recorder), recorder
 }
 
