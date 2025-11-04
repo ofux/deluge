@@ -1,0 +1,379 @@
+package evaluator
+
+import (
+	"encoding/json"
+	"errors"
+	"fmt"
+	"net/url"
+	"strconv"
+	"strings"
+	"time"
+
+	"github.com/ofux/deluge/dsl/ast"
+	"github.com/ofux/deluge/dsl/object"
+	"github.com/ofux/deluge/dsl/token"
+)
+
+const ANY_TYPE object.ObjectType = "ANY"
+
+func AddGlobalBuiltin(name string, fn object.BuiltinFunction) error {
+	if _, ok := globalBuiltins[name]; ok {
+		return errors.New(fmt.Sprintf("Global built-in function '%s' is already defined", name))
+	}
+	globalBuiltins[name] = &object.Builtin{Fn: fn}
+	return nil
+}
+
+func AssertArgCount(node ast.Node, args []object.Object, count int) *object.Error {
+	if len(args) != count {
+		return NewError(node, "wrong number of arguments. got=%d, want=%d",
+			len(args), count)
+	}
+	return nil
+}
+
+func AssertArgsType(node ast.Node, args []object.Object, types ...object.ObjectType) *object.Error {
+	if len(args) != len(types) {
+		return NewError(node, "wrong number of arguments. got=%d, want=%d",
+			len(args), len(types))
+	}
+	for i, t := range types {
+		if t != ANY_TYPE && args[i].Type() != t {
+			return NewError(node, "wrong type of argument n°%d. got=%s, want=%s",
+				i+1, args[i].Type(), t)
+		}
+	}
+	return nil
+}
+
+var globalBuiltins = map[string]*object.Builtin{
+	"exit": {
+		Fn: func(node ast.Node, args ...object.Object) object.Object {
+			if len(args) > 0 {
+				interrupt(args[0])
+			} else {
+				interrupt(nil)
+			}
+			return nil
+		},
+	},
+	"assert": {
+		Fn: func(node ast.Node, args ...object.Object) object.Object {
+			if oErr := AssertArgsType(node, args, object.BOOLEAN_OBJ); oErr != nil {
+				return oErr
+			}
+
+			if b := args[0].(*object.Boolean); !b.Value {
+				interrupt(&object.Error{
+					Message:    "Assertion failed",
+					StackToken: []token.Token{node.TokenDetails()},
+				})
+			}
+			return TRUE
+		},
+	},
+	"pause": {
+		Fn: func(node ast.Node, args ...object.Object) object.Object {
+			if oErr := AssertArgsType(node, args, object.STRING_OBJ); oErr != nil {
+				return oErr
+			}
+
+			dArg := args[0].(*object.String)
+			d, err := time.ParseDuration(dArg.Value)
+			if err != nil {
+				return NewError(node, "%s", err.Error())
+			}
+			time.Sleep(d)
+
+			return NULL
+		},
+	},
+	"len": {
+		Fn: func(node ast.Node, args ...object.Object) object.Object {
+			if oErr := AssertArgCount(node, args, 1); oErr != nil {
+				return oErr
+			}
+
+			switch arg := args[0].(type) {
+			case *object.Array:
+				return &object.Integer{Value: int64(len(arg.Elements))}
+			case *object.String:
+				return &object.Integer{Value: int64(len(arg.Value))}
+			default:
+				return NewError(node, "wrong type of argument. got=%s, want %s or %s",
+					args[0].Type(), object.ARRAY_OBJ, object.STRING_OBJ)
+			}
+		},
+	},
+	"parseInt": {
+		Fn: func(node ast.Node, args ...object.Object) object.Object {
+			if oErr := AssertArgsType(node, args, object.STRING_OBJ); oErr != nil {
+				return oErr
+			}
+
+			dArg := args[0].(*object.String)
+			val, err := strconv.ParseInt(dArg.Value, 10, 64)
+			if err != nil {
+				return NewError(node, "%s", err.Error())
+			}
+			return &object.Integer{Value: val}
+		},
+	},
+	"parseFloat": {
+		Fn: func(node ast.Node, args ...object.Object) object.Object {
+			if oErr := AssertArgsType(node, args, object.STRING_OBJ); oErr != nil {
+				return oErr
+			}
+
+			dArg := args[0].(*object.String)
+			val, err := strconv.ParseFloat(dArg.Value, 64)
+			if err != nil {
+				return NewError(node, "%s", err.Error())
+			}
+			return &object.Float{Value: val}
+		},
+	},
+	"parseBool": {
+		Fn: func(node ast.Node, args ...object.Object) object.Object {
+			if oErr := AssertArgsType(node, args, object.STRING_OBJ); oErr != nil {
+				return oErr
+			}
+
+			dArg := args[0].(*object.String)
+			val, err := strconv.ParseBool(dArg.Value)
+			if err != nil {
+				return NewError(node, "%s", err.Error())
+			}
+			return &object.Boolean{Value: val}
+		},
+	},
+	"parseJson": {
+		Fn: func(node ast.Node, args ...object.Object) object.Object {
+			if oErr := AssertArgsType(node, args, object.STRING_OBJ); oErr != nil {
+				return oErr
+			}
+
+			str := args[0].(*object.String).Value
+			in := make(map[string]interface{})
+			err := json.Unmarshal([]byte(str), &in)
+			if err != nil {
+				return NewError(node, "%s", err.Error())
+			}
+
+			obj, err := object.ToObject(in)
+			if err != nil {
+				return NewError(node, "%s", err.Error())
+			}
+
+			return obj
+		},
+	},
+	"toJson": {
+		Fn: func(node ast.Node, args ...object.Object) object.Object {
+			if oErr := AssertArgsType(node, args, object.HASH_OBJ); oErr != nil {
+				return oErr
+			}
+
+			hash := args[0].(*object.Hash)
+			native, err := object.FromObject(hash)
+			if err != nil {
+				return NewError(node, "%s", err.Error())
+			}
+
+			jsonStr, err := json.Marshal(native)
+			if err != nil {
+				return NewError(node, "%s", err.Error())
+			}
+
+			return &object.String{Value: string(jsonStr)}
+		},
+	},
+	"urlParamsEncode": {
+		Fn: func(node ast.Node, args ...object.Object) object.Object {
+			if oErr := AssertArgsType(node, args, object.HASH_OBJ); oErr != nil {
+				return oErr
+			}
+
+			data := url.Values{}
+			hash := args[0].(*object.Hash)
+			for k, v := range hash.Pairs {
+				vStr, ok := v.(*object.String)
+				if !ok {
+					return NewError(node, "cannot url-encode value of type %s", v.Type())
+				}
+				data.Add(string(k), vStr.Value)
+			}
+
+			return &object.String{Value: data.Encode()}
+		},
+	},
+	"urlParamsDecode": {
+		Fn: func(node ast.Node, args ...object.Object) object.Object {
+			if oErr := AssertArgsType(node, args, object.STRING_OBJ); oErr != nil {
+				return oErr
+			}
+
+			encoded := args[0].(*object.String)
+			parsed, err := url.ParseQuery(encoded.Value)
+			if err != nil {
+				return NewError(node, "%s", err.Error())
+			}
+
+			resHeaders := make(map[object.HashKey]object.Object)
+			for k := range parsed {
+				resHeaders[object.HashKey(k)] = &object.String{Value: parsed.Get(k)}
+			}
+
+			return &object.Hash{
+				Pairs: resHeaders,
+			}
+		},
+	},
+	"first": {
+		Fn: func(node ast.Node, args ...object.Object) object.Object {
+			if oErr := AssertArgsType(node, args, object.ARRAY_OBJ); oErr != nil {
+				return oErr
+			}
+
+			arr := args[0].(*object.Array)
+			if len(arr.Elements) > 0 {
+				return arr.Elements[0]
+			}
+
+			return NULL
+		},
+	},
+	"last": {
+		Fn: func(node ast.Node, args ...object.Object) object.Object {
+			if oErr := AssertArgsType(node, args, object.ARRAY_OBJ); oErr != nil {
+				return oErr
+			}
+
+			arr := args[0].(*object.Array)
+			length := len(arr.Elements)
+			if length > 0 {
+				return arr.Elements[length-1]
+			}
+
+			return NULL
+		},
+	},
+	"arrayIndexOf": {
+		Fn: func(node ast.Node, args ...object.Object) object.Object {
+			if oErr := AssertArgsType(node, args, object.ARRAY_OBJ, ANY_TYPE); oErr != nil {
+				return oErr
+			}
+
+			arr := args[0].(*object.Array)
+			obj := args[1]
+			for i, v := range arr.Elements {
+				if v.Equals(obj) {
+					return &object.Integer{Value: int64(i)}
+				}
+			}
+
+			return &object.Integer{Value: int64(-1)}
+		},
+	},
+	"stringIndexOf": {
+		Fn: func(node ast.Node, args ...object.Object) object.Object {
+			if oErr := AssertArgsType(node, args, object.STRING_OBJ, object.STRING_OBJ); oErr != nil {
+				return oErr
+			}
+
+			str := args[0].(*object.String)
+			searched := args[1].(*object.String)
+
+			idx := strings.Index(str.Value, searched.Value)
+
+			return &object.Integer{Value: int64(idx)}
+		},
+	},
+	"split": {
+		Fn: func(node ast.Node, args ...object.Object) object.Object {
+			if oErr := AssertArgsType(node, args, object.STRING_OBJ, object.STRING_OBJ); oErr != nil {
+				return oErr
+			}
+
+			str := args[0].(*object.String)
+			separator := args[1].(*object.String)
+
+			split := strings.Split(str.Value, separator.Value)
+			elements := make([]object.Object, 0, len(split))
+			for _, v := range split {
+				elements = append(elements, &object.String{Value: v})
+			}
+
+			return &object.Array{Elements: elements}
+		},
+	},
+	"rest": {
+		Fn: func(node ast.Node, args ...object.Object) object.Object {
+			if oErr := AssertArgsType(node, args, object.ARRAY_OBJ); oErr != nil {
+				return oErr
+			}
+
+			arr := args[0].(*object.Array)
+			length := len(arr.Elements)
+			if length > 0 {
+				newElements := make([]object.Object, length-1, length-1)
+				copy(newElements, arr.Elements[1:length])
+				return &object.Array{Elements: newElements}
+			}
+
+			return NULL
+		},
+	},
+	"push": {
+		Fn: func(node ast.Node, args ...object.Object) object.Object {
+			if oErr := AssertArgsType(node, args, object.ARRAY_OBJ, ANY_TYPE); oErr != nil {
+				return oErr
+			}
+
+			arr := args[0].(*object.Array)
+			length := len(arr.Elements)
+
+			newElements := make([]object.Object, length+1, length+1)
+			copy(newElements, arr.Elements)
+			newElements[length] = args[1]
+
+			return &object.Array{Elements: newElements}
+		},
+	},
+	"merge": {
+		Fn: func(node ast.Node, args ...object.Object) object.Object {
+			if oErr := AssertArgsType(node, args, object.HASH_OBJ, object.HASH_OBJ); oErr != nil {
+				return oErr
+			}
+
+			hash1 := args[0].(*object.Hash)
+			hash2 := args[1].(*object.Hash)
+
+			newElements := make(map[object.HashKey]object.Object)
+			for k, v := range hash1.Pairs {
+				newElements[k] = v
+			}
+			for k, v := range hash2.Pairs {
+				newElements[k] = v
+			}
+
+			return &object.Hash{Pairs: newElements}
+		},
+	},
+	"keys": {
+		Fn: func(node ast.Node, args ...object.Object) object.Object {
+			if oErr := AssertArgsType(node, args, object.HASH_OBJ); oErr != nil {
+				return oErr
+			}
+
+			hash := args[0].(*object.Hash)
+
+			keys := make([]object.Object, 0, len(hash.Pairs))
+			for k := range hash.Pairs {
+				keys = append(keys, &object.String{Value: string(k)})
+			}
+
+			return &object.Array{Elements: keys}
+		},
+	},
+}
