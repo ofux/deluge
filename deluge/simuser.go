@@ -1,12 +1,13 @@
 package deluge
 
 import (
-	"github.com/ofux/deluge-dsl/ast"
-	"github.com/ofux/deluge-dsl/evaluator"
-	"github.com/ofux/deluge-dsl/object"
-	log "github.com/sirupsen/logrus"
 	"net/http"
 	"time"
+
+	"github.com/ofux/deluge/dsl/ast"
+	"github.com/ofux/deluge/dsl/evaluator"
+	"github.com/ofux/deluge/dsl/object"
+	log "github.com/sirupsen/logrus"
 )
 
 type SimUserStatus int
@@ -69,21 +70,21 @@ func (su *SimUser) ExecHTTPRequest(node ast.Node, args ...object.Object) object.
 	if !ok {
 		return evaluator.NewError(node, "invalid HTTP request: missing 'url' field")
 	}
-	url, ok := jsUrl.Value.(*object.String)
+	url, ok := jsUrl.(*object.String)
 	if !ok {
 		return evaluator.NewError(node, "invalid HTTP request: 'url' should be a STRING")
 	}
 
 	var method = "GET"
 	if methodField, ok := reqObj.Get("method"); ok {
-		if methodFieldVal, ok := methodField.Value.(*object.String); ok {
+		if methodFieldVal, ok := methodField.(*object.String); ok {
 			method = methodFieldVal.Value
 		}
 	}
 
 	req, err := http.NewRequest(method, url.Value, nil)
 	if err != nil {
-		return evaluator.NewError(node, err.Error())
+		return evaluator.NewError(node, "%s", err.Error())
 	}
 
 	log.Debugf("Performing HTTP request: %s %s", req.Method, req.URL.String())
@@ -93,7 +94,7 @@ func (su *SimUser) ExecHTTPRequest(node ast.Node, args ...object.Object) object.
 	duration := end.Sub(start)
 	if err != nil {
 		log.Debugf("Request error: %s", err.Error())
-		return evaluator.NewError(node, err.Error())
+		return evaluator.NewError(node, "%s", err.Error())
 	} else {
 		log.Debugf("Response status: %s in %s", "res.Status", duration.String())
 	}

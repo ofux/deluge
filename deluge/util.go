@@ -1,7 +1,7 @@
 package deluge
 
 import (
-	"github.com/ofux/deluge-dsl/parser"
+	"github.com/ofux/deluge/dsl/parser"
 	log "github.com/sirupsen/logrus"
 )
 

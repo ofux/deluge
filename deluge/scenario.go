@@ -1,11 +1,12 @@
 package deluge
 
 import (
-	"github.com/ofux/deluge-dsl/ast"
-	log "github.com/sirupsen/logrus"
 	"strconv"
 	"sync"
 	"time"
+
+	"github.com/ofux/deluge/dsl/ast"
+	log "github.com/sirupsen/logrus"
 )
 
 type Scenario struct {
