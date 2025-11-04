@@ -15,7 +15,6 @@ type Scenario struct {
 	script             ast.Node
 	duration           time.Duration
 	TotalSimUsersCalls int64
-	recorder           Recorder
 }
 
 func NewScenario(name string, concurrent int, duration time.Duration, script ast.Node) *Scenario {
@@ -24,11 +23,10 @@ func NewScenario(name string, concurrent int, duration time.Duration, script ast
 		simUsers: make([]*SimUser, concurrent),
 		duration: duration,
 		script:   script,
-		recorder: NewRecorder(),
 	}
 
 	for i := 0; i < concurrent; i++ {
-		s.simUsers[i] = NewSimUser(strconv.Itoa(i), s.script, s.recorder)
+		s.simUsers[i] = NewSimUser(strconv.Itoa(i), s.script)
 	}
 
 	return s
@@ -75,7 +73,6 @@ func (sc *Scenario) Run(duration time.Duration) {
 		}(su)
 	}
 	waitg.Wait()
-	sc.recorder.Close()
 
 	log.Infof("Scenario executed %d requests in %s", sc.TotalSimUsersCalls, time.Now().Sub(start).String())
 }

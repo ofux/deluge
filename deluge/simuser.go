@@ -2,7 +2,6 @@ package deluge
 
 import (
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/ofux/deluge/dsl/ast"
@@ -27,18 +26,16 @@ type SimUser struct {
 	client        *http.Client
 	Status        SimUserStatus
 	SleepDuration time.Duration
-	recorder      Recorder
 	iteration     int
 }
 
-func NewSimUser(name string, script ast.Node, recorder Recorder) *SimUser {
+func NewSimUser(name string, script ast.Node) *SimUser {
 	su := &SimUser{
 		Name:      name,
 		script:    script,
 		evaluator: evaluator.NewEvaluator(),
 		client:    http.DefaultClient,
 		Status:    Virgin,
-		recorder:  recorder,
 	}
 
 	su.evaluator.AddBuiltin("http", su.ExecHTTPRequest)
@@ -68,7 +65,7 @@ func (su *SimUser) ExecHTTPRequest(node ast.Node, args ...object.Object) object.
 		return oErr
 	}
 
-	reqName := args[0].(*object.String).Value
+	//reqName := args[0].(*object.String).Value
 	reqObj := args[1].(*object.Hash)
 
 	jsUrl, ok := reqObj.Get("url")
@@ -94,7 +91,7 @@ func (su *SimUser) ExecHTTPRequest(node ast.Node, args ...object.Object) object.
 
 	log.Debugf("Performing HTTP request: %s %s", req.Method, req.URL.String())
 	start := time.Now()
-	res, err := su.client.Do(req)
+	//res, err := su.client.Do(req)
 	end := time.Now()
 	duration := end.Sub(start)
 
@@ -103,7 +100,6 @@ func (su *SimUser) ExecHTTPRequest(node ast.Node, args ...object.Object) object.
 		return evaluator.NewError(node, "%s", err.Error())
 	} else {
 		log.Debugf("Response status: %s in %s", "res.Status", duration.String())
-		su.recorder.Record(su.iteration, reqName+"->"+strconv.Itoa(res.StatusCode), duration.Nanoseconds()/1000)
 	}
 
 	return evaluator.NULL
