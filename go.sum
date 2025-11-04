@@ -5,6 +5,10 @@ github.com/dustin/gojson v0.0.0-20160307161227-2e71ec9dd5ad h1:Qk76DOWdOp+GlyDKB
 github.com/dustin/gojson v0.0.0-20160307161227-2e71ec9dd5ad/go.mod h1:mPKfmRa823oBIgl2r20LeMSpTAteW5j7FLkc0vjmzyQ=
 github.com/ofux/floa v0.0.0-20170708090307-9b9e96298d3e h1:CtSYUYTxy4EWaM0WR4ZfwKBm3QmH/OyfN/2rKCiYaqQ=
 github.com/ofux/floa v0.0.0-20170708090307-9b9e96298d3e/go.mod h1:kGd51rnek+P8CVmL94SettpFDoGh/iSWUgFHRGlvbok=
+github.com/ofux/hdrhistogram v0.0.0-20191004163134-d8ebd25fd911 h1:FjR5jz3rnzMEm0yAwLmpebRJ+kDhEbkXD/4ZgoK7KX0=
+github.com/ofux/hdrhistogram v0.0.0-20191004163134-d8ebd25fd911/go.mod h1:88FksYQPkNbBfVlrZdXfC+GpBiBI44pM71MVc+LSsIU=
+github.com/pkg/errors v0.8.1 h1:iURUrRGxPUNPdy5/HRSm+Yj6okJ6UtLINN0Q9M4+h3I=
+github.com/pkg/errors v0.8.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/sirupsen/logrus v1.9.3 h1:dueUQJ1C2q9oE3F7wvmSGAaVtTmUizReu6fjN8uqzbQ=
