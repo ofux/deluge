@@ -18,6 +18,7 @@ build: tidy
 test: tidy
 	@echo "Running tests..."
 	go test ./... -race -count=1 -cpu=2 -v -timeout 90s
+	go test ./... -run TestMutations -count=1 -v -timeout 300s
 
 # Generate coverage report
 coverage: tidy
