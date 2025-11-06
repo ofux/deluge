@@ -1,9 +1,10 @@
 package deluge
 
 import (
-	"github.com/ofux/deluge-dsl/lexer"
-	"github.com/ofux/deluge-dsl/parser"
 	"testing"
+
+	"github.com/ofux/deluge/dsl/lexer"
+	"github.com/ofux/deluge/dsl/parser"
 )
 
 func BenchmarkNewDeluge(b *testing.B) {

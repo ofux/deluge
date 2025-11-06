@@ -1,12 +1,13 @@
 package main
 
 import (
-	"github.com/ofux/deluge-dsl/lexer"
-	"github.com/ofux/deluge-dsl/parser"
-	"github.com/ofux/deluge/deluge"
-	log "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"time"
+
+	"github.com/ofux/deluge/deluge"
+	"github.com/ofux/deluge/dsl/lexer"
+	"github.com/ofux/deluge/dsl/parser"
+	log "github.com/sirupsen/logrus"
 )
 
 func main() {

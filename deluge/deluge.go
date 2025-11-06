@@ -1,11 +1,12 @@
 package deluge
 
 import (
-	"github.com/ofux/deluge-dsl/ast"
-	"github.com/ofux/deluge-dsl/evaluator"
-	"github.com/ofux/deluge-dsl/object"
-	log "github.com/sirupsen/logrus"
 	"time"
+
+	"github.com/ofux/deluge/dsl/ast"
+	"github.com/ofux/deluge/dsl/evaluator"
+	"github.com/ofux/deluge/dsl/object"
+	log "github.com/sirupsen/logrus"
 )
 
 type Deluge struct {
@@ -79,7 +80,7 @@ func (d *delugeBuilder) CreateDeluge(node ast.Node, args ...object.Object) objec
 	}
 
 	for scenarioId, v := range conf.Pairs {
-		scenarioConf, ok := v.Value.(*object.Hash)
+		scenarioConf, ok := v.(*object.Hash)
 		if !ok {
 			log.Fatalf("Expected scenario configuration to be an object at %s\n", ast.PrintLocation(node))
 		}
@@ -88,7 +89,7 @@ func (d *delugeBuilder) CreateDeluge(node ast.Node, args ...object.Object) objec
 		if !ok {
 			log.Fatalf("Expected 'concurrent' value in configuration at %s\n", ast.PrintLocation(node))
 		}
-		concurrentClients, ok := concurrentClientsHashPair.Value.(*object.Integer)
+		concurrentClients, ok := concurrentClientsHashPair.(*object.Integer)
 		if !ok {
 			log.Fatalf("Expected 'concurrent' value to be an integer in configuration at %s\n", ast.PrintLocation(node))
 		}
@@ -97,7 +98,7 @@ func (d *delugeBuilder) CreateDeluge(node ast.Node, args ...object.Object) objec
 		if !ok {
 			log.Fatalf("Expected 'delay' value in configuration at %s\n", ast.PrintLocation(node))
 		}
-		delayHashStr, ok := delayHashPair.Value.(*object.String)
+		delayHashStr, ok := delayHashPair.(*object.String)
 		if !ok {
 			log.Fatalf("Expected 'concurrent' value to be a duration in configuration at %s\n", ast.PrintLocation(node))
 		}
