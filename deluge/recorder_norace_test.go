@@ -24,7 +24,7 @@ func (h *SlowHistogram) TotalCount() int64 {
 	return h.histogram.TotalCount()
 }
 
-func TestRecordReturnsImmediately(t *testing.T) {
+func Test__Verifier__RecordReturnsImmediately(t *testing.T) {
 	t.Run("Record calls complete in under 1ms even with slow processing", func(t *testing.T) {
 		blocked := make(chan struct{})
 		recorder := NewRecorder(func() Histogram {
