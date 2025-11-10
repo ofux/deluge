@@ -12,7 +12,8 @@ func BenchmarkNewDeluge(b *testing.B) {
 deluge("Some name", {
     "myScenario": {
         "concurrent": 100,
-        "delay": "2s"
+        "delay": "2s",
+    "duration": "1s"
     }
 });
 

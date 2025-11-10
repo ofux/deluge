@@ -3,6 +3,7 @@ package deluge
 import (
 	"strconv"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/ofux/deluge/dsl/ast"
@@ -13,16 +14,18 @@ type Scenario struct {
 	Name               string
 	simUsers           []*SimUser
 	script             ast.Node
-	duration           time.Duration
+	delay              time.Duration
+	totalDuration      time.Duration
 	TotalSimUsersCalls int64
 }
 
-func NewScenario(name string, concurrent int, duration time.Duration, script ast.Node) *Scenario {
+func NewScenario(name string, concurrent int, delay time.Duration, totalDuration time.Duration, script ast.Node) *Scenario {
 	s := &Scenario{
-		Name:     name,
-		simUsers: make([]*SimUser, concurrent),
-		duration: duration,
-		script:   script,
+		Name:          name,
+		simUsers:      make([]*SimUser, concurrent),
+		delay:         delay,
+		totalDuration: totalDuration,
+		script:        script,
 	}
 
 	for i := 0; i < concurrent; i++ {
@@ -34,9 +37,13 @@ func NewScenario(name string, concurrent int, duration time.Duration, script ast
 
 func (sc *Scenario) Run(duration time.Duration) {
 	var waitg sync.WaitGroup
+	var counterWg sync.WaitGroup
 
-	simUserCallCounter := sc.countSimUserCalls()
-	defer close(simUserCallCounter)
+	simUserCallCounter := sc.countSimUserCalls(&counterWg)
+	defer func() {
+		close(simUserCallCounter)
+		counterWg.Wait() // Ensure counter goroutine finishes
+	}()
 
 	start := time.Now()
 
@@ -44,7 +51,7 @@ func (sc *Scenario) Run(duration time.Duration) {
 		waitg.Add(1)
 		go func(su *SimUser) {
 			defer waitg.Done()
-			ticker := time.NewTicker(sc.duration)
+			ticker := time.NewTicker(sc.delay)
 			timer := time.NewTimer(duration)
 
 			for {
@@ -71,17 +78,17 @@ func (sc *Scenario) Run(duration time.Duration) {
 		}(su)
 	}
 	waitg.Wait()
-
-	log.Infof("Scenario executed %d requests in %s", sc.TotalSimUsersCalls, time.Now().Sub(start).String())
 }
 
-func (sc *Scenario) countSimUserCalls() chan int8 {
+func (sc *Scenario) countSimUserCalls(wg *sync.WaitGroup) chan int8 {
 	simCallCounter := make(chan int8, 10000)
+	wg.Add(1)
 	go func() {
+		defer wg.Done()
 		for {
 			_, ok := <-simCallCounter
 			if ok {
-				sc.TotalSimUsersCalls++
+				atomic.AddInt64(&sc.TotalSimUsersCalls, 1)
 			} else {
 				return
 			}

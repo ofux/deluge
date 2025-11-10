@@ -26,8 +26,9 @@ type scenarioCore struct {
 }
 
 type scenarioConfig struct {
-	concurrent int
-	duration   time.Duration
+	concurrent      int
+	delay           time.Duration
+	totalDuration   time.Duration
 }
 
 func NewDeluge(script *ast.Program) *Deluge {
@@ -46,7 +47,7 @@ func NewDeluge(script *ast.Program) *Deluge {
 	}
 	for id, sConf := range builder.scenarioConfigs {
 		if sCore, ok := builder.scenarioCores[id]; ok {
-			dlg.scenarios[id] = NewScenario(sCore.name, sConf.concurrent, sConf.duration, sCore.script)
+			dlg.scenarios[id] = NewScenario(sCore.name, sConf.concurrent, sConf.delay, sConf.totalDuration, sCore.script)
 		} else {
 			log.Fatalf("Scenario '%s' is configured but not defined.", id)
 		}
@@ -58,7 +59,7 @@ func (d *Deluge) Run() {
 	log.Infof("Executing %d scenario(s)", len(d.scenarios))
 	start := time.Now()
 	for _, scenario := range d.scenarios {
-		scenario.Run(10 * time.Second)
+		scenario.Run(scenario.totalDuration)
 	}
 	log.Infof("Deluge executed %d scenario(s) in %s", len(d.scenarios), time.Now().Sub(start).String())
 }
@@ -100,11 +101,24 @@ func (d *delugeBuilder) CreateDeluge(node ast.Node, args ...object.Object) objec
 		}
 		delayHashStr, ok := delayHashPair.(*object.String)
 		if !ok {
-			log.Fatalf("Expected 'concurrent' value to be a duration in configuration at %s\n", ast.PrintLocation(node))
+			log.Fatalf("Expected 'delay' value to be a duration string in configuration at %s\n", ast.PrintLocation(node))
 		}
 		delayHash, err := time.ParseDuration(delayHashStr.Value)
 		if err != nil {
-			log.Fatalf("Expected 'concurrent' value to be a duration in configuration at %s\n", ast.PrintLocation(node))
+			log.Fatalf("Expected 'delay' value to be a valid duration in configuration at %s\n", ast.PrintLocation(node))
+		}
+
+		// Parse optional duration field (defaults to 10s for backward compatibility)
+		totalDuration := 10 * time.Second
+		if durationHashPair, ok := scenarioConf.Get("duration"); ok {
+			durationHashStr, ok := durationHashPair.(*object.String)
+			if !ok {
+				log.Fatalf("Expected 'duration' value to be a duration string in configuration at %s\n", ast.PrintLocation(node))
+			}
+			totalDuration, err = time.ParseDuration(durationHashStr.Value)
+			if err != nil {
+				log.Fatalf("Expected 'duration' value to be a valid duration in configuration at %s\n", ast.PrintLocation(node))
+			}
 		}
 
 		_, ok = d.scenarioConfigs[string(scenarioId)]
@@ -113,8 +127,9 @@ func (d *delugeBuilder) CreateDeluge(node ast.Node, args ...object.Object) objec
 		}
 
 		d.scenarioConfigs[string(scenarioId)] = &scenarioConfig{
-			concurrent: int(concurrentClients.Value),
-			duration:   delayHash,
+			concurrent:    int(concurrentClients.Value),
+			delay:         delayHash,
+			totalDuration: totalDuration,
 		}
 	}
 

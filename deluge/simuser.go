@@ -33,8 +33,10 @@ func NewSimUser(name string, script ast.Node) *SimUser {
 		Name:      name,
 		script:    script,
 		evaluator: evaluator.NewEvaluator(),
-		client:    http.DefaultClient,
-		Status:    Virgin,
+		client: &http.Client{
+			Timeout: 5 * time.Second,
+		},
+		Status: Virgin,
 	}
 
 	su.evaluator.AddBuiltin("http", su.ExecHTTPRequest)
