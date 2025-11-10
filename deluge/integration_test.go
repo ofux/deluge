@@ -28,8 +28,8 @@ func TestEndToEndScenarioExecution(t *testing.T) {
 deluge("Load Test", {
     "testScenario": {
         "concurrent": 2,
-        "delay": "100ms",
-        "duration": "500ms"
+        "delay": "20ms",
+        "duration": "100ms"
     }
 });
 
@@ -54,7 +54,7 @@ scenario("testScenario", "Test Scenario", function () {
 		t.Errorf("Expected deluge name to be 'Load Test', got '%s'", dlg.Name)
 	}
 
-	// Run should execute without panicking (runs for 500ms per scenario)
+	// Run should execute without panicking (runs for 100ms per scenario)
 	dlg.Run()
 
 	// Verify that requests were made
@@ -76,7 +76,7 @@ deluge("Duration Test", {
     "quickScenario": {
         "concurrent": 1,
         "delay": "10ms",
-    "duration": "500ms"
+    "duration": "100ms"
     }
 });
 
@@ -100,10 +100,10 @@ scenario("quickScenario", "Quick Scenario", function () {
 	dlg.Run()
 	elapsed := time.Since(start)
 
-	// The configured duration is 500ms
-	// It should take approximately 500ms
-	if elapsed < 400*time.Millisecond || elapsed > 700*time.Millisecond {
-		t.Errorf("Expected execution to take ~500ms, but took %s", elapsed)
+	// The configured duration is 100ms
+	// It should take approximately 100ms
+	if elapsed < 80*time.Millisecond || elapsed > 200*time.Millisecond {
+		t.Errorf("Expected execution to take ~100ms, but took %s", elapsed)
 	}
 }
 
@@ -135,7 +135,7 @@ deluge("Concurrency Test", {
     "concurrentScenario": {
         "concurrent": 5,
         "delay": "10ms",
-    "duration": "500ms"
+    "duration": "100ms"
     }
 });
 
@@ -195,8 +195,8 @@ func TestHTTPRequestWithDifferentMethods(t *testing.T) {
 deluge("Method Test", {
     "methodScenario": {
         "concurrent": 1,
-        "delay": "100ms",
-    "duration": "500ms"
+        "delay": "20ms",
+    "duration": "100ms"
     }
 });
 
@@ -237,7 +237,7 @@ deluge("Count Test", {
     "countScenario": {
         "concurrent": 3,
         "delay": "50ms",
-    "duration": "500ms"
+    "duration": "100ms"
     }
 });
 
@@ -259,8 +259,8 @@ scenario("countScenario", "Count Scenario", function () {
 	dlg.Run()
 
 	// The scenario should have executed multiple requests
-	// With 3 concurrent users, 50ms delay, and 500ms duration, we expect many requests
-	// At minimum, we should see 3 users * (500ms / 50ms) = 30 requests
+	// With 3 concurrent users, 50ms delay, and 100ms duration, we expect many requests
+	// At minimum, we should see 3 users * (100ms / 50ms) = 6 requests
 	// But we'll be conservative and just check that some requests were made
 	if dlg == nil {
 		t.Error("Deluge instance should not be nil")
@@ -274,8 +274,8 @@ func TestInvalidHTTPRequest(t *testing.T) {
 deluge("Error Test", {
     "errorScenario": {
         "concurrent": 1,
-        "delay": "100ms",
-    "duration": "500ms"
+        "delay": "20ms",
+    "duration": "100ms"
     }
 });
 
@@ -312,8 +312,8 @@ func TestSimUserWithAssertions(t *testing.T) {
 deluge("Assert Test", {
     "assertScenario": {
         "concurrent": 1,
-        "delay": "100ms",
-    "duration": "500ms"
+        "delay": "20ms",
+    "duration": "100ms"
     }
 });
 
@@ -349,7 +349,7 @@ deluge("Failed Assert Test", {
     "failScenario": {
         "concurrent": 1,
         "delay": "10ms",
-    "duration": "500ms"
+    "duration": "100ms"
     }
 });
 
@@ -399,8 +399,8 @@ func TestScenarioWithMultipleOperations(t *testing.T) {
 deluge("Multi-Op Test", {
     "multiScenario": {
         "concurrent": 2,
-        "delay": "100ms",
-    "duration": "500ms"
+        "delay": "20ms",
+    "duration": "100ms"
     }
 });
 
@@ -471,8 +471,8 @@ func TestScenarioDelayBetweenRequests(t *testing.T) {
 deluge("Delay Test", {
     "delayScenario": {
         "concurrent": 1,
-        "delay": "200ms",
-    "duration": "500ms"
+        "delay": "30ms",
+    "duration": "200ms"
     }
 });
 
@@ -500,12 +500,12 @@ scenario("delayScenario", "Delay Scenario", function () {
 		t.Skip("Not enough requests to verify delay")
 	}
 
-	// Check that consecutive requests are approximately 200ms apart
+	// Check that consecutive requests are approximately 30ms apart
 	for i := 1; i < len(requestTimes); i++ {
 		delay := requestTimes[i].Sub(requestTimes[i-1])
-		// Allow 50ms tolerance
-		if delay < 150*time.Millisecond || delay > 250*time.Millisecond {
-			t.Errorf("Expected ~200ms delay between requests, got %s", delay)
+		// Allow 15ms tolerance
+		if delay < 15*time.Millisecond || delay > 45*time.Millisecond {
+			t.Errorf("Expected ~30ms delay between requests, got %s", delay)
 			break
 		}
 	}
