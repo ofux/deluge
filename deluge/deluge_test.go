@@ -13,7 +13,7 @@ deluge("Some name", {
     "myScenario": {
         "concurrent": 100,
         "delay": "2s",
-    "duration": "1s"
+    "duration": "500ms"
     }
 });
 

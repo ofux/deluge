@@ -1,0 +1,30 @@
+.PHONY: tidy install-deps build test coverage
+
+# Run go mod tidy
+tidy:
+	@echo "Running go mod tidy..."
+	go mod tidy
+
+# Install dependencies
+install-deps: tidy
+	@echo No dependency to install
+
+# Build the project
+build: tidy
+	@echo "Building project..."
+	go test -run=XXX_SHOULD_NEVER_MATCH_XXX ./...
+
+# Run tests
+test: tidy
+	@echo "Running tests..."
+	go test ./... -race -count=1 -v -timeout 120s
+
+# Run tests
+mutation: test
+	@echo "Running mutation tests..."
+	./mutation_test.sh mutations.json
+
+# Generate coverage report
+coverage: tidy
+	@echo "Generating coverage report..."
+	go test ./... -cover -timeout 90s

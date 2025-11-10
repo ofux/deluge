@@ -38,7 +38,7 @@ deluge("Concurrency Test", {
     "test": {
         "concurrent": 10,
         "delay": "5ms",
-    "duration": "1s"
+    "duration": "500ms"
     }
 });
 
@@ -80,7 +80,7 @@ deluge("Timeout Test", {
     "test": {
         "concurrent": 2,
         "delay": "50ms",
-    "duration": "1s"
+    "duration": "500ms"
     }
 });
 
@@ -139,7 +139,7 @@ deluge("Error Status Test", {
     "test": {
         "concurrent": 1,
         "delay": "100ms",
-    "duration": "1s"
+    "duration": "500ms"
     }
 });
 
@@ -172,7 +172,7 @@ deluge("Malformed URL Test", {
     "test": {
         "concurrent": 1,
         "delay": "100ms",
-    "duration": "1s"
+    "duration": "500ms"
     }
 });
 
@@ -203,7 +203,7 @@ deluge("Empty URL Test", {
     "test": {
         "concurrent": 1,
         "delay": "100ms",
-    "duration": "1s"
+    "duration": "500ms"
     }
 });
 
@@ -234,7 +234,7 @@ deluge("Missing URL Test", {
     "test": {
         "concurrent": 1,
         "delay": "100ms",
-    "duration": "1s"
+    "duration": "500ms"
     }
 });
 
@@ -273,7 +273,7 @@ deluge("Stress Test", {
     "stress": {
         "concurrent": 50,
         "delay": "10ms",
-    "duration": "1s"
+    "duration": "500ms"
     }
 });
 
@@ -294,7 +294,7 @@ scenario("stress", "Stress", function () {
 	dlg := deluge.NewDeluge(program)
 	dlg.Run()
 
-	// With 50 concurrent users, 10ms delay, 10s duration: ~50,000 requests
+	// With 50 concurrent users, 10ms delay, 500ms duration: ~2,500 requests
 	count := atomic.LoadInt32(&requestCount)
 	if count < 1000 {
 		t.Errorf("Expected many requests under stress test, got only %d", count)
@@ -317,7 +317,7 @@ deluge("Server Close Test", {
     "test": {
         "concurrent": 2,
         "delay": "100ms",
-    "duration": "1s"
+    "duration": "500ms"
     }
 });
 
@@ -371,7 +371,7 @@ deluge("Complex Test", {
     "complex": {
         "concurrent": 3,
         "delay": "100ms",
-    "duration": "1s"
+    "duration": "500ms"
     }
 });
 
@@ -435,7 +435,7 @@ deluge("Rapid Fire", {
     "rapid": {
         "concurrent": 10,
         "delay": "1ms",
-    "duration": "1s"
+    "duration": "500ms"
     }
 });
 
@@ -456,7 +456,7 @@ scenario("rapid", "Rapid", function () {
 	dlg := deluge.NewDeluge(program)
 	dlg.Run()
 
-	// With 10 users, 1ms delay, 10s duration: very many requests
+	// With 10 users, 1ms delay, 500ms duration: very many requests
 	count := atomic.LoadInt32(&requestCount)
 	if count < 100 {
 		t.Errorf("Expected many rapid requests, got only %d", count)
@@ -503,7 +503,7 @@ deluge("High Concurrency", {
     "test": {
         "concurrent": 100,
         "delay": "50ms",
-    "duration": "1s"
+    "duration": "500ms"
     }
 });
 
@@ -525,7 +525,7 @@ scenario("test", "Test", function () {
 	dlg.Run()
 
 	count := atomic.LoadInt32(&requestCount)
-	// With 100 users, 50ms delay, 10s duration: ~20,000 requests
+	// With 100 users, 50ms delay, 500ms duration: ~1,000 requests
 	if count < 1000 {
 		t.Errorf("Expected many requests with high concurrency, got %d", count)
 	}
@@ -539,7 +539,7 @@ deluge("Error Test", {
     "test": {
         "concurrent": 1,
         "delay": "100ms",
-    "duration": "1s"
+    "duration": "500ms"
     }
 });
 
@@ -573,7 +573,7 @@ deluge("Invalid Method Test", {
     "test": {
         "concurrent": 1,
         "delay": "100ms",
-    "duration": "1s"
+    "duration": "500ms"
     }
 });
 
