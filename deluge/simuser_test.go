@@ -1,0 +1,45 @@
+package deluge
+
+import (
+	"testing"
+
+	"github.com/ofux/deluge/dsl/lexer"
+	"github.com/ofux/deluge/dsl/parser"
+)
+
+func NewSimUserTest(t *testing.T, js string) *SimUser {
+	l := lexer.New(js)
+	p := parser.New(l)
+
+	program, ok := p.ParseProgram()
+	if !ok {
+		PrintParserErrors(p.Errors())
+		t.Fatal("Parsing error(s)")
+	}
+
+	return NewSimUser("1", program)
+}
+
+func checkSimUserStatus(t *testing.T, su *SimUser, status SimUserStatus) {
+	if su.Status != status {
+		t.Fatalf("Bad SimUser status %d, expected %d", su.Status, status)
+	}
+}
+
+func TestAssert(t *testing.T) {
+	t.Run("Assert true", func(t *testing.T) {
+		su := NewSimUserTest(t, `
+		assert(1+1 == 2)
+		`)
+		su.Run()
+		checkSimUserStatus(t, su, DoneSuccess)
+	})
+
+	t.Run("Assert false", func(t *testing.T) {
+		su := NewSimUserTest(t, `
+		assert(1+1 == 3)
+		`)
+		su.Run()
+		checkSimUserStatus(t, su, DoneError)
+	})
+}
