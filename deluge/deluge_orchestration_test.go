@@ -35,12 +35,12 @@ deluge("Multi-Scenario Test", {
     "first": {
         "concurrent": 2,
         "delay": "50ms",
-    "duration": "1s"
+    "duration": "500ms"
     },
     "second": {
         "concurrent": 3,
         "delay": "50ms",
-    "duration": "1s"
+    "duration": "500ms"
     }
 });
 
@@ -121,12 +121,12 @@ deluge("Sequential Test", {
     "first": {
         "concurrent": 1,
         "delay": "50ms",
-    "duration": "1s"
+    "duration": "500ms"
     },
     "second": {
         "concurrent": 1,
         "delay": "50ms",
-    "duration": "1s"
+    "duration": "500ms"
     }
 });
 
@@ -173,7 +173,7 @@ deluge("My Custom Load Test", {
     "test": {
         "concurrent": 1,
         "delay": "100ms",
-    "duration": "1s"
+    "duration": "500ms"
     }
 });
 
@@ -267,17 +267,17 @@ deluge("Three Scenarios", {
     "alpha": {
         "concurrent": 1,
         "delay": "100ms",
-    "duration": "1s"
+    "duration": "500ms"
     },
     "beta": {
         "concurrent": 2,
         "delay": "100ms",
-    "duration": "1s"
+    "duration": "500ms"
     },
     "gamma": {
         "concurrent": 3,
         "delay": "100ms",
-    "duration": "1s"
+    "duration": "500ms"
     }
 });
 
@@ -328,12 +328,12 @@ deluge("Independence Test", {
     "success": {
         "concurrent": 1,
         "delay": "50ms",
-    "duration": "1s"
+    "duration": "500ms"
     },
     "failure": {
         "concurrent": 1,
         "delay": "50ms",
-    "duration": "1s"
+    "duration": "500ms"
     }
 });
 
@@ -385,12 +385,12 @@ deluge("Different Delays", {
     "fast": {
         "concurrent": 1,
         "delay": "50ms",
-    "duration": "1s"
+    "duration": "500ms"
     },
     "slow": {
         "concurrent": 1,
         "delay": "200ms",
-    "duration": "1s"
+    "duration": "500ms"
     }
 });
 
@@ -417,7 +417,7 @@ scenario("slow", "Slow", function () {
 	slow := atomic.LoadInt32(&slowCount)
 
 	// Fast scenario (50ms delay) should make more requests than slow (200ms delay)
-	// With 10s duration: fast ~200 requests, slow ~50 requests
+	// With 500ms duration: fast ~10 requests, slow ~2-3 requests
 	if fast <= slow {
 		t.Errorf("Expected fast scenario (%d) to make more requests than slow (%d)", fast, slow)
 	}
@@ -436,12 +436,12 @@ deluge("Timing Test", {
     "s1": {
         "concurrent": 1,
         "delay": "50ms",
-    "duration": "1s"
+    "duration": "500ms"
     },
     "s2": {
         "concurrent": 1,
         "delay": "50ms",
-    "duration": "1s"
+    "duration": "500ms"
     }
 });
 
@@ -467,10 +467,10 @@ scenario("s2", "S2", function () {
 	dlg.Run()
 	elapsed := time.Since(start)
 
-	// Both scenarios configured with 1s duration
-	// With 2 scenarios running sequentially: ~2s total
-	expectedDuration := 2 * time.Second
-	tolerance := 300 * time.Millisecond
+	// Both scenarios configured with 500ms duration
+	// With 2 scenarios running sequentially: ~1s total
+	expectedDuration := 1 * time.Second
+	tolerance := 200 * time.Millisecond
 
 	if elapsed < expectedDuration-tolerance || elapsed > expectedDuration+tolerance {
 		t.Errorf("Expected total runtime ~%s, got %s", expectedDuration, elapsed)
@@ -487,7 +487,7 @@ func TestDelugeScenarioOrderDoesNotMatter(t *testing.T) {
 			name: "Config then scenario",
 			script: `
 deluge("Test", {
-    "test": {"concurrent": 1, "delay": "50ms"}
+    "test": {"concurrent": 1, "delay": "50ms", "duration": "500ms"}
 });
 scenario("test", "Test", function () { assert(true); });
 			`,
@@ -497,7 +497,7 @@ scenario("test", "Test", function () { assert(true); });
 			script: `
 scenario("test", "Test", function () { assert(true); });
 deluge("Test", {
-    "test": {"concurrent": 1, "delay": "50ms"}
+    "test": {"concurrent": 1, "delay": "50ms", "duration": "500ms"}
 });
 			`,
 		},

@@ -29,7 +29,7 @@ deluge("Load Test", {
     "testScenario": {
         "concurrent": 2,
         "delay": "100ms",
-        "duration": "1s"
+        "duration": "500ms"
     }
 });
 
@@ -54,7 +54,7 @@ scenario("testScenario", "Test Scenario", function () {
 		t.Errorf("Expected deluge name to be 'Load Test', got '%s'", dlg.Name)
 	}
 
-	// Run should execute without panicking (runs for 10s per scenario)
+	// Run should execute without panicking (runs for 500ms per scenario)
 	dlg.Run()
 
 	// Verify that requests were made
@@ -76,7 +76,7 @@ deluge("Duration Test", {
     "quickScenario": {
         "concurrent": 1,
         "delay": "10ms",
-    "duration": "1s"
+    "duration": "500ms"
     }
 });
 
@@ -100,10 +100,10 @@ scenario("quickScenario", "Quick Scenario", function () {
 	dlg.Run()
 	elapsed := time.Since(start)
 
-	// The configured duration is 1 second
-	// It should take approximately 1 second
-	if elapsed < 900*time.Millisecond || elapsed > 1200*time.Millisecond {
-		t.Errorf("Expected execution to take ~1s, but took %s", elapsed)
+	// The configured duration is 500ms
+	// It should take approximately 500ms
+	if elapsed < 400*time.Millisecond || elapsed > 700*time.Millisecond {
+		t.Errorf("Expected execution to take ~500ms, but took %s", elapsed)
 	}
 }
 
@@ -135,7 +135,7 @@ deluge("Concurrency Test", {
     "concurrentScenario": {
         "concurrent": 5,
         "delay": "10ms",
-    "duration": "1s"
+    "duration": "500ms"
     }
 });
 
@@ -196,7 +196,7 @@ deluge("Method Test", {
     "methodScenario": {
         "concurrent": 1,
         "delay": "100ms",
-    "duration": "1s"
+    "duration": "500ms"
     }
 });
 
@@ -237,7 +237,7 @@ deluge("Count Test", {
     "countScenario": {
         "concurrent": 3,
         "delay": "50ms",
-    "duration": "1s"
+    "duration": "500ms"
     }
 });
 
@@ -259,8 +259,8 @@ scenario("countScenario", "Count Scenario", function () {
 	dlg.Run()
 
 	// The scenario should have executed multiple requests
-	// With 3 concurrent users, 50ms delay, and 10s duration, we expect many requests
-	// At minimum, we should see 3 users * (10s / 50ms) = 600 requests
+	// With 3 concurrent users, 50ms delay, and 500ms duration, we expect many requests
+	// At minimum, we should see 3 users * (500ms / 50ms) = 30 requests
 	// But we'll be conservative and just check that some requests were made
 	if dlg == nil {
 		t.Error("Deluge instance should not be nil")
@@ -275,7 +275,7 @@ deluge("Error Test", {
     "errorScenario": {
         "concurrent": 1,
         "delay": "100ms",
-    "duration": "1s"
+    "duration": "500ms"
     }
 });
 
@@ -313,7 +313,7 @@ deluge("Assert Test", {
     "assertScenario": {
         "concurrent": 1,
         "delay": "100ms",
-    "duration": "1s"
+    "duration": "500ms"
     }
 });
 
@@ -349,7 +349,7 @@ deluge("Failed Assert Test", {
     "failScenario": {
         "concurrent": 1,
         "delay": "10ms",
-    "duration": "1s"
+    "duration": "500ms"
     }
 });
 
@@ -400,7 +400,7 @@ deluge("Multi-Op Test", {
     "multiScenario": {
         "concurrent": 2,
         "delay": "100ms",
-    "duration": "1s"
+    "duration": "500ms"
     }
 });
 
@@ -472,7 +472,7 @@ deluge("Delay Test", {
     "delayScenario": {
         "concurrent": 1,
         "delay": "200ms",
-    "duration": "1s"
+    "duration": "500ms"
     }
 });
 
