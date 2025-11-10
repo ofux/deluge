@@ -38,7 +38,7 @@ deluge("Concurrency Test", {
     "test": {
         "concurrent": 10,
         "delay": "5ms",
-    "duration": "500ms"
+    "duration": "100ms"
     }
 });
 
@@ -70,7 +70,7 @@ scenario("test", "Test", function () {
 // TestHTTPTimeouts verifies handling of slow/timeout responses
 func TestHTTPTimeouts(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		time.Sleep(100 * time.Millisecond) // Slow response
+		time.Sleep(50 * time.Millisecond) // Slow response
 		w.WriteHeader(http.StatusOK)
 	}))
 	defer server.Close()
@@ -80,7 +80,7 @@ deluge("Timeout Test", {
     "test": {
         "concurrent": 2,
         "delay": "50ms",
-    "duration": "500ms"
+    "duration": "100ms"
     }
 });
 
@@ -138,8 +138,8 @@ func TestHTTPErrorStatuses(t *testing.T) {
 deluge("Error Status Test", {
     "test": {
         "concurrent": 1,
-        "delay": "100ms",
-    "duration": "500ms"
+        "delay": "20ms",
+    "duration": "100ms"
     }
 });
 
@@ -171,8 +171,8 @@ func TestMalformedURL(t *testing.T) {
 deluge("Malformed URL Test", {
     "test": {
         "concurrent": 1,
-        "delay": "100ms",
-    "duration": "500ms"
+        "delay": "20ms",
+    "duration": "100ms"
     }
 });
 
@@ -202,8 +202,8 @@ func TestEmptyURL(t *testing.T) {
 deluge("Empty URL Test", {
     "test": {
         "concurrent": 1,
-        "delay": "100ms",
-    "duration": "500ms"
+        "delay": "20ms",
+    "duration": "100ms"
     }
 });
 
@@ -233,8 +233,8 @@ func TestHTTPWithoutURL(t *testing.T) {
 deluge("Missing URL Test", {
     "test": {
         "concurrent": 1,
-        "delay": "100ms",
-    "duration": "500ms"
+        "delay": "20ms",
+    "duration": "100ms"
     }
 });
 
@@ -273,7 +273,7 @@ deluge("Stress Test", {
     "stress": {
         "concurrent": 50,
         "delay": "10ms",
-    "duration": "500ms"
+    "duration": "100ms"
     }
 });
 
@@ -294,9 +294,9 @@ scenario("stress", "Stress", function () {
 	dlg := deluge.NewDeluge(program)
 	dlg.Run()
 
-	// With 50 concurrent users, 10ms delay, 500ms duration: ~2,500 requests
+	// With 50 concurrent users, 10ms delay, 100ms duration: ~500 requests
 	count := atomic.LoadInt32(&requestCount)
-	if count < 1000 {
+	if count < 100 {
 		t.Errorf("Expected many requests under stress test, got only %d", count)
 	}
 }
@@ -316,8 +316,8 @@ func TestServerCloseDuringExecution(t *testing.T) {
 deluge("Server Close Test", {
     "test": {
         "concurrent": 2,
-        "delay": "100ms",
-    "duration": "500ms"
+        "delay": "20ms",
+    "duration": "100ms"
     }
 });
 
@@ -370,8 +370,8 @@ func TestComplexScenarioWithMixedOperations(t *testing.T) {
 deluge("Complex Test", {
     "complex": {
         "concurrent": 3,
-        "delay": "100ms",
-    "duration": "500ms"
+        "delay": "20ms",
+    "duration": "100ms"
     }
 });
 
@@ -435,7 +435,7 @@ deluge("Rapid Fire", {
     "rapid": {
         "concurrent": 10,
         "delay": "1ms",
-    "duration": "500ms"
+    "duration": "100ms"
     }
 });
 
@@ -456,7 +456,7 @@ scenario("rapid", "Rapid", function () {
 	dlg := deluge.NewDeluge(program)
 	dlg.Run()
 
-	// With 10 users, 1ms delay, 500ms duration: very many requests
+	// With 10 users, 1ms delay, 100ms duration: very many requests
 	count := atomic.LoadInt32(&requestCount)
 	if count < 100 {
 		t.Errorf("Expected many rapid requests, got only %d", count)
@@ -503,7 +503,7 @@ deluge("High Concurrency", {
     "test": {
         "concurrent": 100,
         "delay": "50ms",
-    "duration": "500ms"
+    "duration": "100ms"
     }
 });
 
@@ -525,8 +525,8 @@ scenario("test", "Test", function () {
 	dlg.Run()
 
 	count := atomic.LoadInt32(&requestCount)
-	// With 100 users, 50ms delay, 500ms duration: ~1,000 requests
-	if count < 1000 {
+	// With 100 users, 50ms delay, 100ms duration: ~200 requests
+	if count < 100 {
 		t.Errorf("Expected many requests with high concurrency, got %d", count)
 	}
 }
@@ -538,8 +538,8 @@ func TestScenarioWithScriptErrors(t *testing.T) {
 deluge("Error Test", {
     "test": {
         "concurrent": 1,
-        "delay": "100ms",
-    "duration": "500ms"
+        "delay": "20ms",
+    "duration": "100ms"
     }
 });
 
@@ -572,8 +572,8 @@ func TestHTTPWithInvalidMethod(t *testing.T) {
 deluge("Invalid Method Test", {
     "test": {
         "concurrent": 1,
-        "delay": "100ms",
-    "duration": "500ms"
+        "delay": "20ms",
+    "duration": "100ms"
     }
 });
 

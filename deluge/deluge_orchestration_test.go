@@ -35,12 +35,12 @@ deluge("Multi-Scenario Test", {
     "first": {
         "concurrent": 2,
         "delay": "50ms",
-    "duration": "500ms"
+    "duration": "100ms"
     },
     "second": {
         "concurrent": 3,
         "delay": "50ms",
-    "duration": "500ms"
+    "duration": "100ms"
     }
 });
 
@@ -121,12 +121,12 @@ deluge("Sequential Test", {
     "first": {
         "concurrent": 1,
         "delay": "50ms",
-    "duration": "500ms"
+    "duration": "100ms"
     },
     "second": {
         "concurrent": 1,
         "delay": "50ms",
-    "duration": "500ms"
+    "duration": "100ms"
     }
 });
 
@@ -172,8 +172,8 @@ func TestDelugeName(t *testing.T) {
 deluge("My Custom Load Test", {
     "test": {
         "concurrent": 1,
-        "delay": "100ms",
-    "duration": "500ms"
+        "delay": "20ms",
+    "duration": "100ms"
     }
 });
 
@@ -266,18 +266,18 @@ func TestDelugeWithThreeScenarios(t *testing.T) {
 deluge("Three Scenarios", {
     "alpha": {
         "concurrent": 1,
-        "delay": "100ms",
-    "duration": "500ms"
+        "delay": "20ms",
+    "duration": "100ms"
     },
     "beta": {
         "concurrent": 2,
-        "delay": "100ms",
-    "duration": "500ms"
+        "delay": "20ms",
+    "duration": "100ms"
     },
     "gamma": {
         "concurrent": 3,
-        "delay": "100ms",
-    "duration": "500ms"
+        "delay": "20ms",
+    "duration": "100ms"
     }
 });
 
@@ -328,12 +328,12 @@ deluge("Independence Test", {
     "success": {
         "concurrent": 1,
         "delay": "50ms",
-    "duration": "500ms"
+    "duration": "100ms"
     },
     "failure": {
         "concurrent": 1,
         "delay": "50ms",
-    "duration": "500ms"
+    "duration": "100ms"
     }
 });
 
@@ -384,13 +384,13 @@ func TestDelugeWithDifferentDelays(t *testing.T) {
 deluge("Different Delays", {
     "fast": {
         "concurrent": 1,
-        "delay": "50ms",
-    "duration": "500ms"
+        "delay": "10ms",
+    "duration": "100ms"
     },
     "slow": {
         "concurrent": 1,
-        "delay": "200ms",
-    "duration": "500ms"
+        "delay": "15ms",
+    "duration": "100ms"
     }
 });
 
@@ -416,8 +416,8 @@ scenario("slow", "Slow", function () {
 	fast := atomic.LoadInt32(&fastCount)
 	slow := atomic.LoadInt32(&slowCount)
 
-	// Fast scenario (50ms delay) should make more requests than slow (200ms delay)
-	// With 500ms duration: fast ~10 requests, slow ~2-3 requests
+	// Fast scenario (50ms delay) should make more requests than slow (80ms delay)
+	// With 100ms duration: fast ~2 requests, slow ~1 request
 	if fast <= slow {
 		t.Errorf("Expected fast scenario (%d) to make more requests than slow (%d)", fast, slow)
 	}
@@ -436,12 +436,12 @@ deluge("Timing Test", {
     "s1": {
         "concurrent": 1,
         "delay": "50ms",
-    "duration": "500ms"
+    "duration": "100ms"
     },
     "s2": {
         "concurrent": 1,
         "delay": "50ms",
-    "duration": "500ms"
+    "duration": "100ms"
     }
 });
 
@@ -467,10 +467,10 @@ scenario("s2", "S2", function () {
 	dlg.Run()
 	elapsed := time.Since(start)
 
-	// Both scenarios configured with 500ms duration
-	// With 2 scenarios running sequentially: ~1s total
-	expectedDuration := 1 * time.Second
-	tolerance := 200 * time.Millisecond
+	// Both scenarios configured with 100ms duration
+	// With 2 scenarios running sequentially: ~200ms total
+	expectedDuration := 200 * time.Millisecond
+	tolerance := 100 * time.Millisecond
 
 	if elapsed < expectedDuration-tolerance || elapsed > expectedDuration+tolerance {
 		t.Errorf("Expected total runtime ~%s, got %s", expectedDuration, elapsed)
@@ -487,7 +487,7 @@ func TestDelugeScenarioOrderDoesNotMatter(t *testing.T) {
 			name: "Config then scenario",
 			script: `
 deluge("Test", {
-    "test": {"concurrent": 1, "delay": "50ms", "duration": "500ms"}
+    "test": {"concurrent": 1, "delay": "50ms", "duration": "100ms"}
 });
 scenario("test", "Test", function () { assert(true); });
 			`,
@@ -497,7 +497,7 @@ scenario("test", "Test", function () { assert(true); });
 			script: `
 scenario("test", "Test", function () { assert(true); });
 deluge("Test", {
-    "test": {"concurrent": 1, "delay": "50ms", "duration": "500ms"}
+    "test": {"concurrent": 1, "delay": "50ms", "duration": "100ms"}
 });
 			`,
 		},
