@@ -26,9 +26,9 @@ type scenarioCore struct {
 }
 
 type scenarioConfig struct {
-	concurrent      int
-	delay           time.Duration
-	totalDuration   time.Duration
+	concurrent    int
+	delay         time.Duration
+	totalDuration time.Duration
 }
 
 func NewDeluge(script *ast.Program) *Deluge {
@@ -56,12 +56,7 @@ func NewDeluge(script *ast.Program) *Deluge {
 }
 
 func (d *Deluge) Run() {
-	log.Infof("Executing %d scenario(s)", len(d.scenarios))
-	start := time.Now()
-	for _, scenario := range d.scenarios {
-		scenario.Run(scenario.totalDuration)
-	}
-	log.Infof("Deluge executed %d scenario(s) in %s", len(d.scenarios), time.Now().Sub(start).String())
+	// TODO
 }
 
 func (d *delugeBuilder) CreateDeluge(node ast.Node, args ...object.Object) object.Object {
