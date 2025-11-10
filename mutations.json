@@ -1,0 +1,137 @@
+{
+  "test_cmd": "go test ./deluge -timeout 90s -v",
+  "mutations": [
+    {
+      "path": "deluge/scenario.go",
+      "search": "if time.Now().Sub(start).Nanoseconds() > duration.Nanoseconds()",
+      "replace": "if time.Now().Sub(start).Nanoseconds() < duration.Nanoseconds()",
+      "description": "Invert duration check - should cause tests to fail as scenarios would terminate immediately"
+    },
+    {
+      "path": "deluge/scenario.go",
+      "search": "if time.Now().Sub(start).Nanoseconds() > duration.Nanoseconds()",
+      "replace": "if false",
+      "description": "Disable duration enforcement - scenarios would run forever"
+    },
+    {
+      "path": "deluge/scenario.go",
+      "search": "if su.Status == DoneError",
+      "replace": "if su.Status == DoneSuccess",
+      "description": "Change error status check - failed users would continue running"
+    },
+    {
+      "path": "deluge/scenario.go",
+      "search": "if su.Status == DoneError",
+      "replace": "if false",
+      "description": "Disable error termination - users should stop on errors"
+    },
+    {
+      "path": "deluge/scenario.go",
+      "search": "atomic.AddInt64(&sc.TotalSimUsersCalls, 1)",
+      "replace": "sc.TotalSimUsersCalls++",
+      "description": "Break atomic counter - should cause race conditions"
+    },
+    {
+      "path": "deluge/scenario.go",
+      "search": "atomic.AddInt64(&sc.TotalSimUsersCalls, 1)",
+      "replace": "atomic.AddInt64(&sc.TotalSimUsersCalls, 2)",
+      "description": "Double-count iterations - counter would be incorrect"
+    },
+    {
+      "path": "deluge/scenario.go",
+      "search": "ticker := time.NewTicker(sc.delay)",
+      "replace": "ticker := time.NewTicker(sc.delay * 2)",
+      "description": "Double the delay - fewer iterations would execute"
+    },
+    {
+      "path": "deluge/scenario.go",
+      "search": "simUserCallCounter <- 1",
+      "replace": "// simUserCallCounter <- 1",
+      "description": "Disable counter channel send - no counts would be recorded"
+    },
+    {
+      "path": "deluge/simuser.go",
+      "search": "su.Status = InProgress",
+      "replace": "su.Status = Virgin",
+      "description": "Break status transition to InProgress"
+    },
+    {
+      "path": "deluge/simuser.go",
+      "search": "su.Status = DoneSuccess",
+      "replace": "su.Status = InProgress",
+      "description": "Never transition to DoneSuccess - status would remain InProgress"
+    },
+    {
+      "path": "deluge/simuser.go",
+      "search": "su.Status = DoneError",
+      "replace": "su.Status = DoneSuccess",
+      "description": "Treat errors as success - failed runs would appear successful"
+    },
+    {
+      "path": "deluge/simuser.go",
+      "search": "if evaluated != nil && evaluated.Type() == object.ERROR_OBJ",
+      "replace": "if false",
+      "description": "Disable error detection - errors would not be caught"
+    },
+    {
+      "path": "deluge/simuser.go",
+      "search": "if su.Status == InProgress",
+      "replace": "if true",
+      "description": "Always set DoneSuccess even if status changed - could override DoneError"
+    },
+    {
+      "path": "deluge/simuser.go",
+      "search": "var method = \"GET\"",
+      "replace": "var method = \"POST\"",
+      "description": "Change default HTTP method - GET requests would become POST"
+    },
+    {
+      "path": "deluge/simuser.go",
+      "search": "return evaluator.NewError(node, \"invalid HTTP request: missing 'url' field\")",
+      "replace": "return evaluator.NULL",
+      "description": "Ignore missing URL - should return error instead"
+    },
+    {
+      "path": "deluge/simuser.go",
+      "search": "return evaluator.NewError(node, \"invalid HTTP request: 'url' should be a STRING\")",
+      "replace": "return evaluator.NULL",
+      "description": "Ignore invalid URL type - should return error instead"
+    },
+    {
+      "path": "deluge/simuser.go",
+      "search": "return evaluator.NewError(node, \"%s\", err.Error())",
+      "replace": "return evaluator.NULL",
+      "description": "Suppress HTTP errors - failures would appear as success"
+    },
+    {
+      "path": "deluge/simuser.go",
+      "search": "env := object.NewEnvironment()",
+      "replace": "var env *object.Environment",
+      "description": "Use nil environment - would cause crash"
+    },
+    {
+      "path": "deluge/scenario.go",
+      "search": "waitg.Wait()",
+      "replace": "// waitg.Wait()",
+      "description": "Don't wait for goroutines - scenario would return prematurely"
+    },
+    {
+      "path": "deluge/scenario.go",
+      "search": "defer waitg.Done()",
+      "replace": "// defer waitg.Done()",
+      "description": "Don't signal goroutine completion - Wait() would hang"
+    },
+    {
+      "path": "deluge/scenario.go",
+      "search": "close(simUserCallCounter)",
+      "replace": "// close(simUserCallCounter)",
+      "description": "Don't close counter channel - counter goroutine would leak"
+    },
+    {
+      "path": "deluge/scenario.go",
+      "search": "counterWg.Wait()",
+      "replace": "// counterWg.Wait()",
+      "description": "Don't wait for counter goroutine - premature return could lose counts"
+    }
+  ]
+}
